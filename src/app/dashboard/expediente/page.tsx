@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   CheckCircle2,
   Save,
@@ -40,6 +41,7 @@ const TECNICAS_DISPONIBLES = [
 // PAGE
 // ─────────────────────────────────────────────────────────────────────────────
 export default function ExpedientePage() {
+  const router = useRouter();
   // ── Estado del formulario ──
   const [subjetivo, setSubjetivo] = useState("");
   const [objetivo, setObjetivo] = useState("");
@@ -66,6 +68,7 @@ export default function ExpedientePage() {
         <Button
           variant="ghost"
           size="icon"
+          onClick={() => router.back()}
           className="h-8 w-8 cursor-pointer hover:bg-cyan-100 shrink-0"
         >
           <ArrowLeft className="h-4 w-4 text-[#164E63]" />
