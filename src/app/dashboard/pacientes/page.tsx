@@ -25,6 +25,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import Link from "next/link";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -268,10 +283,12 @@ function PerfilPaciente({ paciente, onClose }: { paciente: Paciente; onClose: ()
                 Nueva Cita
               </Button>
             </Link>
-            <Button size="sm" className="cursor-pointer bg-[#059669] hover:bg-[#059669]/90 text-white transition-all duration-200 gap-1.5 text-xs">
-              <ClipboardList className="h-3.5 w-3.5" />
-              Nota SOAP
-            </Button>
+            <Link href="/dashboard/expediente">
+              <Button size="sm" className="cursor-pointer bg-[#059669] hover:bg-[#059669]/90 text-white transition-all duration-200 gap-1.5 text-xs">
+                <ClipboardList className="h-3.5 w-3.5" />
+                Nota SOAP
+              </Button>
+            </Link>
           </div>
         </div>
 
@@ -466,7 +483,7 @@ function PerfilPaciente({ paciente, onClose }: { paciente: Paciente; onClose: ()
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-xs font-bold text-[#164E63]">{ej.series}×{ej.reps}</p>
-                    <p className="text-[10px] text-[#164E63]/40">series×{ej.key === "reps" ? "reps" : "seg"}</p>
+                    <p className="text-[10px] text-[#164E63]/40">series×{ej.tipo === "Flexibilidad" ? "seg" : "reps"}</p>
                   </div>
                 </div>
               ))}
@@ -539,6 +556,40 @@ export default function PacientesPage() {
   const [vistaActiva, setVistaActiva] = useState<"grid" | "lista">("grid");
   const [pacienteActivo, setPacienteActivo] = useState<Paciente | null>(null);
   const [filtroEstado, setFiltroEstado] = useState<"todos" | "alerta">("todos");
+  const [modalNuevoPaciente, setModalNuevoPaciente] = useState(false);
+
+  // Form state para nuevo paciente
+  const [formNuevo, setFormNuevo] = useState({
+    nombre: "",
+    apellido: "",
+    email: "",
+    telefono: "",
+    edad: "",
+    ciudad: "",
+    diagnostico: "",
+    cie10: "",
+    sesionesTotal: "10",
+  });
+
+  const handleFormChange = (field: string, value: string) => {
+    setFormNuevo((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleGuardarPaciente = () => {
+    // Mock save — solo cierra el modal y resetea el form
+    setModalNuevoPaciente(false);
+    setFormNuevo({
+      nombre: "",
+      apellido: "",
+      email: "",
+      telefono: "",
+      edad: "",
+      ciudad: "",
+      diagnostico: "",
+      cie10: "",
+      sesionesTotal: "10",
+    });
+  };
 
   const alertaCount = mockPacientes.filter((p) => p.sesionesRestantes <= 2).length;
 
@@ -556,6 +607,145 @@ export default function PacientesPage() {
         <PerfilPaciente paciente={pacienteActivo} onClose={() => setPacienteActivo(null)} />
       )}
 
+      {/* ── MODAL: Nuevo Paciente ── */}
+      <Dialog open={modalNuevoPaciente} onOpenChange={setModalNuevoPaciente}>
+        <DialogContent className="max-w-lg border-cyan-100 bg-white">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold text-[#164E63]">Nuevo Paciente</DialogTitle>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-2">
+            {/* Nombre + Apellido */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-[#164E63]">Nombre *</Label>
+                <Input
+                  placeholder="Ej. Ana"
+                  value={formNuevo.nombre}
+                  onChange={(e) => handleFormChange("nombre", e.target.value)}
+                  className="border-cyan-200 focus:border-[#0891B2] focus:ring-[#0891B2]/20"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-[#164E63]">Apellido *</Label>
+                <Input
+                  placeholder="Ej. Flores Torres"
+                  value={formNuevo.apellido}
+                  onChange={(e) => handleFormChange("apellido", e.target.value)}
+                  className="border-cyan-200 focus:border-[#0891B2] focus:ring-[#0891B2]/20"
+                />
+              </div>
+            </div>
+
+            {/* Email + Teléfono */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-[#164E63]">Email</Label>
+                <Input
+                  type="email"
+                  placeholder="correo@ejemplo.com"
+                  value={formNuevo.email}
+                  onChange={(e) => handleFormChange("email", e.target.value)}
+                  className="border-cyan-200 focus:border-[#0891B2] focus:ring-[#0891B2]/20"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-[#164E63]">Teléfono</Label>
+                <Input
+                  placeholder="+52 55 1234 5678"
+                  value={formNuevo.telefono}
+                  onChange={(e) => handleFormChange("telefono", e.target.value)}
+                  className="border-cyan-200 focus:border-[#0891B2] focus:ring-[#0891B2]/20"
+                />
+              </div>
+            </div>
+
+            {/* Edad + Ciudad */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-[#164E63]">Edad</Label>
+                <Input
+                  type="number"
+                  placeholder="34"
+                  value={formNuevo.edad}
+                  onChange={(e) => handleFormChange("edad", e.target.value)}
+                  className="border-cyan-200 focus:border-[#0891B2] focus:ring-[#0891B2]/20"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-[#164E63]">Ciudad</Label>
+                <Select value={formNuevo.ciudad} onValueChange={(v) => handleFormChange("ciudad", v)}>
+                  <SelectTrigger className="cursor-pointer border-cyan-200 focus:border-[#0891B2] focus:ring-[#0891B2]/20">
+                    <SelectValue placeholder="Seleccionar" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="CDMX" className="cursor-pointer">CDMX</SelectItem>
+                    <SelectItem value="Guadalajara" className="cursor-pointer">Guadalajara</SelectItem>
+                    <SelectItem value="Monterrey" className="cursor-pointer">Monterrey</SelectItem>
+                    <SelectItem value="Puebla" className="cursor-pointer">Puebla</SelectItem>
+                    <SelectItem value="Querétaro" className="cursor-pointer">Querétaro</SelectItem>
+                    <SelectItem value="Mérida" className="cursor-pointer">Mérida</SelectItem>
+                    <SelectItem value="Otra" className="cursor-pointer">Otra</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Diagnóstico + CIE-10 */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="col-span-2 space-y-1.5">
+                <Label className="text-xs font-semibold text-[#164E63]">Diagnóstico</Label>
+                <Input
+                  placeholder="Ej. Lumbalgia mecánica"
+                  value={formNuevo.diagnostico}
+                  onChange={(e) => handleFormChange("diagnostico", e.target.value)}
+                  className="border-cyan-200 focus:border-[#0891B2] focus:ring-[#0891B2]/20"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-[#164E63]">CIE-10</Label>
+                <Input
+                  placeholder="M54.5"
+                  value={formNuevo.cie10}
+                  onChange={(e) => handleFormChange("cie10", e.target.value)}
+                  className="border-cyan-200 focus:border-[#0891B2] focus:ring-[#0891B2]/20"
+                />
+              </div>
+            </div>
+
+            {/* Sesiones totales */}
+            <div className="w-1/3 space-y-1.5">
+              <Label className="text-xs font-semibold text-[#164E63]">Sesiones autorizadas</Label>
+              <Input
+                type="number"
+                placeholder="10"
+                value={formNuevo.sesionesTotal}
+                onChange={(e) => handleFormChange("sesionesTotal", e.target.value)}
+                className="border-cyan-200 focus:border-[#0891B2] focus:ring-[#0891B2]/20"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setModalNuevoPaciente(false)}
+              className="cursor-pointer border-cyan-200 text-[#164E63] hover:bg-cyan-50 transition-all duration-200"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleGuardarPaciente}
+              disabled={!formNuevo.nombre.trim() || !formNuevo.apellido.trim()}
+              className="cursor-pointer bg-[#059669] hover:bg-[#059669]/90 text-white transition-all duration-200 disabled:opacity-50"
+            >
+              <Plus className="h-4 w-4 mr-1.5" />
+              Guardar Paciente
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* ── 1. HEADER ── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
@@ -564,7 +754,7 @@ export default function PacientesPage() {
             {mockPacientes.filter((p) => p.activo).length} pacientes activos
           </p>
         </div>
-        <Button className="cursor-pointer bg-[#059669] hover:bg-[#059669]/90 text-white transition-all duration-200 gap-1.5 w-fit">
+        <Button onClick={() => setModalNuevoPaciente(true)} className="cursor-pointer bg-[#059669] hover:bg-[#059669]/90 text-white transition-all duration-200 gap-1.5 w-fit">
           <Plus className="h-4 w-4" />
           Nuevo Paciente
         </Button>
