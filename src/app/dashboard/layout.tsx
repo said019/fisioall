@@ -15,6 +15,7 @@ import {
   X,
   Bell,
   ChevronRight,
+  Scan,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +25,7 @@ const navItems = [
   { href: "/dashboard", icon: Activity, label: "Dashboard", exact: true },
   { href: "/dashboard/agenda", icon: CalendarDays, label: "Agenda", exact: false },
   { href: "/dashboard/pacientes", icon: Users, label: "Pacientes", exact: false },
+  { href: "/dashboard/body-map", icon: Scan, label: "Body Map", exact: false },
   {
     href: "/dashboard/membresias",
     icon: CreditCard,
@@ -162,6 +164,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     "/dashboard": "Dashboard",
     "/dashboard/agenda": "Agenda",
     "/dashboard/pacientes": "Pacientes",
+    "/dashboard/body-map": "Body Map",
     "/dashboard/membresias": "Membresías y Pagos",
     "/dashboard/configuracion": "Configuración",
   };

@@ -319,17 +319,22 @@ model Diagnostico {
 model BodyMapMarca {
   id              String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   diagnosticoId   String      @map("diagnostico_id") @db.Uuid
-  vista           String      @db.VarChar(20)
-  coordX          Decimal     @map("coord_x") @db.Decimal(5, 2)
-  coordY          Decimal     @map("coord_y") @db.Decimal(5, 2)
-  tipo            String?     @default("dolor") @db.VarChar(30)
-  intensidad      DolorEscala? @default(N5)
-  color           String?     @default("#EF4444") @db.VarChar(7)
-  descripcion     String?
+  tenantId        String      @map("tenant_id") @db.Uuid
+  coordX          Float       @map("coord_x")
+  coordY          Float       @map("coord_y")
+  vista           String      @db.VarChar(20)   // anterior | posterior | lateral_der | lateral_izq
+  tipo            String      @default("dolor") @db.VarChar(20)  // dolor | inflamacion | contractura | limitacion | parestesia | tension
+  intensidad      Int?        @default(5) @db.SmallInt
+  zonaNombre      String?     @map("zona_nombre") @db.VarChar(100) // "Columna L4-L5", "Rodilla izquierda"
+  colorHex        String?     @default("#EF4444") @map("color_hex") @db.VarChar(7)
+  notas           String?
   createdAt       DateTime?   @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime?   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
   diagnostico     Diagnostico @relation(fields: [diagnosticoId], references: [id], onDelete: Cascade)
 
+  @@index([diagnosticoId])
+  @@index([tenantId])
   @@map("body_map_marcas")
 }
 
