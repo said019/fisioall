@@ -23,27 +23,23 @@ import {
   Hand,
   Minus,
   ChevronRight,
+  Clock,
+  GitCompareArrows,
+  Scan,
 } from "lucide-react";
 import Link from "next/link";
+import { MOCK_SNAPSHOTS, type Snapshot, type MarcaBodyMap } from "@/components/BodyMapModal";
 
 /* ═══════════════════════════════════════════════════════════════════
-   TYPES
+   TYPES (re-used from BodyMapModal)
    ═══════════════════════════════════════════════════════════════════ */
 
 type Vista = "anterior" | "posterior" | "lateral_der" | "lateral_izq";
 type TipoHallazgo = "dolor" | "inflamacion" | "contractura" | "limitacion" | "parestesia" | "tension";
 type Lateralidad = "bilateral" | "izquierdo" | "derecho";
 
-interface Marca {
-  zona: string;
-  label: string;
-  vista: Vista;
-  eva: number;
-  tipo: TipoHallazgo;
-  lateralidad: Lateralidad;
-  notas: string;
-  color: string;
-}
+// Local alias for convenience
+type Marca = MarcaBodyMap;
 
 /* ═══════════════════════════════════════════════════════════════════
    CONSTANTS
@@ -292,6 +288,10 @@ export default function BodyMapPage() {
   const [tipoGlobal, setTipoGlobal] = useState<TipoHallazgo>("dolor");
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [guardadoFlash, setGuardadoFlash] = useState(false);
+  const [modoVista, setModoVista] = useState<"editor" | "historial" | "comparacion">("editor");
+
+  /* snapshots state */
+  const [snapshots] = useState<Snapshot[]>(MOCK_SNAPSHOTS);
 
   /* form state */
   const [formEva, setFormEva] = useState(5);
@@ -396,7 +396,37 @@ export default function BodyMapPage() {
             <p className="text-[11px] text-[#164E63]/50">Sesión #8 · Lun 24 Feb 2026</p>
           </div>
         </div>
-        <Badge className="bg-[#0891B2]/10 text-[#0891B2] border-[#0891B2]/20 font-semibold text-xs shrink-0">
+        {/* Mode toggles */}
+        <div className="flex items-center gap-1 bg-[#ECFEFF] border border-cyan-100 rounded-xl p-1 shrink-0">
+          <button
+            onClick={() => { setModoVista("editor"); setSelectedKey(null); }}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer ${
+              modoVista === "editor" ? "bg-[#0891B2] text-white shadow-sm" : "text-[#164E63]/50 hover:text-[#164E63]"
+            }`}
+          >
+            <MapPin className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Editar</span>
+          </button>
+          <button
+            onClick={() => { setModoVista("historial"); setSelectedKey(null); }}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer ${
+              modoVista === "historial" ? "bg-[#0891B2] text-white shadow-sm" : "text-[#164E63]/50 hover:text-[#164E63]"
+            }`}
+          >
+            <Clock className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Historial</span>
+          </button>
+          <button
+            onClick={() => { setModoVista("comparacion"); setSelectedKey(null); }}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer ${
+              modoVista === "comparacion" ? "bg-amber-500 text-white shadow-sm" : "text-[#164E63]/50 hover:text-[#164E63]"
+            }`}
+          >
+            <GitCompareArrows className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Comparar</span>
+          </button>
+        </div>
+        <Badge className="bg-[#0891B2]/10 text-[#0891B2] border-[#0891B2]/20 font-semibold text-xs shrink-0 hidden sm:flex">
           <Activity className="h-3 w-3 mr-1" />Body Map Pro
         </Badge>
       </div>
@@ -406,13 +436,49 @@ export default function BodyMapPage() {
 
         {/* ══ LEFT SIDEBAR ══ */}
         <div className="hidden lg:flex w-56 shrink-0 flex-col border-r border-cyan-100 bg-white p-4 gap-1 overflow-y-auto">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-[#164E63]/40 px-2 mb-1">Vistas</p>
-          {(["anterior","posterior","lateral_der","lateral_izq"] as Vista[]).map(v => (
-            <button
-              key={v}
-              onClick={() => { setVista(v); resetPanel(); }}
-              className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-200 cursor-pointer w-full text-left ${
-                vista === v
+
+          {/* Historial mode: show timeline */}
+          {modoVista === "historial" && (
+            <>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-[#164E63]/40 px-2 mb-1">Snapshots</p>
+              {snapshots.map((snap) => (
+                <div key={snap.id} className="rounded-xl border border-cyan-100 p-3 bg-white mb-1">
+                  <div className="flex items-center gap-2">
+                    <div className={`h-6 w-6 rounded-full flex items-center justify-center shrink-0 ${
+                      snap.modo === "baseline" ? "bg-violet-100" : "bg-[#0891B2]/10"
+                    }`}>
+                      {snap.modo === "baseline"
+                        ? <Scan className="h-3 w-3 text-violet-600" />
+                        : <Activity className="h-3 w-3 text-[#0891B2]" />
+                      }
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] font-bold text-[#164E63] truncate">
+                        {snap.modo === "baseline" ? "Baseline" : `Sesión #${snap.sesion}`}
+                      </p>
+                      <p className="text-[9px] text-[#164E63]/40">{snap.fecha}</p>
+                    </div>
+                    <span className="text-xs font-black tabular-nums shrink-0" style={{
+                      color: "#EF4444"
+                    }}>
+                      {(Object.values(snap.marcas).reduce((s, m) => s + m.eva, 0) / Math.max(Object.keys(snap.marcas).length, 1)).toFixed(1)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+
+          {/* Editor and Comparacion modes: show vista + tipo selectors */}
+          {(modoVista === "editor" || modoVista === "comparacion") && (
+            <>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-[#164E63]/40 px-2 mb-1">Vistas</p>
+              {(["anterior","posterior","lateral_der","lateral_izq"] as Vista[]).map(v => (
+                <button
+                  key={v}
+                  onClick={() => { setVista(v); resetPanel(); }}
+                  className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-200 cursor-pointer w-full text-left ${
+                    vista === v
                   ? "bg-[#0891B2]/10 text-[#0891B2] border border-[#0891B2]/20"
                   : "text-[#164E63]/60 hover:bg-cyan-50 hover:text-[#164E63] border border-transparent"
               }`}
@@ -453,6 +519,8 @@ export default function BodyMapPage() {
           <button onClick={handleExport} className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-[12px] font-medium text-[#164E63]/60 hover:bg-cyan-50 transition-all duration-200 cursor-pointer w-full text-left">
             <Download className="h-3.5 w-3.5" />Exportar datos
           </button>
+            </>
+          )}
         </div>
 
         {/* ══ CENTER CANVAS ══ */}
@@ -460,6 +528,125 @@ export default function BodyMapPage() {
           {/* Glow bg */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-[#0891B2]/[0.04] blur-3xl pointer-events-none" />
 
+          {/* ── HISTORIAL MODE ── */}
+          {modoVista === "historial" && (
+            <div className="w-full max-w-2xl relative z-10 space-y-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Clock className="h-4 w-4 text-[#0891B2]" />
+                <p className="text-sm font-bold text-[#164E63]">Historial de Body Map</p>
+                <Badge className="ml-auto bg-[#0891B2]/10 text-[#0891B2] border-[#0891B2]/20 text-[10px]">
+                  {snapshots.length} snapshots
+                </Badge>
+              </div>
+              {snapshots.map((snap) => (
+                <div key={snap.id} className="bg-white border border-cyan-100 rounded-2xl overflow-hidden shadow-sm">
+                  <div className="px-5 py-3.5 flex items-center gap-3 border-b border-cyan-100">
+                    <div className={`h-8 w-8 rounded-xl flex items-center justify-center ${
+                      snap.modo === "baseline" ? "bg-violet-100" : "bg-[#0891B2]/10"
+                    }`}>
+                      {snap.modo === "baseline"
+                        ? <Scan className="h-4 w-4 text-violet-600" />
+                        : <Activity className="h-4 w-4 text-[#0891B2]" />
+                      }
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-[#164E63]">
+                        {snap.modo === "baseline" ? "Evaluación Inicial (Baseline)" : `Sesión #${snap.sesion}`}
+                      </p>
+                      <p className="text-[11px] text-[#164E63]/40">{snap.fecha} · {Object.keys(snap.marcas).length} zonas afectadas</p>
+                    </div>
+                    {snap.modo === "baseline" && (
+                      <Badge className="ml-auto bg-violet-100 text-violet-700 border-violet-200 font-bold text-[10px]">BASELINE</Badge>
+                    )}
+                  </div>
+                  {/* Hallazgos list */}
+                  <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {Object.values(snap.marcas).map((m, i) => (
+                      <div key={i} className="flex items-center gap-2 bg-[#ECFEFF]/50 border border-cyan-100 rounded-xl px-3 py-2">
+                        <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: m.color }} />
+                        <span className="text-[12px] font-semibold text-[#164E63] flex-1 truncate">{m.label}</span>
+                        <span className="text-sm font-black tabular-nums" style={{
+                          color: ["#10B981","#10B981","#10B981","#34D399","#FCD34D","#F59E0B","#F97316","#EF4444","#DC2626","#B91C1C","#7F1D1D"][Math.min(m.eva, 10)]
+                        }}>{m.eva}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* ── COMPARACION MODE ── */}
+          {modoVista === "comparacion" && (
+            <div className="w-full max-w-4xl relative z-10">
+              <div className="flex items-center gap-2 mb-4">
+                <GitCompareArrows className="h-4 w-4 text-amber-600" />
+                <p className="text-sm font-bold text-[#164E63]">Comparación: Sesión 1 vs Sesión 8</p>
+              </div>
+              {/* Side-by-side header */}
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="text-center">
+                  <Badge className="bg-violet-100 text-violet-700 border-violet-200 font-bold">
+                    BASELINE — {snapshots[0]?.fecha}
+                  </Badge>
+                </div>
+                <div className="text-center">
+                  <Badge className="bg-[#0891B2]/10 text-[#0891B2] border-[#0891B2]/20 font-bold">
+                    ACTUAL — {snapshots[snapshots.length - 1]?.fecha}
+                  </Badge>
+                </div>
+              </div>
+              {/* Delta cards */}
+              <div className="space-y-2">
+                {Object.keys(snapshots[0]?.marcas ?? {}).map(key => {
+                  const antes = snapshots[0].marcas[key];
+                  const ahora = snapshots[snapshots.length - 1]?.marcas[key];
+                  if (!antes) return null;
+                  const delta = (ahora?.eva ?? 0) - antes.eva;
+                  const evaBefore = antes.eva;
+                  const evaAfter = ahora?.eva ?? 0;
+                  const EVA_COLORS_LOCAL = ["#10B981","#10B981","#10B981","#34D399","#FCD34D","#F59E0B","#F97316","#EF4444","#DC2626","#B91C1C","#7F1D1D"];
+                  return (
+                    <div key={key} className="flex items-center gap-4 bg-white border border-cyan-100 rounded-xl px-4 py-3">
+                      <span className="h-3 w-3 rounded-full shrink-0" style={{ background: antes.color }} />
+                      <span className="text-sm font-bold text-[#164E63] flex-1 min-w-0 truncate">{antes.label}</span>
+                      {/* Before EVA */}
+                      <div className="text-center shrink-0">
+                        <p className="text-2xl font-black tabular-nums leading-none" style={{ color: EVA_COLORS_LOCAL[Math.min(evaBefore, 10)] }}>{evaBefore}</p>
+                        <p className="text-[9px] text-[#164E63]/30 mt-0.5">inicio</p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-[#164E63]/20 shrink-0" />
+                      {/* After EVA */}
+                      <div className="text-center shrink-0">
+                        <p className="text-2xl font-black tabular-nums leading-none" style={{ color: ahora ? EVA_COLORS_LOCAL[Math.min(evaAfter, 10)] : "#10B981" }}>
+                          {ahora ? evaAfter : "—"}
+                        </p>
+                        <p className="text-[9px] text-[#164E63]/30 mt-0.5">sesión 8</p>
+                      </div>
+                      {/* Delta */}
+                      {ahora ? (
+                        <Badge className={`text-xs px-2 h-6 font-bold shrink-0 ${
+                          delta < 0 ? "bg-emerald-100 text-emerald-700 border-emerald-200"
+                          : delta > 0 ? "bg-red-100 text-red-600 border-red-200"
+                          : "bg-gray-100 text-gray-500 border-gray-200"
+                        }`}>
+                          {delta < 0 ? `↓ ${Math.abs(delta)} puntos` : delta > 0 ? `↑ ${delta} puntos` : "Sin cambios"}
+                        </Badge>
+                      ) : (
+                        <Badge className="text-xs px-2 h-6 font-bold shrink-0 bg-emerald-100 text-emerald-700 border-emerald-200">
+                          ✓ Zona resuelta
+                        </Badge>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ── EDITOR MODE ── */}
+          {modoVista === "editor" && (
+            <>
           {/* Vista toggle (mobile + always visible) */}
           <div className="flex gap-1 bg-white border border-cyan-100 rounded-xl p-1 mb-5 shadow-sm relative z-10">
             {(["anterior","posterior","lateral_der","lateral_izq"] as Vista[]).map(v => (
@@ -508,6 +695,8 @@ export default function BodyMapPage() {
               <Trash2 className="h-3.5 w-3.5 mr-1" />Limpiar
             </Button>
           </div>
+            </>
+          )}
         </div>
 
         {/* ══ RIGHT PANEL ══ */}
