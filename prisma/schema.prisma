@@ -1,0 +1,727 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -------------------------------------------------------------------------------- //
+// ENUMS
+// -------------------------------------------------------------------------------- //
+
+enum PlanTipo {
+  basico
+  pro
+  clinica
+}
+
+enum GeneroTipo {
+  masculino
+  femenino
+  otro
+  no_especificado
+}
+
+enum SesionEstado {
+  agendada
+  confirmada
+  en_curso
+  completada
+  cancelada
+  no_show
+}
+
+enum PagoMetodo {
+  efectivo
+  transferencia
+  tarjeta_debito
+  tarjeta_credito
+  otro
+}
+
+enum PagoEstado {
+  pendiente
+  pagado
+  parcial
+  reembolsado
+}
+
+enum MembresiaEstado {
+  activa
+  pausada
+  vencida
+  cancelada
+  pendiente_activacion
+}
+
+enum NotificacionTipo {
+  recordatorio_cita
+  sesion_por_vencer
+  membresia_vencida
+  seguimiento
+  ejercicio_pendiente
+  general
+}
+
+enum LesionLado {
+  izquierdo
+  derecho
+  bilateral
+  central
+  n_a
+}
+
+enum DolorEscala {
+  N0
+  N1
+  N2
+  N3
+  N4
+  N5
+  N6
+  N7
+  N8
+  N9
+  N10
+}
+
+enum EjercicioTipo {
+  movilidad
+  fortalecimiento
+  estiramiento
+  cardio
+  equilibrio
+  respiracion
+  otro
+}
+
+enum DiaSemana {
+  lunes
+  martes
+  miercoles
+  jueves
+  viernes
+  sabado
+  domingo
+}
+
+// -------------------------------------------------------------------------------- //
+// MODELS
+// -------------------------------------------------------------------------------- //
+
+model Tenant {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre                String    @db.VarChar(150)
+  slug                  String    @unique @db.VarChar(100)
+  plan                  PlanTipo  @default(basico)
+  activo                Boolean?  @default(true)
+  logoUrl               String?   @map("logo_url")
+  colorPrimario         String?   @default("#2563EB") @map("color_primario") @db.VarChar(7)
+  telefono              String?   @db.VarChar(20)
+  emailContacto         String?   @map("email_contacto") @db.VarChar(150)
+  direccion             String?
+  ciudad                String?   @db.VarChar(100)
+  estado                String?   @db.VarChar(100)
+  pais                  String?   @default("México") @db.VarChar(60)
+  timezone              String?   @default("America/Mexico_City") @db.VarChar(60)
+  configuracion         Json?     @default("{}")
+  stripeCustomerId      String?   @map("stripe_customer_id") @db.VarChar(100)
+  suscripcionActiva     Boolean?  @default(false) @map("suscripcion_activa")
+  suscripcionFin        DateTime? @map("suscripcion_fin") @db.Date
+  maxFisioterapeutas    Int?      @default(1) @map("max_fisioterapeutas")
+  maxPacientesActivos   Int?      @default(50) @map("max_pacientes_activos")
+  createdAt             DateTime? @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt             DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  usuarios              Usuario[]
+  pacientes             Paciente[]
+  paquetes              Paquete[]
+  membresias            Membresia[]
+  citas                 Cita[]
+  pagos                 Pago[]
+  ejercicios            Ejercicio[]
+  notificaciones        Notificacion[]
+  plantillasMensaje     PlantillaMensaje[]
+
+  @@index([slug])
+  @@map("tenants")
+}
+
+model Usuario {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId              String    @map("tenant_id") @db.Uuid
+  nombre                String    @db.VarChar(100)
+  apellido              String    @db.VarChar(100)
+  email                 String    @unique @db.VarChar(150)
+  telefono              String?   @db.VarChar(20)
+  passwordHash          String    @map("password_hash")
+  rol                   String    @default("fisioterapeuta") @db.VarChar(30)
+  cedulaProfesional     String?   @map("cedula_profesional") @db.VarChar(50)
+  especialidades        String[]
+  fotoUrl               String?   @map("foto_url")
+  bio                   String?
+  activo                Boolean?  @default(true)
+  ultimoLogin           DateTime? @map("ultimo_login") @db.Timestamptz
+  tokenRecuperacion     String?   @map("token_recuperacion")
+  tokenExp              DateTime? @map("token_exp") @db.Timestamptz
+  refreshToken          String?   @map("refresh_token")
+  configuracion         Json?     @default("{}")
+  createdAt             DateTime? @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt             DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  tenant                Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  horariosTrabajo       HorarioTrabajo[]
+  bloqueosHorario       BloqueoHorario[]
+  pacientesAsignados    Paciente[]       @relation("FisioPrincipal")
+  diagnosticosEmitidos  Diagnostico[]
+  expedientesSubidos    ExpedienteAdjunto[]
+  membresiasVendidas    Membresia[]
+  citasAtendidas        Cita[]           @relation("CitaFisio")
+  citasCreadas          Cita[]           @relation("CitaCreador")
+  notasSesion           NotaSesion[]
+  pagosRegistrados      Pago[]
+  ejerciciosCreados     Ejercicio[]
+  ejerciciosAsignados   EjercicioAsignado[]
+  notificacionesRecibidas Notificacion[]
+
+  @@index([tenantId])
+  @@index([email])
+  @@map("usuarios")
+}
+
+model HorarioTrabajo {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuarioId       String    @map("usuario_id") @db.Uuid
+  dia             DiaSemana
+  horaInicio      DateTime  @map("hora_inicio") @db.Time
+  horaFin         DateTime  @map("hora_fin") @db.Time
+  activo          Boolean?  @default(true)
+
+  usuario         Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@unique([usuarioId, dia])
+  @@map("horarios_trabajo")
+}
+
+model BloqueoHorario {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuarioId       String    @map("usuario_id") @db.Uuid
+  fechaInicio     DateTime  @map("fecha_inicio") @db.Timestamptz
+  fechaFin        DateTime  @map("fecha_fin") @db.Timestamptz
+  motivo          String?   @db.VarChar(200)
+  createdAt       DateTime? @default(now()) @map("created_at") @db.Timestamptz
+
+  usuario         Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@map("bloqueos_horario")
+}
+
+model Paciente {
+  id                          String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId                    String      @map("tenant_id") @db.Uuid
+  fisioterapeutaId            String?     @map("fisioterapeuta_id") @db.Uuid
+  nombre                      String      @db.VarChar(100)
+  apellido                    String      @db.VarChar(100)
+  email                       String?     @db.VarChar(150)
+  telefono                    String      @db.VarChar(20)
+  whatsapp                    String?     @db.VarChar(20)
+  fechaNacimiento             DateTime?   @map("fecha_nacimiento") @db.Date
+  genero                      GeneroTipo? @default(no_especificado)
+  ocupacion                   String?     @db.VarChar(100)
+  fotoUrl                     String?     @map("foto_url")
+  
+  contactoEmergenciaNombre    String?     @map("contacto_emergencia_nombre") @db.VarChar(150)
+  contactoEmergenciaTel       String?     @map("contacto_emergencia_tel") @db.VarChar(20)
+  contactoEmergenciaRelacion  String?     @map("contacto_emergencia_relacion") @db.VarChar(60)
+  
+  pesoKg                      Decimal?    @map("peso_kg") @db.Decimal(5, 2)
+  alturaCm                    Decimal?    @map("altura_cm") @db.Decimal(5, 1)
+  tipoSangre                  String?     @map("tipo_sangre") @db.VarChar(5)
+  alergias                    String[]
+  medicamentosActuales        String?     @map("medicamentos_actuales")
+  enfermedadesCronicas        String[]    @map("enfermedades_cronicas")
+  cirugiasPrevias             String?     @map("cirugias_previas")
+  notasMedicas                String?     @map("notas_medicas")
+  
+  activo                      Boolean?    @default(true)
+  fechaPrimeraCita            DateTime?   @map("fecha_primera_cita") @db.Date
+  totalSesiones               Int?        @default(0) @map("total_sesiones")
+  
+  walletPassUrl               String?     @map("wallet_pass_url")
+  walletPassId                String?     @map("wallet_pass_id") @db.VarChar(100)
+  
+  createdAt                   DateTime?   @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt                   DateTime?   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  tenant                      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  fisioterapeuta              Usuario?    @relation("FisioPrincipal", fields: [fisioterapeutaId], references: [id], onDelete: SetNull)
+
+  diagnosticos                Diagnostico[]
+  adjuntosExpediente          ExpedienteAdjunto[]
+  membresias                  Membresia[]
+  citas                       Cita[]
+  notasSesion                 NotaSesion[]
+  fotosSesion                 SesionFoto[]
+  pagos                       Pago[]
+  ejerciciosAsignados         EjercicioAsignado[]
+  registrosEjercicios         EjercicioRegistro[]
+  encuestas                   EncuestaSesion[]
+  notificaciones              Notificacion[]
+  progresosDolor              ProgresoDolor[]
+
+  @@index([tenantId])
+  @@index([fisioterapeutaId])
+  @@index([telefono])
+  // Trigram index on nombre would be raw SQL in Prisma
+  @@map("pacientes")
+}
+
+model Diagnostico {
+  id                        String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pacienteId                String      @map("paciente_id") @db.Uuid
+  fisioterapeutaId          String      @map("fisioterapeuta_id") @db.Uuid
+  fecha                     DateTime    @default(dbgenerated("CURRENT_DATE")) @db.Date
+  motivoConsulta            String      @map("motivo_consulta")
+  diagnosticoPrincipal      String      @map("diagnostico_principal") @db.VarChar(300)
+  diagnosticoCie10          String?     @map("diagnostico_cie10") @db.VarChar(10)
+  zonaLesion                String?     @map("zona_lesion") @db.VarChar(100)
+  ladoLesion                LesionLado? @default(n_a) @map("lado_lesion")
+  tipoLesion                String?     @map("tipo_lesion") @db.VarChar(100)
+  origen                    String?     @db.VarChar(100)
+  cronificacion             Boolean?    @default(false)
+  objetivosTratamiento      String?     @map("objetivos_tratamiento")
+  planTratamiento           String?     @map("plan_tratamiento")
+  numeroSesionesEstimadas   Int?        @map("numero_sesiones_estimadas")
+  observaciones             String?
+  activo                    Boolean?    @default(true)
+  fechaCierre               DateTime?   @map("fecha_cierre") @db.Date
+  
+  createdAt                 DateTime?   @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt                 DateTime?   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  paciente                  Paciente    @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
+  fisioterapeuta            Usuario     @relation(fields: [fisioterapeutaId], references: [id])
+
+  marcasBodyMap             BodyMapMarca[]
+  adjuntos                  ExpedienteAdjunto[]
+  membresias                Membresia[]
+  citas                     Cita[]
+  progresosDolor            ProgresoDolor[]
+
+  @@index([pacienteId])
+  @@index([fisioterapeutaId])
+  @@map("diagnosticos")
+}
+
+model BodyMapMarca {
+  id              String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  diagnosticoId   String      @map("diagnostico_id") @db.Uuid
+  vista           String      @db.VarChar(20)
+  coordX          Decimal     @map("coord_x") @db.Decimal(5, 2)
+  coordY          Decimal     @map("coord_y") @db.Decimal(5, 2)
+  tipo            String?     @default("dolor") @db.VarChar(30)
+  intensidad      DolorEscala? @default(N5)
+  color           String?     @default("#EF4444") @db.VarChar(7)
+  descripcion     String?
+  createdAt       DateTime?   @default(now()) @map("created_at") @db.Timestamptz
+
+  diagnostico     Diagnostico @relation(fields: [diagnosticoId], references: [id], onDelete: Cascade)
+
+  @@map("body_map_marcas")
+}
+
+model ExpedienteAdjunto {
+  id              String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pacienteId      String      @map("paciente_id") @db.Uuid
+  diagnosticoId   String?     @map("diagnostico_id") @db.Uuid
+  nombre          String      @db.VarChar(200)
+  tipo            String?     @db.VarChar(50)
+  url             String
+  sizeBytes       BigInt?     @map("size_bytes")
+  descripcion     String?
+  uploadedBy      String?     @map("uploaded_by") @db.Uuid
+  createdAt       DateTime?   @default(now()) @map("created_at") @db.Timestamptz
+
+  paciente        Paciente    @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
+  diagnostico     Diagnostico? @relation(fields: [diagnosticoId], references: [id], onDelete: SetNull)
+  uploader        Usuario?    @relation(fields: [uploadedBy], references: [id])
+
+  @@map("expediente_adjuntos")
+}
+
+model Paquete {
+  id              String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String      @map("tenant_id") @db.Uuid
+  nombre          String      @db.VarChar(150)
+  descripcion     String?
+  numSesiones     Int         @map("num_sesiones")
+  precio          Decimal     @db.Decimal(10, 2)
+  duracionDias    Int?        @map("duracion_dias")
+  activo          Boolean?    @default(true)
+  color           String?     @default("#2563EB") @db.VarChar(7)
+  notasInternas   String?     @map("notas_internas")
+  
+  createdAt       DateTime?   @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime?   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  tenant          Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  membresias      Membresia[]
+
+  @@index([tenantId])
+  @@map("paquetes")
+}
+
+model Membresia {
+  id                    String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId              String            @map("tenant_id") @db.Uuid
+  pacienteId            String            @map("paciente_id") @db.Uuid
+  paqueteId             String            @map("paquete_id") @db.Uuid
+  fisioterapeutaId      String?           @map("fisioterapeuta_id") @db.Uuid
+  diagnosticoId         String?           @map("diagnostico_id") @db.Uuid
+  
+  estado                MembresiaEstado?  @default(pendiente_activacion)
+  sesionesTotal         Int               @map("sesiones_total")
+  sesionesUsadas        Int?              @default(0) @map("sesiones_usadas")
+  // Note: sesionesRestantes is a generated column in DB: sesiones_total - sesiones_usadas
+  
+  precioPagado          Decimal           @map("precio_pagado") @db.Decimal(10, 2)
+  fechaCompra           DateTime          @default(dbgenerated("CURRENT_DATE")) @map("fecha_compra") @db.Date
+  fechaActivacion       DateTime?         @map("fecha_activacion") @db.Date
+  fechaVencimiento      DateTime?         @map("fecha_vencimiento") @db.Date
+  
+  activadaManualmente   Boolean?          @default(false) @map("activada_manualmente")
+  notasActivacion       String?           @map("notas_activacion")
+  
+  walletPassId          String?           @map("wallet_pass_id") @db.VarChar(100)
+  walletSerial          String?           @map("wallet_serial") @db.VarChar(100)
+  
+  createdAt             DateTime?         @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt             DateTime?         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  tenant                Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  paciente              Paciente          @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
+  paquete               Paquete           @relation(fields: [paqueteId], references: [id])
+  fisioterapeuta        Usuario?          @relation(fields: [fisioterapeutaId], references: [id])
+  diagnostico           Diagnostico?      @relation(fields: [diagnosticoId], references: [id])
+
+  citas                 Cita[]
+  pagos                 Pago[]
+
+  @@index([pacienteId])
+  @@index([tenantId])
+  @@index([estado])
+  @@map("membresias")
+}
+
+model Cita {
+  id                    String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId              String            @map("tenant_id") @db.Uuid
+  fisioterapeutaId      String            @map("fisioterapeuta_id") @db.Uuid
+  pacienteId            String            @map("paciente_id") @db.Uuid
+  membresiaId           String?           @map("membresía_id") @db.Uuid
+  diagnosticoId         String?           @map("diagnostico_id") @db.Uuid
+  
+  fechaHoraInicio       DateTime          @map("fecha_hora_inicio") @db.Timestamptz
+  fechaHoraFin          DateTime          @map("fecha_hora_fin") @db.Timestamptz
+  // duracionMinutos is generated in DB
+  
+  estado                SesionEstado?     @default(agendada)
+  tipoSesion            String?           @default("rehabilitación") @map("tipo_sesion") @db.VarChar(100)
+  numeroSesion          Int?              @map("numero_sesion")
+  sala                  String?           @db.VarChar(60)
+  
+  recordatorioEnviado   Boolean?          @default(false) @map("recordatorio_enviado")
+  recordatorioAt        DateTime?         @map("recordatorio_at") @db.Timestamptz
+  confirmadaPaciente    Boolean?          @default(false) @map("confirmada_paciente")
+  
+  notasPrevias          String?           @map("notas_previas")
+  createdBy             String?           @map("created_by") @db.Uuid
+  
+  createdAt             DateTime?         @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt             DateTime?         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  tenant                Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  fisioterapeuta        Usuario           @relation("CitaFisio", fields: [fisioterapeutaId], references: [id])
+  paciente              Paciente          @relation(fields: [pacienteId], references: [id])
+  membresia             Membresia?        @relation(fields: [membresiaId], references: [id], onDelete: SetNull)
+  diagnostico           Diagnostico?      @relation(fields: [diagnosticoId], references: [id], onDelete: SetNull)
+  creador               Usuario?          @relation("CitaCreador", fields: [createdBy], references: [id])
+
+  notasSesion           NotaSesion[]
+  pagos                 Pago[]
+  ejerciciosAsignados   EjercicioAsignado[]
+  encuestas             EncuestaSesion[]
+  progresosDolor        ProgresoDolor[]
+
+  @@index([fisioterapeutaId])
+  @@index([pacienteId])
+  @@index([fechaHoraInicio])
+  @@index([tenantId])
+  @@index([estado])
+  @@map("citas")
+}
+
+model NotaSesion {
+  id                          String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  citaId                      String          @map("cita_id") @db.Uuid
+  fisioterapeutaId            String          @map("fisioterapeuta_id") @db.Uuid
+  pacienteId                  String          @map("paciente_id") @db.Uuid
+  fecha                       DateTime        @default(now()) @db.Timestamptz
+  
+  subjetivo                   String?
+  objetivo                    String?
+  analisis                    String?
+  plan                        String?
+  
+  dolorInicio                 DolorEscala?    @map("dolor_inicio")
+  dolorFin                    DolorEscala?    @map("dolor_fin")
+  
+  tecnicasUtilizadas          String[]        @map("tecnicas_utilizadas")
+  duracionTecnicas            Json?           @map("duracion_tecnicas")
+  
+  evolucion                   String?         @default("sin_cambios") @db.VarChar(30)
+  porcentajeObjetivo          Int?            @map("porcentaje_objetivo")
+  
+  notasAdicionales            String?         @map("notas_adicionales")
+  proximaSesionRecomendacion  String?         @map("proxima_sesion_recomendacion")
+  
+  createdAt                   DateTime?       @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt                   DateTime?       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  cita                        Cita            @relation(fields: [citaId], references: [id], onDelete: Cascade)
+  fisioterapeuta              Usuario         @relation(fields: [fisioterapeutaId], references: [id])
+  paciente                    Paciente        @relation(fields: [pacienteId], references: [id])
+  
+  fotos                       SesionFoto[]
+
+  @@index([citaId])
+  @@index([pacienteId])
+  @@map("notas_sesion")
+}
+
+model SesionFoto {
+  id              String      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  notaSesionId    String?     @map("nota_sesion_id") @db.Uuid
+  pacienteId      String      @map("paciente_id") @db.Uuid
+  url             String
+  thumbnailUrl    String?     @map("thumbnail_url")
+  tipo            String?     @default("postura") @db.VarChar(50)
+  descripcion     String?
+  fecha           DateTime?   @default(now()) @db.Timestamptz
+  orden           Int?        @default(0)
+
+  notaSesion      NotaSesion? @relation(fields: [notaSesionId], references: [id], onDelete: Cascade)
+  paciente        Paciente    @relation(fields: [pacienteId], references: [id])
+
+  @@map("sesion_fotos")
+}
+
+model Pago {
+  id                  String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  tenantId            String          @map("tenant_id") @db.Uuid
+  pacienteId          String          @map("paciente_id") @db.Uuid
+  membresiaId         String?         @map("membresía_id") @db.Uuid
+  citaId              String?         @map("cita_id") @db.Uuid
+  
+  monto               Decimal         @db.Decimal(10, 2)
+  metodo              PagoMetodo
+  estado              PagoEstado?     @default(pagado)
+  
+  referenciaExterna   String?         @map("referencia_externa") @db.VarChar(200)
+  concepto            String
+  notas               String?
+  
+  registradoPor       String?         @map("registrado_por") @db.Uuid
+  fechaPago           DateTime?       @default(now()) @map("fecha_pago") @db.Timestamptz
+  createdAt           DateTime?       @default(now()) @map("created_at") @db.Timestamptz
+
+  tenant              Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  paciente            Paciente        @relation(fields: [pacienteId], references: [id])
+  membresia           Membresia?      @relation(fields: [membresiaId], references: [id], onDelete: SetNull)
+  cita                Cita?           @relation(fields: [citaId], references: [id], onDelete: SetNull)
+  registrador         Usuario?        @relation(fields: [registradoPor], references: [id])
+
+  @@index([tenantId])
+  @@index([pacienteId])
+  @@index([membresiaId])
+  @@index([fechaPago])
+  @@map("pagos")
+}
+
+model Ejercicio {
+  id                  String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  tenantId            String?         @map("tenant_id") @db.Uuid
+  nombre              String          @db.VarChar(200)
+  descripcion         String?
+  tipo                EjercicioTipo
+  zonaCorporal        String[]        @map("zona_corporal")
+  nivelDificultad     String?         @default("medio") @map("nivel_dificultad") @db.VarChar(20)
+  
+  instrucciones       String?
+  consejos            String?
+  precauciones        String?
+  
+  videoUrl            String?         @map("video_url")
+  imagenUrl           String?         @map("imagen_url")
+  gifUrl              String?         @map("gif_url")
+  
+  duracionSegundos    Int?            @map("duracion_segundos")
+  series              Int?
+  repeticiones        Int?
+  
+  esGlobal            Boolean?        @default(false) @map("es_global")
+  createdBy           String?         @map("created_by") @db.Uuid
+  
+  createdAt           DateTime?       @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt           DateTime?       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  tenant              Tenant?         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  creador             Usuario?        @relation(fields: [createdBy], references: [id])
+  
+  asignados           EjercicioAsignado[]
+
+  @@index([tenantId])
+  @@index([tipo])
+  @@map("ejercicios")
+}
+
+model EjercicioAsignado {
+  id                          String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  pacienteId                  String          @map("paciente_id") @db.Uuid
+  ejercicioId                 String          @map("ejercicio_id") @db.Uuid
+  citaId                      String?         @map("cita_id") @db.Uuid
+  fisioterapeutaId            String?         @map("fisioterapeuta_id") @db.Uuid
+  
+  series                      Int?
+  repeticiones                Int?
+  duracionSegundos            Int?            @map("duracion_segundos")
+  frecuenciaDias              Int?            @default(1) @map("frecuencia_dias")
+  
+  instruccionesPersonalizadas String?         @map("instrucciones_personalizadas")
+  fechaInicio                 DateTime?       @default(dbgenerated("CURRENT_DATE")) @map("fecha_inicio") @db.Date
+  fechaFin                    DateTime?       @map("fecha_fin") @db.Date
+  activo                      Boolean?        @default(true)
+  
+  createdAt                   DateTime?       @default(now()) @map("created_at") @db.Timestamptz
+
+  paciente                    Paciente        @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
+  ejercicio                   Ejercicio       @relation(fields: [ejercicioId], references: [id])
+  cita                        Cita?           @relation(fields: [citaId], references: [id], onDelete: SetNull)
+  fisioterapeuta              Usuario?        @relation(fields: [fisioterapeutaId], references: [id])
+
+  registros                   EjercicioRegistro[]
+
+  @@map("ejercicios_asignados")
+}
+
+model EjercicioRegistro {
+  id                    String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  ejercicioAsignadoId   String          @map("ejercicio_asignado_id") @db.Uuid
+  pacienteId            String          @map("paciente_id") @db.Uuid
+  fecha                 DateTime        @default(dbgenerated("CURRENT_DATE")) @db.Date
+  completado            Boolean?        @default(true)
+  seriesHechas          Int?            @map("series_hechas")
+  repHechas             Int?            @map("rep_hechas")
+  dolorDurante          DolorEscala?    @map("dolor_durante")
+  notasPaciente         String?         @map("notas_paciente")
+  
+  createdAt             DateTime?       @default(now()) @map("created_at") @db.Timestamptz
+
+  ejercicioAsignado     EjercicioAsignado @relation(fields: [ejercicioAsignadoId], references: [id], onDelete: Cascade)
+  paciente              Paciente        @relation(fields: [pacienteId], references: [id])
+
+  @@map("ejercicios_registro")
+}
+
+model EncuestaSesion {
+  id                  String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  citaId              String          @map("cita_id") @db.Uuid
+  pacienteId          String          @map("paciente_id") @db.Uuid
+  
+  npsScore            Int?            @map("nps_score")
+  dolorPost           DolorEscala?    @map("dolor_post")
+  satisfaccion        Int?
+  mejoriaPercibida    String?         @map("mejoria_percibida") @db.VarChar(30)
+  comentarios         String?
+  
+  enviadaAt           DateTime?       @default(now()) @map("enviada_at") @db.Timestamptz
+  respondidaAt        DateTime?       @map("respondida_at") @db.Timestamptz
+  respondida          Boolean?        @default(false)
+
+  cita                Cita            @relation(fields: [citaId], references: [id], onDelete: Cascade)
+  paciente            Paciente        @relation(fields: [pacienteId], references: [id])
+
+  @@index([pacienteId])
+  @@map("encuestas_sesion")
+}
+
+model Notificacion {
+  id                  String            @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  tenantId            String            @map("tenant_id") @db.Uuid
+  pacienteId          String?           @map("paciente_id") @db.Uuid
+  usuarioId           String?           @map("usuario_id") @db.Uuid
+  tipo                NotificacionTipo
+  titulo              String            @db.VarChar(200)
+  cuerpo              String
+  canal               String?           @default("whatsapp") @db.VarChar(30)
+  
+  enviada             Boolean?          @default(false)
+  enviadaAt           DateTime?         @map("enviada_at") @db.Timestamptz
+  leida               Boolean?          @default(false)
+  leidaAt             DateTime?         @map("leida_at") @db.Timestamptz
+  error               String?
+  
+  referenciaId        String?           @map("referencia_id") @db.Uuid
+  referenciaTipo      String?           @map("referencia_tipo") @db.VarChar(50)
+  
+  programadaAt        DateTime?         @map("programada_at") @db.Timestamptz
+  createdAt           DateTime?         @default(now()) @map("created_at") @db.Timestamptz
+
+  tenant              Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  paciente            Paciente?         @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
+  usuario             Usuario?          @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([pacienteId])
+  @@map("notificaciones")
+}
+
+model PlantillaMensaje {
+  id                  String            @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  tenantId            String?           @map("tenant_id") @db.Uuid
+  nombre              String            @db.VarChar(100)
+  tipo                NotificacionTipo
+  canal               String?           @default("whatsapp") @db.VarChar(30)
+  asunto              String?           @db.VarChar(200)
+  cuerpo              String            // con variables {{nombre}}, {{fecha}}, etc.
+  activa              Boolean?          @default(true)
+  createdAt           DateTime?         @default(now()) @map("created_at") @db.Timestamptz
+
+  tenant              Tenant?           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("plantillas_mensaje")
+}
+
+model ProgresoDolor {
+  id                  String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  pacienteId          String          @map("paciente_id") @db.Uuid
+  diagnosticoId       String?         @map("diagnostico_id") @db.Uuid
+  citaId              String?         @map("cita_id") @db.Uuid
+  fecha               DateTime        @db.Date
+  dolorInicio         Int?            @map("dolor_inicio")
+  dolorFin            Int?            @map("dolor_fin")
+  evolucion           String?         @db.VarChar(30)
+  numeroSesion        Int?            @map("numero_sesion")
+  createdAt           DateTime?       @default(now()) @map("created_at") @db.Timestamptz
+
+  paciente            Paciente        @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
+  diagnostico         Diagnostico?    @relation(fields: [diagnosticoId], references: [id])
+  cita                Cita?           @relation(fields: [citaId], references: [id])
+
+  @@index([pacienteId])
+  @@index([fecha])
+  @@map("progreso_dolor")
+}

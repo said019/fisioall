@@ -1,0 +1,823 @@
+🩺
+PLATAFORMA PARA FISIOTERAPEUTAS
+Diseño, Planeación y Construcción de Base de Datos
+
+Versión 1.0  |  PostgreSQL 15+  |  Said – Bain & Co. Tech
+
+
+1. Introducción y Objetivos
+Este documento define la arquitectura completa de base de datos para una plataforma SaaS multi-tenant dirigida a fisioterapeutas y clínicas de rehabilitación. El sistema cubre el ciclo de vida completo del paciente: desde el diagnóstico inicial hasta el alta, incluyendo agenda, membresías, expediente clínico digital, seguimiento y pagos.
+
+1.1 Principios de Diseño
+	•	Multi-tenancy nativa: aislamiento por tenant_id + Row Level Security (RLS) de PostgreSQL
+	•	UUIDs como PK: portabilidad entre entornos y seguridad frente a enumeración
+	•	Datos clínicos normalizados: SOAP, body map, escala EVA de dolor como columnas tipadas
+	•	Automatización via triggers: sesiones, progreso, timestamps — sin lógica en la app
+	•	Performance: índices GIN para búsquedas fuzzy, GIST para detección de solapamiento de horarios
+	•	Extensibilidad: columnas JSONB para configuración y atributos variables sin ALTER TABLE
+
+1.2 Stack Tecnológico
+	•	Motor: PostgreSQL 15 + extensiones uuid-ossp, pgcrypto, pg_trgm
+	•	ORM sugerido: Prisma o Drizzle (compatible con tu stack React + Node.js + Firebase Auth)
+	•	Hosting: Supabase (managed PostgreSQL con RLS nativo y edge functions) o Railway
+	•	Backups: pg_dump diario + WAL-G para point-in-time recovery
+
+2. Módulos del Sistema
+El schema se organiza en 12 módulos funcionales. Cada módulo agrupa tablas relacionadas que satisfacen una necesidad de negocio específica.
+
+#
+Tabla(s)
+Módulo
+Descripción
+01
+tenants
+Clínicas / Multitenancy
+Control de suscripción, configuración, límites por plan
+02
+usuarios
+Fisioterapeutas & Admins
+Autenticación, roles, horarios de trabajo
+03
+pacientes
+Expediente del Paciente
+Datos personales, médicos, historial, contacto emergencia
+04
+diagnosticos
+Diagnósticos Clínicos
+CIE-10, body map, zona/lado lesión, plan de tratamiento
+05
+paquetes / membresias
+Membresías & Paquetes
+Sesiones prepagadas, estado, vigencia, wallet pass
+06
+citas
+Agenda & Citas
+Horario, estado, recordatorios, confirmación paciente
+07
+notas_sesion
+Notas SOAP
+Subjetivo, objetivo, análisis, plan + dolor inicio/fin
+08
+ejercicios
+Biblioteca de Ejercicios
+Catálogo global + asignación personalizada + cumplimiento
+09
+pagos
+Control de Pagos
+Métodos, estado, referencias, reporte por período
+10
+notificaciones
+Notificaciones
+WhatsApp, email, push – recordatorios y seguimiento
+11
+encuestas_sesion
+NPS & Feedback
+Encuesta post-sesión automatizada, NPS, dolor reportado
+12
+progreso_dolor
+Analytics & Progreso
+Trazabilidad del dolor, evolución por sesión
+
+3. Tipos Enumerados (ENUMs)
+Los ENUMs garantizan integridad de datos a nivel de base de datos, eliminando strings arbitrarios y simplificando validación en la capa de aplicación.
+
+ENUM
+Valores
+Propósito
+plan_tipo
+basico, pro, clinica
+Tier de suscripción del tenant
+sesion_estado
+agendada, confirmada, en_curso, completada, cancelada, no_show
+Ciclo de vida de una cita
+pago_metodo
+efectivo, transferencia, tarjeta_debito, tarjeta_credito, otro
+Forma de pago registrada
+pago_estado
+pendiente, pagado, parcial, reembolsado
+Estado del cobro
+membresía_estado
+activa, pausada, vencida, cancelada, pendiente_activacion
+Estado del paquete del paciente
+dolor_escala
+0 al 10
+Escala numérica EVA de dolor
+lesion_lado
+izquierdo, derecho, bilateral, central, n/a
+Lateralidad de la lesión
+ejercicio_tipo
+movilidad, fortalecimiento, estiramiento, cardio, equilibrio, respiracion, otro
+Clasificación del ejercicio
+notificacion_tipo
+recordatorio_cita, sesion_por_vencer, membresía_vencida, seguimiento, ejercicio_pendiente, general
+Canal de notificación
+genero_tipo
+masculino, femenino, otro, no_especificado
+Género del paciente
+
+4. Diseño Detallado de Tablas
+4.1 tenants
+Raíz del modelo multi-tenant. Cada clínica o fisioterapeuta independiente es un tenant. Controla el plan de suscripción, límites operativos y configuración visual (colores, logo).
+
+Columna
+Tipo
+Nullable
+PK
+FK
+Descripción
+id
+UUID
+NO
+✓
+
+Identificador único (uuid_generate_v4)
+nombre
+VARCHAR(150)
+NO
+
+
+Nombre de la clínica o consultorio
+slug
+VARCHAR(100)
+NO
+
+
+URL amigable única para subdomain o portal
+plan
+plan_tipo
+NO
+
+
+Tier: básico | pro | clínica
+configuracion
+JSONB
+YES
+
+
+Ajustes libres: duración default cita, timezone, etc.
+stripe_customer_id
+VARCHAR(100)
+YES
+
+
+ID de cliente en Stripe para facturación SaaS
+max_fisioterapeutas
+INT
+NO
+
+
+Límite de usuarios activos según plan
+max_pacientes_activos
+INT
+NO
+
+
+Límite de pacientes activos según plan
+created_at / updated_at
+TIMESTAMPTZ
+NO
+
+
+Auditoría automática con trigger set_updated_at()
+
+4.2 pacientes
+Expediente maestro del paciente. Concentra datos personales, médicos generales y referencias a su Digital Wallet. Es el centro de gravedad del modelo relacional.
+
+Columna
+Tipo
+Nullable
+PK
+FK
+Descripción
+id
+UUID
+NO
+✓
+
+PK del paciente
+tenant_id
+UUID
+NO
+
+✓
+Aislamiento por tenant (RLS)
+fisioterapeuta_id
+UUID
+YES
+
+✓
+Fisioterapeuta principal asignado
+nombre / apellido
+VARCHAR(100)
+NO
+
+
+Nombre completo — indexado con GIN trgm
+telefono / whatsapp
+VARCHAR(20)
+NO
+
+
+Canal de contacto principal — indexado
+peso_kg / altura_cm
+DECIMAL
+YES
+
+
+Para cálculo de IMC y seguimiento
+alergias
+TEXT[]
+YES
+
+
+Array de alergias conocidas
+enfermedades_cronicas
+TEXT[]
+YES
+
+
+Condiciones médicas previas relevantes
+total_sesiones
+INT
+NO
+
+
+Contador incremental vía trigger al completar citas
+wallet_pass_url
+TEXT
+YES
+
+
+URL de descarga del Apple/Google Wallet pass
+wallet_pass_id
+VARCHAR(100)
+YES
+
+
+Referencia al pass para actualizaciones push
+
+4.3 diagnosticos
+Núcleo clínico. Cada episodio de tratamiento tiene su propio diagnóstico con codificación CIE-10, lateralidad, zona anatómica y plan de tratamiento. Un paciente puede tener múltiples diagnósticos activos o históricos.
+
+Columna
+Tipo
+Nullable
+PK
+FK
+Descripción
+id
+UUID
+NO
+✓
+
+PK del diagnóstico
+paciente_id
+UUID
+NO
+
+✓
+Paciente al que pertenece
+fisioterapeuta_id
+UUID
+NO
+
+✓
+Fisio que emite el diagnóstico
+diagnostico_cie10
+VARCHAR(10)
+YES
+
+
+Código CIE-10 (ej: M54.5 – lumbalgia)
+zona_lesion
+VARCHAR(100)
+YES
+
+
+Región anatómica textual
+lado_lesion
+lesion_lado
+NO
+
+
+ENUM: izquierdo/derecho/bilateral/central
+cronificacion
+BOOLEAN
+NO
+
+
+TRUE si es lesión crónica (>3 meses)
+objetivos_tratamiento
+TEXT
+YES
+
+
+Metas funcionales del tratamiento
+num_sesiones_estimadas
+INT
+YES
+
+
+Estimado del fisio para cierre del tratamiento
+activo / fecha_cierre
+BOOLEAN / DATE
+YES
+
+
+Control del ciclo activo/cerrado del diagnóstico
+
+4.4 body_map_marcas
+Coordenadas relativas (% sobre SVG) de zonas marcadas en la silueta anatómica del paciente. Permite al fisioterapeuta señalar exactamente dónde está el dolor, inflamación o contractura, vinculando la marca a un diagnóstico específico.
+
+Columna
+Tipo
+Nullable
+PK
+FK
+Descripción
+id
+UUID
+NO
+✓
+
+PK de la marca
+diagnostico_id
+UUID
+NO
+
+✓
+Diagnóstico al que pertenece
+vista
+VARCHAR(20)
+NO
+
+
+anterior | posterior | lateral_der | lateral_izq | superior | inferior
+coord_x / coord_y
+DECIMAL(5,2)
+NO
+
+
+Posición % relativa al SVG (0-100)
+tipo
+VARCHAR(30)
+NO
+
+
+dolor | inflamacion | contractura | etc.
+intensidad
+dolor_escala
+YES
+
+
+Escala 0-10 EVA en esa marca
+color
+VARCHAR(7)
+NO
+
+
+Color hex del marcador en el mapa
+
+4.5 notas_sesion (SOAP)
+Registro clínico de cada sesión. Implementa el estándar SOAP (Subjetivo, Objetivo, Análisis, Plan) más medición EVA de dolor al inicio y al final de la sesión. Alimenta automáticamente la tabla progreso_dolor vía trigger.
+
+Columna
+Tipo
+Nullable
+PK
+FK
+Descripción
+id
+UUID
+NO
+✓
+
+PK de la nota
+cita_id
+UUID
+NO
+
+✓
+Cita a la que corresponde (1 nota por cita)
+subjetivo
+TEXT
+YES
+
+
+S: síntomas reportados por el paciente
+objetivo
+TEXT
+YES
+
+
+O: hallazgos clínicos medibles observados por el fisio
+analisis
+TEXT
+YES
+
+
+A: evaluación/interpretación del fisioterapeuta
+plan
+TEXT
+YES
+
+
+P: acciones para próxima sesión
+dolor_inicio / dolor_fin
+dolor_escala
+YES
+
+
+EVA antes y después – fuente de la gráfica de progreso
+tecnicas_utilizadas
+TEXT[]
+YES
+
+
+ej: [ultrasonido, masaje, TENS]
+evolucion
+VARCHAR(30)
+YES
+
+
+mejoría | sin_cambios | deterioro
+porcentaje_objetivo
+INT
+YES
+
+
+% cumplimiento del objetivo terapéutico (0-100)
+
+4.6 membresias
+Instancia de un paquete de sesiones para un paciente específico. Incluye contador de sesiones restantes (columna generada/computada), estado del ciclo de vida y referencia al Digital Wallet pass para mostrar saldo de sesiones en Apple/Google Wallet.
+
+Columna
+Tipo
+Nullable
+PK
+FK
+Descripción
+id
+UUID
+NO
+✓
+
+PK de la membresía
+paciente_id
+UUID
+NO
+
+✓
+Paciente dueño de la membresía
+paquete_id
+UUID
+NO
+
+✓
+Paquete base (precio, sesiones, vigencia)
+estado
+membresía_estado
+NO
+
+
+activa | pausada | vencida | cancelada | pendiente_activacion
+sesiones_total
+INT
+NO
+
+
+Total de sesiones del paquete adquirido
+sesiones_usadas
+INT
+NO
+
+
+Incrementado por trigger al completar cita
+sesiones_restantes
+INT GENERATED
+NO
+
+
+Columna computada: total - usadas (siempre consistente)
+activada_manualmente
+BOOLEAN
+NO
+
+
+TRUE = pago previo en efectivo, activado por admin
+wallet_pass_id
+VARCHAR(100)
+YES
+
+
+ID del pass para push update de saldo en wallet
+
+4.7 citas
+Agenda centralizada. Usa tstzrange sobre fecha_hora_inicio/fin para detectar solapamientos con operador && en el índice GIST — eliminando doble booking a nivel de BD sin necesidad de lógica en la app.
+
+Columna
+Tipo
+Nullable
+PK
+FK
+Descripción
+id
+UUID
+NO
+✓
+
+PK de la cita
+fisioterapeuta_id
+UUID
+NO
+
+✓
+Profesional que atiende
+paciente_id
+UUID
+NO
+
+✓
+Paciente que asiste
+membresía_id
+UUID
+YES
+
+✓
+Membresía a descontar (NULL = sesión suelta)
+fecha_hora_inicio/fin
+TIMESTAMPTZ
+NO
+
+
+Con timezone – indexado con GIST para anti-solapamiento
+duracion_minutos
+INT GENERATED
+NO
+
+
+Calculado automáticamente del rango de tiempo
+estado
+sesion_estado
+NO
+
+
+agendada → confirmada → en_curso → completada
+numero_sesion
+INT
+YES
+
+
+Sesión #N del tratamiento (ej: sesión 3 de 10)
+sala
+VARCHAR(60)
+YES
+
+
+Cubículo o sala física asignada
+recordatorio_enviado
+BOOLEAN
+NO
+
+
+Bandera para el job de notificaciones
+
+4.8 ejercicios y ejercicios_asignados
+Biblioteca de ejercicios reutilizables (globales del sistema o propios del tenant) con asignación personalizada por paciente. El seguimiento de cumplimiento via ejercicios_registro permite al fisio ver si el paciente hizo los ejercicios en casa.
+
+Columna
+Tipo
+Nullable
+PK
+FK
+Descripción
+id
+UUID
+NO
+✓
+
+PK del ejercicio
+tenant_id
+UUID
+YES
+
+✓
+NULL = ejercicio global compartido para todos
+tipo
+ejercicio_tipo
+NO
+
+
+movilidad | fortalecimiento | estiramiento | etc.
+zona_corporal
+TEXT[]
+YES
+
+
+Filtro por área anatómica
+video_url / gif_url
+TEXT
+YES
+
+
+Recurso multimedia instructivo
+es_global
+BOOLEAN
+NO
+
+
+TRUE = visible para todos los tenants
+
+5. Triggers y Funciones PostgreSQL
+La automatización a nivel de base de datos elimina lógica de negocio crítica de la capa de aplicación, garantizando consistencia incluso ante accesos directos o errores en el código de la app.
+
+Trigger
+Evento
+Descripción
+trg_cita_sesiones
+AFTER UPDATE ON citas
+Descuenta sesiones de membresía y suma al total del paciente al completar cita
+trg_nota_progreso_dolor
+AFTER INSERT ON notas_sesion
+Registra automáticamente el progreso de dolor en tabla histórica
+trg_*_updated_at
+BEFORE UPDATE en todas las tablas
+Actualiza el campo updated_at automáticamente en cualquier modificación
+
+5.1 Función: verificar_disponibilidad()
+Función utilitaria que verifica si un fisioterapeuta tiene disponibilidad en un rango de tiempo dado, usando el operador && sobre tstzrange indexado con GIST. Retorna BOOLEAN y puede usarse directamente desde la API antes de crear una cita.
+
+SELECT verificar_disponibilidad('uuid-fisio', '2025-06-15 10:00', '2025-06-15 11:00');
+Retorna TRUE si no hay conflicto, FALSE si ya hay una cita en ese rango (excluyendo estados cancelada/no_show).
+
+6. Estrategia de Índices
+Los índices están diseñados para los patrones de consulta más frecuentes de la aplicación. Se incluyen índices parciales (WHERE condición) para minimizar su tamaño y mantenimiento en casos de filtros comunes como membresías activas o notificaciones pendientes.
+
+Índice
+Tabla
+Tipo
+Propósito
+idx_pacientes_nombre_trgm
+pacientes
+GIN + pg_trgm
+Búsqueda fuzzy por nombre de paciente
+idx_citas_rango
+citas
+GIST tstzrange
+Detección de conflictos de horario con operador &&
+idx_citas_fecha
+citas
+BTREE
+Queries por rango de fecha de agenda
+idx_membresias_vencimiento
+membresias
+BTREE parcial (activa)
+Alertas de vencimiento próximo
+idx_notificaciones_pendientes
+notificaciones
+BTREE parcial (enviada=FALSE)
+Cola de notificaciones a enviar
+idx_ejercicios_nombre_trgm
+ejercicios
+GIN + pg_trgm
+Búsqueda por nombre en biblioteca
+idx_pacientes_telefono
+pacientes
+BTREE
+Lookup rápido por teléfono/WhatsApp
+idx_pagos_fecha
+pagos
+BTREE
+Reportes financieros por período
+
+7. Vistas del Sistema
+Las vistas encapsulan las consultas más frecuentes del dashboard y la API, simplificando el código de la aplicación y centralizando la lógica de presentación de datos.
+
+Vista
+Descripción
+v_citas_hoy
+Agenda del día con datos de paciente, fisio y sesiones restantes
+v_membresias_activas
+Membresías en curso con alerta (normal/advertencia/crítico) según sesiones restantes
+v_ingresos_mensuales
+Resumen financiero agrupado por mes y método de pago por tenant
+v_progreso_paciente
+Evolución del dolor sesión a sesión con promedio móvil de 3 sesiones
+
+💡 Las vistas pueden convertirse en MATERIALIZED VIEWs con REFRESH CONCURRENTLY para dashboards de alto tráfico, reduciendo la carga de lectura hasta un 80%.
+
+8. Row Level Security (Multi-Tenancy)
+PostgreSQL RLS garantiza que cada tenant solo pueda ver y modificar sus propios datos, incluso si comparten la misma base de datos física. La política se activa configurando la variable de sesión app.current_tenant_id al inicio de cada request HTTP.
+
+8.1 Configuración por Request
+-- En cada request, el middleware Node.js ejecuta:
+SET app.current_tenant_id = '<uuid-del-tenant-del-usuario-autenticado>';
+
+8.2 Tablas con RLS Activado
+	•	tenants
+	•	usuarios
+	•	pacientes
+	•	citas
+	•	notas_sesion
+	•	membresias
+	•	pagos
+
+🔒 Con RLS activo, un query como SELECT * FROM pacientes retorna únicamente los pacientes del tenant de la sesión actual, sin necesidad de añadir WHERE tenant_id = ? en cada consulta.
+
+9. Relaciones Clave (ER Simplificado)
+Las siguientes son las relaciones más importantes del modelo. Cada flecha representa una Foreign Key:
+
+Tabla Origen
+Relación
+Tabla Destino
+Descripción
+tenants
+1 → N
+usuarios
+Un tenant tiene múltiples fisioterapeutas/admins
+tenants
+1 → N
+pacientes
+Todos los pacientes pertenecen a un tenant
+tenants
+1 → N
+paquetes
+Los paquetes de sesiones se definen por tenant
+pacientes
+1 → N
+diagnosticos
+Un paciente puede tener múltiples diagnósticos (historial)
+diagnosticos
+1 → N
+body_map_marcas
+Cada diagnóstico puede tener múltiples marcas anatómicas
+pacientes
+1 → N
+membresias
+Un paciente puede haber comprado varios paquetes
+paquetes
+1 → N
+membresias
+Un paquete puede estar asignado a múltiples pacientes
+membresias
+1 → N
+citas
+Las citas pueden descontar sesiones de una membresía
+citas
+1 → 1
+notas_sesion
+Cada cita completada genera exactamente una nota SOAP
+notas_sesion
+1 → N
+sesion_fotos
+Una nota puede tener fotos de postura/progreso
+pacientes
+1 → N
+ejercicios_asignados
+Ejercicios personalizados asignados a cada paciente
+citas
+1 → 1
+encuestas_sesion
+Encuesta NPS auto-enviada al completar cada cita
+notas_sesion
+1 → 1
+progreso_dolor
+Registro automático del EVA vía trigger
+
+10. Plan de Implementación por Fases
+Fase 1 – Core MVP (Semanas 1-3)
+	•	Módulos: tenants, usuarios, pacientes, citas, paquetes, membresias, pagos
+	•	Triggers: sesiones, updated_at
+	•	API endpoints: autenticación, CRUD pacientes, agenda básica, membresías
+	•	Vista: v_citas_hoy, v_membresias_activas
+
+Fase 2 – Expediente Clínico (Semanas 4-6)
+	•	Módulos: diagnosticos, body_map_marcas, notas_sesion, sesion_fotos, expediente_adjuntos
+	•	Trigger: progreso_dolor automático
+	•	Vista: v_progreso_paciente
+	•	Índices GIN para búsqueda fuzzy
+
+Fase 3 – Engagement & Analytics (Semanas 7-9)
+	•	Módulos: ejercicios, ejercicios_asignados, ejercicios_registro
+	•	Módulos: encuestas_sesion, notificaciones, plantillas_mensaje
+	•	Worker de notificaciones WhatsApp/email
+	•	Dashboard financiero: v_ingresos_mensuales
+	•	Integración Apple/Google Wallet (wallet_pass_id)
+
+Fase 4 – Multi-tenant Completo (Semanas 10-12)
+	•	Row Level Security en producción
+	•	Panel SaaS: gestión de tenants, suscripciones Stripe
+	•	Materialized views para dashboard de alto tráfico
+	•	Backups automatizados + WAL-G
+
+11. Variables de Entorno y Configuración
+
+DATABASE_URL=postgresql://user:pass@host:5432/fisioterapia_db
+PGPOOL_MAX=20          # conexiones máximas pool
+STORAGE_BUCKET=fisio-expedientes  # S3 compatible para adjuntos
+
+11.1 Comando de Instalación del Schema
+psql $DATABASE_URL -f fisioterapia_schema.sql
+
+
+Documento generado para Said | Bain & Co. Tech — Plataforma Fisioterapeutas v1.0
