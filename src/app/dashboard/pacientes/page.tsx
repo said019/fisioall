@@ -1,481 +1,758 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import {
-  Search,
   Plus,
+  Search,
+  LayoutGrid,
+  List,
+  ChevronRight,
+  AlertCircle,
+  ArrowLeft,
+  CalendarDays,
+  ClipboardList,
+  User,
+  Dumbbell,
+  CreditCard,
   Phone,
   Mail,
-  MapPin,
-  CalendarDays,
+  CheckCircle2,
   Activity,
-  FileText,
-  Filter,
-  ChevronRight,
-  User,
-  Clock,
-  AlertCircle,
 } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+import Link from "next/link";
 
-// ── MOCK DATA ──────────────────────────────────────────────────────────────────
-const mockPacientes = [
+// ─────────────────────────────────────────────────────────────────────────────
+// TIPOS
+// ─────────────────────────────────────────────────────────────────────────────
+interface Paciente {
+  id: string;
+  nombre: string;
+  apellido: string;
+  iniciales: string;
+  email: string;
+  telefono: string;
+  edad: number;
+  diagnostico: string;
+  cie10: string;
+  sesionesRestantes: number;
+  sesionesTotal: number;
+  ultimaCita: string;
+  proximaCita: string;
+  dolor: number;
+  activo: boolean;
+  color: string;
+  ciudad: string;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MOCK DATA
+// ─────────────────────────────────────────────────────────────────────────────
+const mockPacientes: Paciente[] = [
   {
     id: "1",
-    nombre: "María González Ríos",
-    initials: "MG",
-    edad: 42,
-    telefono: "555-120-3344",
-    email: "maria.gonzalez@gmail.com",
-    diagnostico: "Rehabilitación Rodilla Post-Op",
-    categoria: "rehabilitacion",
-    estado: "activo",
-    ultimaCita: "24 Feb 2026",
-    proximaCita: "27 Feb 2026",
-    sesionesUsadas: 8,
-    sesionesTotales: 10,
-    notas: "Paciente con buena evolución. Logró 90° de flexión. Continuar con ejercicios de fortalecimiento de cuádriceps.",
-    ciudad: "Ciudad de México",
+    nombre: "Ana",
+    apellido: "Flores Torres",
+    iniciales: "AF",
+    email: "ana.flores@gmail.com",
+    telefono: "+52 55 1234 5678",
+    edad: 34,
+    diagnostico: "Síndrome de banda iliotibial derecha",
+    cie10: "M76.3",
+    sesionesRestantes: 2,
+    sesionesTotal: 10,
+    ultimaCita: "24 feb 2026",
+    proximaCita: "26 feb 2026",
+    dolor: 4,
+    activo: true,
+    color: "bg-cyan-500",
+    ciudad: "CDMX",
   },
   {
     id: "2",
-    nombre: "Roberto Hernández Vega",
-    initials: "RH",
-    edad: 55,
-    telefono: "555-230-5678",
-    email: "rhernandez@hotmail.com",
-    diagnostico: "Lumbalgia Crónica",
-    categoria: "dolor-cronico",
-    estado: "activo",
-    ultimaCita: "24 Feb 2026",
-    proximaCita: "03 Mar 2026",
-    sesionesUsadas: 3,
-    sesionesTotales: 5,
-    notas: "Dolor referido hacia glúteo izquierdo. Se recomienda complementar con ejercicios de McKenzie en casa.",
-    ciudad: "CDMX, Coyoacán",
+    nombre: "Carlos",
+    apellido: "Mendoza López",
+    iniciales: "CM",
+    email: "cmendoza@outlook.com",
+    telefono: "+52 81 9876 5432",
+    edad: 45,
+    diagnostico: "Hernia discal C4-C5 con radiculopatía",
+    cie10: "M50.1",
+    sesionesRestantes: 5,
+    sesionesTotal: 12,
+    ultimaCita: "24 feb 2026",
+    proximaCita: "27 feb 2026",
+    dolor: 3,
+    activo: true,
+    color: "bg-violet-500",
+    ciudad: "Monterrey",
   },
   {
     id: "3",
-    nombre: "Valeria Soto Pérez",
-    initials: "VS",
-    edad: 28,
-    telefono: "555-345-9900",
-    email: "valeria.soto@outlook.com",
-    diagnostico: "Tendinitis de Hombro Derecho",
-    categoria: "deportivo",
-    estado: "activo",
-    ultimaCita: "20 Feb 2026",
-    proximaCita: "24 Feb 2026",
-    sesionesUsadas: 1,
-    sesionesTotales: 8,
-    notas: "Atleta de natación. Evitar movimientos de abducción mayor a 90°. Control en 2 semanas.",
-    ciudad: "Guadalajara, Jalisco",
+    nombre: "Patricia",
+    apellido: "Morales Vega",
+    iniciales: "PM",
+    email: "pmorales@gmail.com",
+    telefono: "+52 33 5555 0101",
+    edad: 62,
+    diagnostico: "Gonartrosis bilateral grado III",
+    cie10: "M17.1",
+    sesionesRestantes: 1,
+    sesionesTotal: 8,
+    ultimaCita: "22 feb 2026",
+    proximaCita: "25 feb 2026",
+    dolor: 6,
+    activo: true,
+    color: "bg-orange-500",
+    ciudad: "Guadalajara",
   },
   {
     id: "4",
-    nombre: "Jorge Ramírez Luna",
-    initials: "JR",
-    edad: 38,
-    telefono: "555-456-1122",
-    email: "jorge.ramirez@empresa.com.mx",
-    diagnostico: "Cervicalgia por Postura",
-    categoria: "rehabilitacion",
-    estado: "alerta",
-    ultimaCita: "24 Feb 2026",
-    proximaCita: "—",
-    sesionesUsadas: 5,
-    sesionesTotales: 5,
-    notas: "Paciente usa última sesión hoy. Evaluar renovación de paquete. Mejoría del 70% en rango de movimiento cervical.",
-    ciudad: "Monterrey, N.L.",
+    nombre: "Roberto",
+    apellido: "Sánchez Vega",
+    iniciales: "RS",
+    email: "rsanchez@hotmail.com",
+    telefono: "+52 55 6677 8899",
+    edad: 28,
+    diagnostico: "Esguince de tobillo grado II",
+    cie10: "S93.4",
+    sesionesRestantes: 6,
+    sesionesTotal: 6,
+    ultimaCita: "21 feb 2026",
+    proximaCita: "24 feb 2026",
+    dolor: 2,
+    activo: true,
+    color: "bg-emerald-500",
+    ciudad: "CDMX",
   },
   {
     id: "5",
-    nombre: "Ana Sofía Morales",
-    initials: "AM",
-    edad: 34,
-    telefono: "555-567-3344",
-    email: "ana.morales@gmail.com",
-    diagnostico: "Pie Plano Adulto",
-    categoria: "rehabilitacion",
-    estado: "activo",
-    ultimaCita: "18 Feb 2026",
-    proximaCita: "24 Feb 2026",
-    sesionesUsadas: 2,
-    sesionesTotales: 6,
-    notas: "Se prescribieron plantillas ortopédicas. Trabajar propiocepción de tobillo.",
-    ciudad: "Ciudad de México",
+    nombre: "Daniela",
+    apellido: "Martínez Cruz",
+    iniciales: "DM",
+    email: "dani.mtz@gmail.com",
+    telefono: "+52 55 2233 4455",
+    edad: 31,
+    diagnostico: "Tendinopatía del manguito rotador izquierdo",
+    cie10: "M75.1",
+    sesionesRestantes: 8,
+    sesionesTotal: 10,
+    ultimaCita: "20 feb 2026",
+    proximaCita: "25 feb 2026",
+    dolor: 5,
+    activo: true,
+    color: "bg-pink-500",
+    ciudad: "Puebla",
   },
   {
     id: "6",
-    nombre: "Luis Alberto Torres",
-    initials: "LT",
-    edad: 24,
-    telefono: "555-678-5566",
-    email: "luis.torres@correo.com",
-    diagnostico: "Esguince Tobillo Grado II",
-    categoria: "deportivo",
-    estado: "inactivo",
-    ultimaCita: "10 Feb 2026",
-    proximaCita: "—",
-    sesionesUsadas: 4,
-    sesionesTotales: 5,
-    notas: "Paciente no asistió a última cita. Sin contacto desde el 10/02. Seguimiento pendiente.",
-    ciudad: "Puebla, Pue.",
-  },
-  {
-    id: "7",
-    nombre: "Fernanda Castillo",
-    initials: "FC",
-    edad: 61,
-    telefono: "555-789-7788",
-    email: "fernanda.c@yahoo.com",
-    diagnostico: "Artrosis de Cadera",
-    categoria: "dolor-cronico",
-    estado: "activo",
-    ultimaCita: "21 Feb 2026",
-    proximaCita: "28 Feb 2026",
-    sesionesUsadas: 6,
-    sesionesTotales: 10,
-    notas: "Terapia acuática recomendada. Manejo con AINES por prescripción médica externa.",
-    ciudad: "CDMX, Tlalpan",
-  },
-  {
-    id: "8",
-    nombre: "Diego Ochoa Gutiérrez",
-    initials: "DO",
-    edad: 19,
-    telefono: "555-890-9900",
-    email: "dochoa@mail.com",
-    diagnostico: "Epicondilitis Lateral",
-    categoria: "deportivo",
-    estado: "activo",
-    ultimaCita: "22 Feb 2026",
-    proximaCita: "26 Feb 2026",
-    sesionesUsadas: 3,
-    sesionesTotales: 8,
-    notas: "Jugador de tenis. Fuerza en antebrazo en progreso. Uso de banda de codo recomendada.",
-    ciudad: "Ciudad de México",
+    nombre: "José",
+    apellido: "Hernández Paz",
+    iniciales: "JH",
+    email: "jose.hz@gmail.com",
+    telefono: "+52 33 9988 7766",
+    edad: 52,
+    diagnostico: "Lumbalgia crónica con espasmo muscular",
+    cie10: "M54.5",
+    sesionesRestantes: 3,
+    sesionesTotal: 12,
+    ultimaCita: "19 feb 2026",
+    proximaCita: "26 feb 2026",
+    dolor: 5,
+    activo: true,
+    color: "bg-amber-500",
+    ciudad: "Guadalajara",
   },
 ];
 
-const categoriaConfig: Record<string, { label: string; class: string }> = {
-  rehabilitacion: { label: "Rehabilitación", class: "bg-[#0891B2]/10 text-[#0891B2] border-[#0891B2]/20" },
-  deportivo: { label: "Deportivo", class: "bg-[#059669]/10 text-[#059669] border-[#059669]/20" },
-  "dolor-cronico": { label: "Dolor Crónico", class: "bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/20" },
-};
+const NOTAS_SOAP = [
+  {
+    sesion: 7,
+    fecha: "24 feb 2026",
+    eva: 4,
+    badge: "Progreso positivo",
+    S: "Paciente refiere dolor moderado en cara lateral de rodilla derecha al subir escaleras. Refiere haber corrido 3 km el fin de semana sin recomendación.",
+    O: "EVA 4/10. Tensión palpable en TFL. Prueba de Ober positiva. ROM completo. Sin edema.",
+    A: "Síndrome de banda iliotibial en fase subaguda. Progreso favorable respecto sesión anterior (EVA 6).",
+    P: "Liberación miofascial TFL y glúteo medio. Estiramientos activos. Electroterapia TENS 20 min. Ejercicios excéntricos cadena cinética cerrada. Próxima cita 26-feb.",
+  },
+  {
+    sesion: 6,
+    fecha: "20 feb 2026",
+    eva: 6,
+    badge: "Seguimiento",
+    S: "Dolor en cara lateral de rodilla al correr más de 2 km. Mejoría leve comparado con sesión previa.",
+    O: "EVA 6/10. Test de compresión TFL positivo. Leve restricción en rotación interna de cadera.",
+    A: "Síndrome iliotibial bilateral, mayor afectación derecha. Adherencias en TFL.",
+    P: "Masoterapia profunda. Estiramientos asistidos. Indicaciones de reposo deportivo parcial.",
+  },
+];
 
-const estadoPacienteConfig: Record<string, { label: string; class: string }> = {
-  activo: { label: "Activo", class: "bg-[#059669]/10 text-[#059669] border-[#059669]/20" },
-  alerta: { label: "Alerta", class: "bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/20" },
-  inactivo: { label: "Inactivo", class: "bg-[#164E63]/10 text-[#164E63]/60 border-[#164E63]/10" },
-};
+const EJERCICIOS = [
+  { id: "1", nombre: "Puente de glúteo unilateral", tipo: "Fuerza", series: 3, reps: 15, completado: true },
+  { id: "2", nombre: "Estiramiento de TFL en decúbito", tipo: "Flexibilidad", series: 2, reps: 30, completado: true },
+  { id: "3", nombre: "Sentadilla monopodal excéntrica", tipo: "Excéntrico", series: 3, reps: 10, completado: false },
+];
 
-type Paciente = typeof mockPacientes[0];
+const PAGOS_PACIENTE = [
+  { id: "P-201", fecha: "10 feb 2026", concepto: "Paquete 10 sesiones", monto: 4500, metodo: "Tarjeta débito", estado: "pagado" },
+  { id: "P-145", fecha: "12 ene 2026", concepto: "Evaluación inicial", monto: 600, metodo: "Efectivo", estado: "pagado" },
+];
 
+const DOLOR_HISTORIAL = [7, 6, 6, 5, 5, 6, 4];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HELPER: Dolor SVG
+// ─────────────────────────────────────────────────────────────────────────────
+function DolorMiniSVG({ data }: { data: number[] }) {
+  const W = 120;
+  const H = 32;
+  const max = 10;
+  const stepX = W / (data.length - 1);
+  const pts = data.map((v, i) => ({ x: Math.round(i * stepX), y: Math.round(H - (v / max) * H) }));
+  const pathD = pts.map((p, i) => (i === 0 ? `M${p.x} ${p.y}` : `L${p.x} ${p.y}`)).join(" ");
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-8" aria-label="historial dolor">
+      <path d={pathD} stroke="#059669" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      {pts.map((p, i) => (
+        <circle key={i} cx={p.x} cy={p.y} r={i === pts.length - 1 ? 3.5 : 2.5} fill="#059669" />
+      ))}
+    </svg>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COMPONENTE: PerfilPaciente (panel derecho)
+// ─────────────────────────────────────────────────────────────────────────────
+function PerfilPaciente({ paciente, onClose }: { paciente: Paciente; onClose: () => void }) {
+  const [tab, setTab] = useState<"expediente" | "soap" | "ejercicios" | "pagos">("expediente");
+  const alerta = paciente.sesionesRestantes <= 2;
+
+  const tabs = [
+    { key: "expediente", label: "Expediente", icono: User },
+    { key: "soap", label: "Notas SOAP", icono: ClipboardList },
+    { key: "ejercicios", label: "Ejercicios", icono: Dumbbell },
+    { key: "pagos", label: "Pagos", icono: CreditCard },
+  ] as const;
+
+  return (
+    <div className="fixed inset-0 z-50 flex">
+      {/* Overlay */}
+      <div
+        className="flex-1 bg-black/30 backdrop-blur-sm cursor-pointer"
+        onClick={onClose}
+        aria-label="Cerrar perfil"
+      />
+
+      {/* Panel */}
+      <div className="max-w-2xl w-full ml-auto bg-white border-l border-cyan-100 shadow-2xl overflow-y-auto flex flex-col">
+
+        {/* Header sticky */}
+        <div className="sticky top-0 z-10 bg-white border-b border-cyan-100 px-5 py-3 flex items-center justify-between gap-2">
+          <button
+            onClick={onClose}
+            className="flex items-center gap-1.5 text-sm font-medium text-[#164E63]/70 hover:text-[#164E63] transition-colors cursor-pointer"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Volver
+          </button>
+          <div className="flex items-center gap-2">
+            <Link href="/dashboard/agenda">
+              <Button size="sm" variant="outline" className="cursor-pointer border-cyan-200 text-[#164E63] hover:bg-cyan-50 transition-all duration-200 gap-1.5 text-xs">
+                <CalendarDays className="h-3.5 w-3.5" />
+                Nueva Cita
+              </Button>
+            </Link>
+            <Button size="sm" className="cursor-pointer bg-[#059669] hover:bg-[#059669]/90 text-white transition-all duration-200 gap-1.5 text-xs">
+              <ClipboardList className="h-3.5 w-3.5" />
+              Nota SOAP
+            </Button>
+          </div>
+        </div>
+
+        {/* Hero del paciente */}
+        <div className="px-6 pt-6 pb-4 border-b border-cyan-100">
+          <div className="flex items-start gap-4">
+            <div className={`h-14 w-14 rounded-2xl ${paciente.color} flex items-center justify-center shrink-0 shadow-md`}>
+              <span className="text-lg font-bold text-white">{paciente.iniciales}</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-lg font-bold text-[#164E63]">{paciente.nombre} {paciente.apellido}</h2>
+              <p className="text-sm text-[#164E63]/50">{paciente.edad} años · {paciente.ciudad}</p>
+              <div className="flex items-center gap-3 mt-2">
+                <div className="flex items-center gap-2">
+                  <p className={`text-xs font-bold ${alerta ? "text-orange-600" : "text-emerald-600"}`}>
+                    {paciente.sesionesRestantes} / {paciente.sesionesTotal} sesiones
+                  </p>
+                  {alerta && <AlertCircle className="h-3.5 w-3.5 text-orange-500" />}
+                </div>
+                <Progress
+                  value={Math.round(((paciente.sesionesTotal - paciente.sesionesRestantes) / paciente.sesionesTotal) * 100)}
+                  className={`h-1.5 w-20 ${alerta ? "[&>div]:bg-orange-400" : "[&>div]:bg-[#0891B2]"}`}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex border-b border-cyan-100 px-4 gap-1 overflow-x-auto">
+          {tabs.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={`flex items-center gap-1.5 px-3 py-3 text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer border-b-2 -mb-px ${
+                tab === t.key
+                  ? "border-[#0891B2] text-[#0891B2]"
+                  : "border-transparent text-[#164E63]/50 hover:text-[#164E63]"
+              }`}
+            >
+              <t.icono className="h-3.5 w-3.5" />
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Contenido tabs */}
+        <div className="flex-1 px-5 py-5 space-y-4">
+
+          {/* ── TAB EXPEDIENTE ── */}
+          {tab === "expediente" && (
+            <div className="space-y-4">
+              {/* Info de contacto */}
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { icono: Phone, label: "Teléfono", valor: paciente.telefono },
+                  { icono: Mail, label: "Email", valor: paciente.email },
+                  { icono: CalendarDays, label: "Última cita", valor: paciente.ultimaCita },
+                  { icono: CalendarDays, label: "Próxima cita", valor: paciente.proximaCita },
+                ].map((item) => (
+                  <div key={item.label} className="bg-[#ECFEFF] rounded-xl p-3 flex items-start gap-2.5">
+                    <div className="h-7 w-7 rounded-lg bg-white flex items-center justify-center shrink-0">
+                      <item.icono className="h-3.5 w-3.5 text-[#0891B2]" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[10px] text-[#164E63]/40 font-medium">{item.label}</p>
+                      <p className="text-xs font-semibold text-[#164E63] truncate">{item.valor}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Diagnóstico */}
+              <div className="bg-white border border-cyan-100 rounded-xl p-4 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-xs font-bold text-[#164E63] uppercase tracking-wide">Diagnóstico</p>
+                    <p className="text-sm text-[#164E63]/70 mt-1 leading-relaxed">{paciente.diagnostico}</p>
+                  </div>
+                  <Badge variant="outline" className="text-[10px] bg-cyan-50 text-[#0891B2] border-cyan-200 shrink-0">
+                    CIE-10: {paciente.cie10}
+                  </Badge>
+                </div>
+
+                {/* Mini gráfica EVA */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-[10px] font-bold text-[#164E63]/50 uppercase">Evolución EVA</p>
+                    <span className="text-[10px] text-emerald-600 font-bold">
+                      {DOLOR_HISTORIAL[0]} → {DOLOR_HISTORIAL[DOLOR_HISTORIAL.length - 1]} / 10
+                    </span>
+                  </div>
+                  <DolorMiniSVG data={DOLOR_HISTORIAL} />
+                </div>
+              </div>
+
+              {/* Body map básico */}
+              <div className="bg-white border border-cyan-100 rounded-xl p-4">
+                <p className="text-xs font-bold text-[#164E63] uppercase tracking-wide mb-3">Mapa Corporal</p>
+                <div className="flex items-center gap-6">
+                  <div className="relative">
+                    <svg viewBox="0 0 80 160" className="h-32 w-auto" aria-label="silueta corporal">
+                      {/* Cabeza */}
+                      <ellipse cx="40" cy="16" rx="13" ry="15" fill="#E0F7FA" stroke="#A5F3FC" strokeWidth="1.5" />
+                      {/* Torso */}
+                      <rect x="22" y="31" width="36" height="50" rx="6" fill="#E0F7FA" stroke="#A5F3FC" strokeWidth="1.5" />
+                      {/* Brazo izq */}
+                      <rect x="7" y="32" width="14" height="42" rx="6" fill="#E0F7FA" stroke="#A5F3FC" strokeWidth="1.5" />
+                      {/* Brazo der */}
+                      <rect x="59" y="32" width="14" height="42" rx="6" fill="#E0F7FA" stroke="#A5F3FC" strokeWidth="1.5" />
+                      {/* Pierna izq */}
+                      <rect x="23" y="82" width="15" height="72" rx="6" fill="#E0F7FA" stroke="#A5F3FC" strokeWidth="1.5" />
+                      {/* Pierna der */}
+                      <rect x="42" y="82" width="15" height="72" rx="6" fill="#E0F7FA" stroke="#A5F3FC" strokeWidth="1.5" />
+                      {/* Punto de lesión — rodilla derecha */}
+                      <circle cx="50" cy="116" r="5" fill="#F97316" opacity="0.85" />
+                      <circle cx="50" cy="116" r="8" fill="#F97316" opacity="0.25" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="h-3 w-3 rounded-full bg-orange-400" />
+                      <p className="text-xs text-[#164E63]/60">Zona de lesión principal</p>
+                    </div>
+                    <p className="text-xs font-semibold text-[#164E63]">Rodilla derecha</p>
+                    <p className="text-[10px] text-[#164E63]/50 mt-1">Cara lateral — banda iliotibial</p>
+                    <div className="mt-3 bg-[#ECFEFF] rounded-lg p-2">
+                      <p className="text-[10px] text-[#164E63]/40">Dolor actual (EVA)</p>
+                      <p className={`text-sm font-bold ${paciente.dolor <= 3 ? "text-emerald-600" : paciente.dolor <= 6 ? "text-amber-500" : "text-red-500"}`}>
+                        {paciente.dolor} / 10
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── TAB SOAP ── */}
+          {tab === "soap" && (
+            <div className="space-y-4">
+              {NOTAS_SOAP.map((nota) => (
+                <div key={nota.sesion} className="border border-cyan-100 rounded-xl overflow-hidden">
+                  {/* Header nota */}
+                  <div className="bg-[#ECFEFF] px-4 py-3 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs font-bold text-[#164E63]">Sesión #{nota.sesion}</span>
+                      <span className="text-[10px] text-[#164E63]/50">{nota.fecha}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${nota.eva <= 3 ? "bg-emerald-100 text-emerald-700" : nota.eva <= 6 ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-600"}`}>
+                        EVA {nota.eva}/10
+                      </span>
+                      <Badge variant="outline" className="text-[10px] border-cyan-200 text-[#0891B2] bg-white">
+                        {nota.badge}
+                      </Badge>
+                    </div>
+                  </div>
+                  {/* Body SOAP */}
+                  <div className="px-4 py-3 space-y-2.5">
+                    {[
+                      { key: "S", label: "Subjetivo", color: "border-cyan-400", bg: "bg-cyan-50", text: nota.S },
+                      { key: "O", label: "Objetivo", color: "border-violet-400", bg: "bg-violet-50", text: nota.O },
+                      { key: "A", label: "Análisis", color: "border-amber-400", bg: "bg-amber-50", text: nota.A },
+                      { key: "P", label: "Plan", color: "border-emerald-400", bg: "bg-emerald-50", text: nota.P },
+                    ].map((s) => (
+                      <div key={s.key} className={`border-l-4 ${s.color} ${s.bg} rounded-r-lg pl-3 pr-2 py-2`}>
+                        <p className="text-[10px] font-bold text-[#164E63]/50 uppercase mb-0.5">{s.key} — {s.label}</p>
+                        <p className="text-xs text-[#164E63]/80 leading-relaxed">{s.text}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* ── TAB EJERCICIOS ── */}
+          {tab === "ejercicios" && (
+            <div className="space-y-3">
+              {EJERCICIOS.map((ej) => (
+                <div key={ej.id} className={`flex items-center gap-3 p-3.5 rounded-xl border transition-all duration-200 ${ej.completado ? "bg-emerald-50 border-emerald-200" : "bg-[#ECFEFF]/50 border-cyan-100"}`}>
+                  <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${ej.completado ? "bg-emerald-100" : "bg-cyan-50"}`}>
+                    {ej.completado
+                      ? <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                      : <Dumbbell className="h-4 w-4 text-[#0891B2]" />
+                    }
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-[#164E63]">{ej.nombre}</p>
+                    <p className="text-[10px] text-[#164E63]/50">{ej.tipo}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-xs font-bold text-[#164E63]">{ej.series}×{ej.reps}</p>
+                    <p className="text-[10px] text-[#164E63]/40">series×{ej.key === "reps" ? "reps" : "seg"}</p>
+                  </div>
+                </div>
+              ))}
+
+              {/* Progreso cumplimiento */}
+              <div className="bg-white border border-cyan-100 rounded-xl p-4 mt-2">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-bold text-[#164E63]">Cumplimiento del plan</p>
+                  <span className="text-xs font-bold text-emerald-600">
+                    {EJERCICIOS.filter((e) => e.completado).length}/{EJERCICIOS.length} completados
+                  </span>
+                </div>
+                <Progress
+                  value={Math.round((EJERCICIOS.filter((e) => e.completado).length / EJERCICIOS.length) * 100)}
+                  className="h-2 [&>div]:bg-emerald-500"
+                />
+                <p className="text-[10px] text-[#164E63]/40 mt-1.5">
+                  {Math.round((EJERCICIOS.filter((e) => e.completado).length / EJERCICIOS.length) * 100)}% de cumplimiento esta semana
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* ── TAB PAGOS ── */}
+          {tab === "pagos" && (
+            <div className="space-y-3">
+              <div className="divide-y divide-cyan-100 border border-cyan-100 rounded-xl overflow-hidden">
+                {PAGOS_PACIENTE.map((p) => (
+                  <div key={p.id} className="flex items-center gap-3 p-3.5 bg-white hover:bg-[#ECFEFF]/50 transition-colors duration-200">
+                    <div className="h-8 w-8 rounded-lg bg-cyan-50 flex items-center justify-center shrink-0">
+                      <CreditCard className="h-4 w-4 text-[#0891B2]" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-[#164E63]">{p.concepto}</p>
+                      <p className="text-[10px] text-[#164E63]/50">{p.fecha} · {p.metodo}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-sm font-bold text-[#164E63]">${p.monto.toLocaleString("es-MX")}</p>
+                      <Badge
+                        variant="outline"
+                        className={`text-[10px] ${p.estado === "pagado" ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-amber-50 text-amber-600 border-amber-200"}`}
+                      >
+                        {p.estado === "pagado" ? "Pagado" : "Pendiente"}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Total */}
+              <div className="bg-[#ECFEFF] rounded-xl p-3.5 flex items-center justify-between border border-cyan-100">
+                <p className="text-xs font-semibold text-[#164E63]">Total pagado</p>
+                <p className="text-base font-bold text-[#164E63]">
+                  ${PAGOS_PACIENTE.filter((p) => p.estado === "pagado").reduce((a, p) => a + p.monto, 0).toLocaleString("es-MX")}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PAGE PRINCIPAL
+// ─────────────────────────────────────────────────────────────────────────────
 export default function PacientesPage() {
   const [busqueda, setBusqueda] = useState("");
-  const [filtroCategoria, setFiltroCategoria] = useState("todos");
-  const [filtroEstado, setFiltroEstado] = useState("todos");
-  const [pacienteSeleccionado, setPacienteSeleccionado] = useState<Paciente | null>(null);
+  const [vistaActiva, setVistaActiva] = useState<"grid" | "lista">("grid");
+  const [pacienteActivo, setPacienteActivo] = useState<Paciente | null>(null);
+  const [filtroEstado, setFiltroEstado] = useState<"todos" | "alerta">("todos");
+
+  const alertaCount = mockPacientes.filter((p) => p.sesionesRestantes <= 2).length;
 
   const pacientesFiltrados = mockPacientes.filter((p) => {
     const matchBusqueda =
-      p.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-      p.diagnostico.toLowerCase().includes(busqueda.toLowerCase());
-    const matchCategoria = filtroCategoria === "todos" || p.categoria === filtroCategoria;
-    const matchEstado = filtroEstado === "todos" || p.estado === filtroEstado;
-    return matchBusqueda && matchCategoria && matchEstado;
+      `${p.nombre} ${p.apellido} ${p.diagnostico}`.toLowerCase().includes(busqueda.toLowerCase());
+    const matchAlerta = filtroEstado === "todos" || p.sesionesRestantes <= 2;
+    return matchBusqueda && matchAlerta;
   });
 
   return (
-    <div className="space-y-5">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="flex flex-col gap-5 p-4 md:p-6 bg-[#ECFEFF] min-h-full">
+      {/* Panel de perfil */}
+      {pacienteActivo && (
+        <PerfilPaciente paciente={pacienteActivo} onClose={() => setPacienteActivo(null)} />
+      )}
+
+      {/* ── 1. HEADER ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-[#164E63]">Directorio de Pacientes</h2>
-          <p className="text-sm text-[#164E63]/50">
-            {mockPacientes.length} pacientes registrados · {mockPacientes.filter(p => p.estado === "activo").length} activos
+          <h1 className="text-xl font-bold text-[#164E63]">Pacientes</h1>
+          <p className="text-xs text-[#164E63]/50 mt-0.5">
+            {mockPacientes.filter((p) => p.activo).length} pacientes activos
           </p>
         </div>
-        <Button className="bg-[#059669] hover:bg-[#059669]/90 text-white cursor-pointer transition-all duration-200 shrink-0">
-          <Plus className="mr-2 h-4 w-4" />
+        <Button className="cursor-pointer bg-[#059669] hover:bg-[#059669]/90 text-white transition-all duration-200 gap-1.5 w-fit">
+          <Plus className="h-4 w-4" />
           Nuevo Paciente
         </Button>
       </div>
 
-      {/* Filtros */}
-      <Card className="border-cyan-100 bg-white">
-        <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#164E63]/30" />
-              <Input
-                placeholder="Buscar por nombre o diagnóstico..."
-                value={busqueda}
-                onChange={(e) => setBusqueda(e.target.value)}
-                className="pl-9 border-cyan-100 focus-visible:ring-[#0891B2] bg-[#ECFEFF]/50 placeholder:text-[#164E63]/30"
-              />
-            </div>
-            <div className="flex gap-2">
-              <Select value={filtroCategoria} onValueChange={setFiltroCategoria}>
-                <SelectTrigger className="w-full sm:w-44 border-cyan-100 text-[#164E63] cursor-pointer">
-                  <Filter className="h-3.5 w-3.5 mr-1.5 text-[#164E63]/40" />
-                  <SelectValue placeholder="Categoría" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todas las categorías</SelectItem>
-                  <SelectItem value="rehabilitacion">Rehabilitación</SelectItem>
-                  <SelectItem value="deportivo">Deportivo</SelectItem>
-                  <SelectItem value="dolor-cronico">Dolor Crónico</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={filtroEstado} onValueChange={setFiltroEstado}>
-                <SelectTrigger className="w-full sm:w-36 border-cyan-100 text-[#164E63] cursor-pointer">
-                  <SelectValue placeholder="Estado" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos</SelectItem>
-                  <SelectItem value="activo">Activos</SelectItem>
-                  <SelectItem value="alerta">Alerta</SelectItem>
-                  <SelectItem value="inactivo">Inactivos</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* ── 2. FILTROS ── */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+        {/* Búsqueda */}
+        <div className="relative w-full sm:w-72">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#164E63]/40" />
+          <Input
+            placeholder="Buscar por nombre o diagnóstico..."
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            className="pl-9 border-cyan-200 bg-white text-sm focus:border-[#0891B2] focus:ring-[#0891B2]/20"
+          />
+        </div>
 
-      {/* Tabla */}
-      <Card className="border-cyan-100 bg-white">
-        <CardContent className="p-0">
-          {pacientesFiltrados.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <User className="h-10 w-10 text-[#164E63]/20 mb-3" />
-              <p className="text-sm font-medium text-[#164E63]/50">No se encontraron pacientes</p>
-              <p className="text-xs text-[#164E63]/30 mt-1">Intenta con otros filtros o términos de búsqueda</p>
-            </div>
-          ) : (
-            <div className="rounded-lg overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-[#ECFEFF]/50 hover:bg-[#ECFEFF]/50 border-b border-cyan-100">
-                    <TableHead className="text-[#164E63]/60 font-semibold text-xs uppercase tracking-wide pl-5">
-                      Paciente
-                    </TableHead>
-                    <TableHead className="text-[#164E63]/60 font-semibold text-xs uppercase tracking-wide hidden md:table-cell">
-                      Diagnóstico
-                    </TableHead>
-                    <TableHead className="text-[#164E63]/60 font-semibold text-xs uppercase tracking-wide hidden lg:table-cell">
-                      Próx. Cita
-                    </TableHead>
-                    <TableHead className="text-[#164E63]/60 font-semibold text-xs uppercase tracking-wide hidden sm:table-cell">
-                      Estado
-                    </TableHead>
-                    <TableHead className="text-[#164E63]/60 font-semibold text-xs uppercase tracking-wide hidden xl:table-cell">
-                      Sesiones
-                    </TableHead>
-                    <TableHead className="w-10" />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {pacientesFiltrados.map((paciente) => {
-                    const cat = categoriaConfig[paciente.categoria];
-                    const est = estadoPacienteConfig[paciente.estado];
-                    const porcentajeSesiones = Math.round((paciente.sesionesUsadas / paciente.sesionesTotales) * 100);
-                    return (
-                      <TableRow
-                        key={paciente.id}
-                        onClick={() => setPacienteSeleccionado(paciente)}
-                        className="cursor-pointer hover:bg-cyan-50/50 transition-all duration-200 border-b border-cyan-50"
-                      >
-                        <TableCell className="pl-5 py-3.5">
-                          <div className="flex items-center gap-3">
-                            <Avatar className="h-9 w-9 border border-cyan-100 shrink-0">
-                              <AvatarFallback className="bg-[#0891B2]/10 text-[#0891B2] text-xs font-bold">
-                                {paciente.initials}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <p className="text-sm font-semibold text-[#164E63] flex items-center gap-1.5">
-                                {paciente.nombre}
-                                {paciente.estado === "alerta" && (
-                                  <AlertCircle className="h-3 w-3 text-[#F59E0B]" />
-                                )}
-                              </p>
-                              <p className="text-xs text-[#164E63]/50">{paciente.edad} años · {paciente.ciudad}</p>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          <Badge variant="outline" className={`text-[11px] ${cat.class}`}>
-                            {cat.label}
-                          </Badge>
-                          <p className="text-xs text-[#164E63]/60 mt-1 max-w-[180px] truncate">{paciente.diagnostico}</p>
-                        </TableCell>
-                        <TableCell className="hidden lg:table-cell">
-                          <div className="flex items-center gap-1.5 text-xs text-[#164E63]/70">
-                            <CalendarDays className="h-3.5 w-3.5 text-[#0891B2]" />
-                            {paciente.proximaCita}
-                          </div>
-                        </TableCell>
-                        <TableCell className="hidden sm:table-cell">
-                          <Badge variant="outline" className={`text-[11px] ${est.class}`}>
-                            {est.label}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="hidden xl:table-cell">
-                          <div className="flex items-center gap-2">
-                            <div className="w-20 h-1.5 rounded-full bg-cyan-100 overflow-hidden">
-                              <div
-                                className="h-full rounded-full bg-[#0891B2] transition-all"
-                                style={{ width: `${porcentajeSesiones}%` }}
-                              />
-                            </div>
-                            <span className="text-xs text-[#164E63]/50">
-                              {paciente.sesionesUsadas}/{paciente.sesionesTotales}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <ChevronRight className="h-4 w-4 text-[#164E63]/20" />
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        {/* Toggle Todos / Alerta */}
+        <div className="flex items-center gap-1 bg-[#ECFEFF] border border-cyan-100 rounded-lg p-1">
+          <button
+            onClick={() => setFiltroEstado("todos")}
+            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all duration-200 cursor-pointer ${
+              filtroEstado === "todos"
+                ? "bg-white text-[#164E63] shadow-sm"
+                : "text-[#164E63]/50 hover:text-[#164E63]"
+            }`}
+          >
+            Todos ({mockPacientes.length})
+          </button>
+          <button
+            onClick={() => setFiltroEstado("alerta")}
+            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all duration-200 cursor-pointer flex items-center gap-1 ${
+              filtroEstado === "alerta"
+                ? "bg-orange-100 text-orange-700 shadow-sm"
+                : "text-[#164E63]/50 hover:text-[#164E63]"
+            }`}
+          >
+            <AlertCircle className="h-3 w-3" />
+            Alerta ({alertaCount})
+          </button>
+        </div>
 
-      {/* Modal detalle paciente */}
-      <Dialog open={!!pacienteSeleccionado} onOpenChange={() => setPacienteSeleccionado(null)}>
-        {pacienteSeleccionado && (
-          <DialogContent className="max-w-lg border-cyan-100">
-            <DialogHeader>
-              <div className="flex items-center gap-3">
-                <Avatar className="h-12 w-12 border-2 border-cyan-200">
-                  <AvatarFallback className="bg-[#0891B2]/20 text-[#0891B2] text-base font-bold">
-                    {pacienteSeleccionado.initials}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <DialogTitle className="text-[#164E63] font-bold">{pacienteSeleccionado.nombre}</DialogTitle>
-                  <DialogDescription className="text-[#164E63]/50 text-xs">
-                    {pacienteSeleccionado.edad} años · {pacienteSeleccionado.ciudad}
-                  </DialogDescription>
-                </div>
-              </div>
-            </DialogHeader>
+        {/* Toggle Vista */}
+        <div className="flex items-center gap-1 bg-[#ECFEFF] border border-cyan-100 rounded-lg p-1 ml-auto">
+          <button
+            onClick={() => setVistaActiva("grid")}
+            className={`p-1.5 rounded-md transition-all duration-200 cursor-pointer ${
+              vistaActiva === "grid" ? "bg-[#0891B2] text-white shadow-sm" : "text-[#164E63]/50 hover:text-[#164E63]"
+            }`}
+          >
+            <LayoutGrid className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => setVistaActiva("lista")}
+            className={`p-1.5 rounded-md transition-all duration-200 cursor-pointer ${
+              vistaActiva === "lista" ? "bg-[#0891B2] text-white shadow-sm" : "text-[#164E63]/50 hover:text-[#164E63]"
+            }`}
+          >
+            <List className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
 
-            <div className="space-y-4 pt-2">
-              {/* Contacto */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex items-center gap-2 text-xs text-[#164E63]/70">
-                  <Phone className="h-3.5 w-3.5 text-[#0891B2]" />
-                  {pacienteSeleccionado.telefono}
-                </div>
-                <div className="flex items-center gap-2 text-xs text-[#164E63]/70">
-                  <Mail className="h-3.5 w-3.5 text-[#0891B2]" />
-                  <span className="truncate">{pacienteSeleccionado.email}</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-[#164E63]/70 col-span-2">
-                  <MapPin className="h-3.5 w-3.5 text-[#0891B2] shrink-0" />
-                  {pacienteSeleccionado.ciudad}
-                </div>
-              </div>
+      {/* ── 3. VISTA GRID ── */}
+      {vistaActiva === "grid" && (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {pacientesFiltrados.map((paciente) => {
+            const alerta = paciente.sesionesRestantes <= 2;
+            const usadas = paciente.sesionesTotal - paciente.sesionesRestantes;
+            const pct = Math.round((usadas / paciente.sesionesTotal) * 100);
 
-              {/* Diagnóstico */}
-              <Card className="border-cyan-100 bg-[#ECFEFF]/50">
-                <CardContent className="p-3 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Activity className="h-3.5 w-3.5 text-[#0891B2]" />
-                    <span className="text-xs font-semibold text-[#164E63]">Diagnóstico</span>
+            return (
+              <Card
+                key={paciente.id}
+                onClick={() => setPacienteActivo(paciente)}
+                className={`cursor-pointer transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 ${
+                  alerta
+                    ? "border-orange-200 bg-orange-50/30 hover:bg-orange-50/50"
+                    : "border-cyan-100 bg-white hover:bg-[#ECFEFF]/50"
+                }`}
+              >
+                <CardContent className="p-4 space-y-3">
+                  {/* Avatar + datos */}
+                  <div className="flex items-start gap-3">
+                    <div className={`h-10 w-10 rounded-xl ${paciente.color} flex items-center justify-center shrink-0 shadow-sm`}>
+                      <span className="text-sm font-bold text-white">{paciente.iniciales}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-[#164E63] truncate">
+                        {paciente.nombre} {paciente.apellido}
+                      </p>
+                      <p className="text-[10px] text-[#164E63]/50">{paciente.edad} años · {paciente.ciudad}</p>
+                    </div>
+                    {alerta && <AlertCircle className="h-4 w-4 text-orange-500 shrink-0 mt-0.5" />}
                   </div>
-                  <p className="text-sm text-[#164E63]">{pacienteSeleccionado.diagnostico}</p>
-                  <Badge variant="outline" className={`text-[11px] ${categoriaConfig[pacienteSeleccionado.categoria].class}`}>
-                    {categoriaConfig[pacienteSeleccionado.categoria].label}
-                  </Badge>
-                </CardContent>
-              </Card>
 
-              {/* Sesiones */}
-              <div className="grid grid-cols-2 gap-3">
-                <Card className="border-cyan-100">
-                  <CardContent className="p-3">
-                    <p className="text-[10px] text-[#164E63]/50 uppercase tracking-wide mb-1">Sesiones</p>
-                    <p className="text-xl font-bold text-[#164E63]">
-                      {pacienteSeleccionado.sesionesUsadas}
-                      <span className="text-sm font-normal text-[#164E63]/40">/{pacienteSeleccionado.sesionesTotales}</span>
+                  {/* Diagnóstico */}
+                  <p className="text-xs text-[#164E63]/60 leading-snug line-clamp-2">{paciente.diagnostico}</p>
+
+                  {/* Sesiones progress */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-[#164E63]/40">Sesiones</span>
+                      <span className={`text-[10px] font-bold ${alerta ? "text-orange-600" : "text-[#164E63]"}`}>
+                        {paciente.sesionesRestantes} restantes
+                      </span>
+                    </div>
+                    <Progress
+                      value={pct}
+                      className={`h-1.5 ${alerta ? "[&>div]:bg-orange-400 bg-orange-100" : "[&>div]:bg-[#0891B2]"}`}
+                    />
+                  </div>
+
+                  {/* Footer */}
+                  <div className="flex items-center justify-between pt-1 border-t border-current/5">
+                    <p className="text-[10px] text-[#164E63]/40">
+                      Próxima: <span className="font-medium text-[#164E63]/60">{paciente.proximaCita}</span>
                     </p>
-                    <div className="mt-1.5 h-1.5 rounded-full bg-cyan-100 overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-[#0891B2]"
-                        style={{ width: `${(pacienteSeleccionado.sesionesUsadas / pacienteSeleccionado.sesionesTotales) * 100}%` }}
-                      />
+                    <div className="flex items-center gap-0.5 text-xs font-medium text-[#0891B2] cursor-pointer hover:text-[#0891B2]/80 transition-colors">
+                      Ver perfil
+                      <ChevronRight className="h-3.5 w-3.5" />
                     </div>
-                  </CardContent>
-                </Card>
-                <Card className="border-cyan-100">
-                  <CardContent className="p-3">
-                    <p className="text-[10px] text-[#164E63]/50 uppercase tracking-wide mb-1">Próxima Cita</p>
-                    <div className="flex items-center gap-1.5 mt-1">
-                      <Clock className="h-3.5 w-3.5 text-[#0891B2]" />
-                      <p className="text-xs font-semibold text-[#164E63]">{pacienteSeleccionado.proximaCita}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Notas */}
-              <Card className="border-cyan-100 bg-[#ECFEFF]/30">
-                <CardHeader className="p-3 pb-1">
-                  <CardTitle className="text-xs font-semibold text-[#164E63] flex items-center gap-2">
-                    <FileText className="h-3.5 w-3.5 text-[#0891B2]" />
-                    Última Nota Clínica
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-3 pt-1">
-                  <p className="text-xs text-[#164E63]/70 leading-relaxed">{pacienteSeleccionado.notas}</p>
+                  </div>
                 </CardContent>
               </Card>
+            );
+          })}
+        </div>
+      )}
 
-              {/* Acciones */}
-              <div className="flex gap-2 pt-1">
-                <Button className="flex-1 bg-[#059669] hover:bg-[#059669]/90 text-white cursor-pointer transition-all duration-200 text-sm">
-                  <CalendarDays className="mr-2 h-4 w-4" />
-                  Agendar Cita
-                </Button>
-                <Button variant="outline" className="flex-1 border-cyan-200 text-[#164E63] hover:bg-cyan-50 cursor-pointer transition-all duration-200 text-sm">
-                  <FileText className="mr-2 h-4 w-4" />
-                  Nota SOAP
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        )}
-      </Dialog>
+      {/* ── 4. VISTA LISTA ── */}
+      {vistaActiva === "lista" && (
+        <Card className="border-cyan-100 bg-white">
+          <div className="divide-y divide-cyan-100">
+            {pacientesFiltrados.map((paciente) => {
+              const alerta = paciente.sesionesRestantes <= 2;
+              return (
+                <div
+                  key={paciente.id}
+                  onClick={() => setPacienteActivo(paciente)}
+                  className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-[#ECFEFF]/50 transition-colors duration-200"
+                >
+                  {/* Avatar */}
+                  <div className={`h-9 w-9 rounded-xl ${paciente.color} flex items-center justify-center shrink-0`}>
+                    <span className="text-xs font-bold text-white">{paciente.iniciales}</span>
+                  </div>
+
+                  {/* Nombre + diagnóstico */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-[#164E63] truncate">
+                      {paciente.nombre} {paciente.apellido}
+                    </p>
+                    <p className="text-[10px] text-[#164E63]/50 truncate">{paciente.diagnostico}</p>
+                  </div>
+
+                  {/* Próxima cita */}
+                  <div className="hidden sm:block text-right shrink-0">
+                    <p className="text-[10px] text-[#164E63]/40">Próxima cita</p>
+                    <p className="text-xs font-medium text-[#164E63]">{paciente.proximaCita}</p>
+                  </div>
+
+                  {/* Sesiones */}
+                  <div className="text-right shrink-0">
+                    <p className={`text-sm font-bold ${alerta ? "text-orange-600" : "text-[#164E63]"}`}>
+                      {paciente.sesionesRestantes}
+                    </p>
+                    <p className="text-[10px] text-[#164E63]/40">sesiones</p>
+                  </div>
+
+                  <ChevronRight className="h-4 w-4 text-[#164E63]/30 shrink-0" />
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
+
+      {/* Empty state */}
+      {pacientesFiltrados.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-16 gap-3">
+          <div className="h-12 w-12 rounded-2xl bg-cyan-50 flex items-center justify-center">
+            <Activity className="h-6 w-6 text-[#0891B2]" />
+          </div>
+          <p className="text-sm font-semibold text-[#164E63]/60">No se encontraron pacientes</p>
+          <p className="text-xs text-[#164E63]/40">Intenta cambiar los filtros o la búsqueda</p>
+        </div>
+      )}
     </div>
   );
 }
