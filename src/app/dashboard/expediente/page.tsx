@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   CheckCircle2,
@@ -24,7 +24,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { BodyMapModal } from "@/components/BodyMapModal";
+import BodyMapModal from "@/components/BodyMapModal";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TÉCNICAS
@@ -58,7 +58,11 @@ export default function ExpedientePage() {
   const [evolucion, setEvolucion] = useState("");
   const [porcentajeObjetivo, setPorcentajeObjetivo] = useState(70);
   const [notasAdicionales, setNotasAdicionales] = useState("");
-  const [modalBodyMap, setModalBodyMap] = useState(false);
+  const [fechaSesion, setFechaSesion] = useState("");
+
+  useEffect(() => {
+    setFechaSesion(format(new Date(), "EEEE d 'de' MMMM, yyyy", { locale: es }));
+  }, []);
 
   const toggleTecnica = (t: string) => {
     setTecnicas((prev) =>
@@ -102,7 +106,7 @@ export default function ExpedientePage() {
                 Rehabilitación Post-Operatoria · Sesión #8 de 10
               </p>
               <p className="text-[10px] text-[#164E63]/40 mt-0.5">
-                {format(new Date(), "EEEE d 'de' MMMM, yyyy", { locale: es })}
+                {fechaSesion}
               </p>
             </div>
           </div>
@@ -422,16 +426,6 @@ export default function ExpedientePage() {
         </CardContent>
       </Card>
 
-      {/* ── BODY MAP MODAL ── */}
-      <BodyMapModal
-        open={modalBodyMap}
-        onClose={() => setModalBodyMap(false)}
-        modo="sesion"
-        pacienteNombre="Ana Flores Gutiérrez"
-        pacienteIniciales="AF"
-        sesionNumero={8}
-      />
-
       {/* ── SECCIÓN 7: BODY MAP ── */}
       <Card className="border-cyan-100 bg-white">
         <CardHeader className="pb-2">
@@ -444,13 +438,19 @@ export default function ExpedientePage() {
                 Mapa corporal de hallazgos · Última actualización: sesión #4
               </p>
             </div>
-            <Button
-              onClick={() => setModalBodyMap(true)}
-              className="cursor-pointer bg-[#059669] hover:bg-[#059669]/90 text-white transition-all duration-200 text-xs gap-1.5 shrink-0"
-            >
-              <ScanLine className="h-3.5 w-3.5" />
-              Actualizar Body Map
-            </Button>
+            <BodyMapModal
+              pacienteId="1"
+              pacienteNombre="Ana Flores Gutiérrez"
+              modoApertura="seguimiento"
+              trigger={
+                <Button
+                  className="cursor-pointer bg-[#059669] hover:bg-[#059669]/90 text-white transition-all duration-200 text-xs gap-1.5 shrink-0"
+                >
+                  <ScanLine className="h-3.5 w-3.5" />
+                  Actualizar Body Map
+                </Button>
+              }
+            />
           </div>
         </CardHeader>
         <CardContent>
@@ -480,13 +480,17 @@ export default function ExpedientePage() {
                 </p>
               </div>
             </div>
-            <div
-              onClick={() => setModalBodyMap(true)}
-              className="flex items-center justify-center gap-1.5 border-2 border-dashed border-cyan-200 rounded-xl px-3 py-2.5 cursor-pointer hover:border-[#0891B2] hover:bg-[#ECFEFF]/80 transition-all duration-200 group"
-            >
-              <Activity className="h-3.5 w-3.5 text-[#0891B2]/40 group-hover:text-[#0891B2] transition-colors" />
-              <p className="text-[10px] font-semibold text-[#164E63]/40 group-hover:text-[#0891B2] transition-colors">Ver completo</p>
-            </div>
+            <BodyMapModal
+              pacienteId="1"
+              pacienteNombre="Ana Flores Gutiérrez"
+              modoApertura="ver_historial"
+              trigger={
+                <div className="flex items-center justify-center gap-1.5 border-2 border-dashed border-cyan-200 rounded-xl px-3 py-2.5 cursor-pointer hover:border-[#0891B2] hover:bg-[#ECFEFF]/80 transition-all duration-200 group">
+                  <Activity className="h-3.5 w-3.5 text-[#0891B2]/40 group-hover:text-[#0891B2] transition-colors" />
+                  <p className="text-[10px] font-semibold text-[#164E63]/40 group-hover:text-[#0891B2] transition-colors">Ver completo</p>
+                </div>
+              }
+            />
           </div>
         </CardContent>
       </Card>

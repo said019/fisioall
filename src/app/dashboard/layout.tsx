@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -159,6 +159,18 @@ function SidebarContent({
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [fechaHoy, setFechaHoy] = useState("");
+
+  useEffect(() => {
+    setFechaHoy(
+      new Date().toLocaleDateString("es-MX", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    );
+  }, []);
 
   const pageLabels: Record<string, string> = {
     "/dashboard": "Dashboard",
@@ -221,12 +233,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="flex-1">
             <h1 className="text-lg font-bold text-[#164E63]">{currentLabel}</h1>
             <p className="text-xs text-[#164E63]/50 hidden sm:block">
-              {new Date().toLocaleDateString("es-MX", {
-                weekday: "long",
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
+              {fechaHoy}
             </p>
           </div>
 

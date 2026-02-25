@@ -18,6 +18,8 @@ import {
   Mail,
   CheckCircle2,
   Activity,
+  TrendingUp,
+  MapPin,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -41,6 +43,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import Link from "next/link";
+import BodyMapModal from "@/components/BodyMapModal";
+import BodyMapComparador from "@/components/BodyMapComparador";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TIPOS
@@ -245,12 +249,13 @@ function DolorMiniSVG({ data }: { data: number[] }) {
 // COMPONENTE: PerfilPaciente (panel derecho)
 // ─────────────────────────────────────────────────────────────────────────────
 function PerfilPaciente({ paciente, onClose }: { paciente: Paciente; onClose: () => void }) {
-  const [tab, setTab] = useState<"expediente" | "soap" | "ejercicios" | "pagos">("expediente");
+  const [tab, setTab] = useState<"expediente" | "soap" | "ejercicios" | "pagos" | "progreso">("expediente");
   const alerta = paciente.sesionesRestantes <= 2;
 
   const tabs = [
     { key: "expediente", label: "Expediente", icono: User },
     { key: "soap", label: "Notas SOAP", icono: ClipboardList },
+    { key: "progreso", label: "Progreso", icono: TrendingUp },
     { key: "ejercicios", label: "Ejercicios", icono: Dumbbell },
     { key: "pagos", label: "Pagos", icono: CreditCard },
   ] as const;
@@ -359,6 +364,40 @@ function PerfilPaciente({ paciente, onClose }: { paciente: Paciente; onClose: ()
                     </div>
                   </div>
                 ))}
+              </div>
+
+              {/* Mapa Corporal */}
+              <div className="bg-white border border-cyan-100 rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-bold text-[#164E63] uppercase tracking-wide">Mapa Corporal</p>
+                  <div className="flex items-center gap-2">
+                    <BodyMapModal
+                      pacienteId={paciente.id}
+                      pacienteNombre={`${paciente.nombre} ${paciente.apellido}`}
+                      modoApertura="evaluacion_inicial"
+                      trigger={
+                        <Button size="sm" variant="outline" className="cursor-pointer border-cyan-200 text-[#164E63] hover:bg-cyan-50 text-xs gap-1 h-7 px-2">
+                          <MapPin className="h-3 w-3" />
+                          Eval. inicial
+                        </Button>
+                      }
+                    />
+                    <BodyMapModal
+                      pacienteId={paciente.id}
+                      pacienteNombre={`${paciente.nombre} ${paciente.apellido}`}
+                      modoApertura="seguimiento"
+                      trigger={
+                        <Button size="sm" className="cursor-pointer bg-[#059669] hover:bg-[#059669]/90 text-white text-xs gap-1 h-7 px-2">
+                          <MapPin className="h-3 w-3" />
+                          Actualizar
+                        </Button>
+                      }
+                    />
+                  </div>
+                </div>
+                <p className="text-[10px] text-[#164E63]/40">
+                  Registra hallazgos clínicos en el mapa corporal interactivo.
+                </p>
               </div>
 
               {/* Diagnóstico */}
@@ -540,6 +579,16 @@ function PerfilPaciente({ paciente, onClose }: { paciente: Paciente; onClose: ()
                   ${PAGOS_PACIENTE.filter((p) => p.estado === "pagado").reduce((a, p) => a + p.monto, 0).toLocaleString("es-MX")}
                 </p>
               </div>
+            </div>
+          )}
+
+          {/* ── TAB PROGRESO ── */}
+          {tab === "progreso" && (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-[#164E63]/50">
+                Comparación de body maps entre sesiones
+              </p>
+              <BodyMapComparador pacienteId={paciente.id} />
             </div>
           )}
         </div>

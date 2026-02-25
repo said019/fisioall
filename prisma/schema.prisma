@@ -730,3 +730,68 @@ model ProgresoDolor {
   @@index([fecha])
   @@map("progreso_dolor")
 }
+
+// ── Body Map Snapshots (sistema de seguimiento clínico) ───────────────────── //
+
+model BodyMapSnapshot {
+  id         String              @id @default(uuid())
+  pacienteId String              @map("paciente_id")
+  tenantId   String              @map("tenant_id")
+  citaId     String?             @map("cita_id")
+  tipo       SnapshotTipo
+  sesionNum  Int                 @map("sesion_num")
+  notas      String?
+  createdAt  DateTime            @default(now()) @map("created_at")
+
+  marcas     BodyMapMarcaSnap[]
+
+  @@index([pacienteId, createdAt])
+  @@index([tenantId])
+  @@map("body_map_snapshot")
+}
+
+model BodyMapMarcaSnap {
+  id          String          @id @default(uuid())
+  snapshotId  String          @map("snapshot_id")
+  zonaId      String          @map("zona_id")
+  zonaLabel   String          @map("zona_label")
+  vista       VistaBody
+  tipo        TipoHallazgo
+  intensidad  Int
+  lateralidad Lateralidad
+  notas       String?
+  colorHex    String          @default("#EF4444") @map("color_hex")
+
+  snapshot    BodyMapSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+
+  @@index([snapshotId])
+  @@map("body_map_marca_snap")
+}
+
+enum SnapshotTipo {
+  evaluacion_inicial
+  seguimiento
+  reevaluacion
+}
+
+enum VistaBody {
+  anterior
+  posterior
+  lateral_der
+  lateral_izq
+}
+
+enum TipoHallazgo {
+  dolor
+  inflamacion
+  contractura
+  limitacion_rom
+  parestesia
+  tension_muscular
+}
+
+enum Lateralidad {
+  bilateral
+  izquierdo
+  derecho
+}
