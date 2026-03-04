@@ -16,6 +16,10 @@ import {
   Bell,
   ChevronRight,
   Scan,
+  Dumbbell,
+  Wallet,
+  Star,
+  BarChart3,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +30,7 @@ const navItems = [
   { href: "/dashboard/agenda", icon: CalendarDays, label: "Agenda", exact: false },
   { href: "/dashboard/pacientes", icon: Users, label: "Pacientes", exact: false },
   { href: "/dashboard/body-map", icon: Scan, label: "Body Map", exact: false },
+  { href: "/dashboard/ejercicios", icon: Dumbbell, label: "Ejercicios", exact: false },
   {
     href: "/dashboard/membresias",
     icon: CreditCard,
@@ -33,6 +38,10 @@ const navItems = [
     exact: false,
     badge: "3",
   },
+  { href: "/dashboard/pagos", icon: Wallet, label: "Pagos", exact: false },
+  { href: "/dashboard/encuestas", icon: Star, label: "Encuestas NPS", exact: false },
+  { href: "/dashboard/notificaciones", icon: Bell, label: "Notificaciones", exact: false },
+  { href: "/dashboard/reportes", icon: BarChart3, label: "Reportes", exact: false },
 ];
 
 function SidebarContent({
@@ -178,7 +187,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     "/dashboard/agenda": "Agenda",
     "/dashboard/pacientes": "Pacientes",
     "/dashboard/body-map": "Body Map",
+    "/dashboard/ejercicios": "Biblioteca de Ejercicios",
     "/dashboard/membresias": "Membresías y Pagos",
+    "/dashboard/pagos": "Pagos",
+    "/dashboard/encuestas": "Encuestas NPS",
+    "/dashboard/notificaciones": "Notificaciones",
+    "/dashboard/reportes": "Reportes y Analítica",
     "/dashboard/configuracion": "Configuración",
   };
 
