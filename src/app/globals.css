@@ -5,6 +5,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --font-sans: var(--font-sans), "Fira Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-heading), "Figtree", ui-sans-serif, system-ui, sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -124,4 +126,68 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* ─── Focus-Visible — Keyboard accessibility (3-4px ring) ─── */
+@layer base {
+  :focus-visible {
+    outline: 3px solid var(--ring, #0891B2);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Remove outline for mouse clicks but keep for keyboard */
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+}
+
+/* ─── Skip link target ─── */
+#main-content:focus {
+  outline: none;
+}
+
+/* ─── Reduced motion — respect user preference ─── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ─── Smooth scrolling (when motion is allowed) ─── */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* ─── Touch targets — minimum 44x44px ─── */
+@layer base {
+  button,
+  [role="button"],
+  a,
+  input[type="checkbox"],
+  input[type="radio"],
+  select {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Exception: inline text links & tiny UI elements */
+  a:not([class]),
+  .min-touch-none {
+    min-height: unset;
+    min-width: unset;
+  }
+}
+
+/* ─── Selection color ─── */
+::selection {
+  background: rgba(8, 145, 178, 0.2);
+  color: #164E63;
 }

@@ -164,7 +164,7 @@ export default function LandingPage() {
   return (
     <div className="flex flex-col min-h-[100dvh] bg-[#ECFEFF] font-sans">
       {/* ─── NAVBAR ─────────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-50 w-full border-b border-cyan-100 bg-white/80 backdrop-blur-md">
+      <header className="sticky top-0 z-50 w-full border-b border-cyan-100 bg-white/80 backdrop-blur-md" role="banner">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-6">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 cursor-pointer shrink-0">
@@ -175,7 +175,7 @@ export default function LandingPage() {
           </Link>
 
           {/* Nav links */}
-          <nav className="hidden md:flex items-center gap-1 ml-4">
+          <nav className="hidden md:flex items-center gap-1 ml-4" aria-label="Navegación principal">
             <Link
               href="#features"
               className="px-3 py-1.5 text-sm font-medium text-[#164E63]/70 hover:text-[#164E63] hover:bg-cyan-50 rounded-lg transition-all duration-200 cursor-pointer"
@@ -210,12 +210,12 @@ export default function LandingPage() {
         </div>
       </header>
 
-      <main className="flex-1">
+      <main id="main-content" className="flex-1">
         {/* ─── HERO ───────────────────────────────────────────────────────── */}
         <section className="relative w-full overflow-hidden pt-20 pb-24 md:pt-28 md:pb-32">
           {/* Blobs de fondo */}
-          <div className="absolute -top-24 -left-24 h-[480px] w-[480px] rounded-full bg-[#0891B2]/15 blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-16 -right-16 h-[400px] w-[400px] rounded-full bg-[#059669]/10 blur-3xl pointer-events-none" />
+          <div className="absolute -top-24 -left-24 h-[480px] w-[480px] rounded-full bg-[#0891B2]/15 blur-3xl pointer-events-none" aria-hidden="true" />
+          <div className="absolute -bottom-16 -right-16 h-[400px] w-[400px] rounded-full bg-[#059669]/10 blur-3xl pointer-events-none" aria-hidden="true" />
 
           <div className="relative max-w-5xl mx-auto px-4 sm:px-6 text-center">
             {/* Pill badge */}
@@ -227,7 +227,7 @@ export default function LandingPage() {
             </div>
 
             {/* H1 */}
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-[#164E63] leading-tight tracking-tight">
+            <h1 className="font-[family-name:var(--font-heading)] text-4xl sm:text-5xl md:text-6xl font-bold text-[#164E63] leading-tight tracking-tight">
               Tu clínica,{" "}
               <span className="relative inline-block">
                 <span className="text-[#0891B2]">completamente</span>
@@ -263,7 +263,7 @@ export default function LandingPage() {
               <Link href="/login">
                 <Button
                   size="lg"
-                  className="cursor-pointer h-12 px-8 bg-[#059669] hover:bg-[#059669]/90 text-white font-semibold text-base shadow-lg shadow-[#059669]/30 transition-all duration-200"
+                  className="cursor-pointer h-12 px-8 bg-[#059669] hover:bg-[#059669]/90 hover:-translate-y-0.5 text-white font-semibold text-base shadow-lg shadow-[#059669]/30 transition-all duration-200"
                 >
                   Empieza gratis hoy
                   <ArrowRight className="ml-2 h-4 w-4" />
@@ -273,7 +273,7 @@ export default function LandingPage() {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="cursor-pointer h-12 px-8 border-[#0891B2] text-[#0891B2] hover:bg-[#0891B2]/10 font-semibold text-base transition-all duration-200"
+                  className="cursor-pointer h-12 px-8 border-[#0891B2] text-[#0891B2] hover:bg-[#0891B2]/10 hover:-translate-y-0.5 font-semibold text-base transition-all duration-200"
                 >
                   Ver demo en vivo
                 </Button>
@@ -551,7 +551,7 @@ export default function LandingPage() {
               <Link href="/login">
                 <Button
                   size="lg"
-                  className="cursor-pointer h-12 px-8 bg-white text-[#0891B2] hover:bg-white/90 font-bold text-base transition-all duration-200 shadow-lg"
+                  className="cursor-pointer h-12 px-8 bg-white text-[#0891B2] hover:bg-white/90 hover:-translate-y-0.5 font-bold text-base transition-all duration-200 shadow-lg"
                 >
                   Crear cuenta gratis
                   <ArrowRight className="ml-2 h-4 w-4" />
@@ -567,7 +567,7 @@ export default function LandingPage() {
       </main>
 
       {/* ─── FOOTER ─────────────────────────────────────────────────────── */}
-      <footer className="bg-[#164E63] py-12">
+      <footer className="bg-[#164E63] py-12" role="contentinfo">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="grid gap-8 sm:grid-cols-3 mb-10">
             {/* Logo + tagline */}

@@ -146,6 +146,7 @@ function SidebarContent({
               type="submit"
               className="cursor-pointer text-[#164E63]/40 hover:text-[#EF4444] transition-colors duration-200"
               title="Cerrar sesión"
+              aria-label="Cerrar sesión"
             >
               <LogOut className="h-4 w-4" />
             </button>
@@ -210,6 +211,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             size="icon"
             className="cursor-pointer h-8 w-8"
             onClick={() => setMobileOpen(false)}
+            aria-label="Cerrar menú"
           >
             <X className="h-4 w-4" />
           </Button>
@@ -226,6 +228,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             size="icon"
             className="sm:hidden cursor-pointer"
             onClick={() => setMobileOpen(true)}
+            aria-label="Abrir menú de navegación"
           >
             <Menu className="h-5 w-5 text-[#164E63]" />
           </Button>
@@ -242,12 +245,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               variant="ghost"
               size="icon"
               className="cursor-pointer relative h-9 w-9 hover:bg-cyan-50"
+              aria-label="Notificaciones"
             >
               <Bell className="h-4 w-4 text-[#164E63]/60" />
-              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[#EF4444]" />
+              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[#EF4444]" aria-hidden="true" />
             </Button>
 
-            <Avatar className="h-9 w-9 border-2 border-cyan-200 cursor-pointer">
+            <Avatar className="h-9 w-9 border-2 border-cyan-200 cursor-pointer" aria-label="Perfil de usuario">
               <AvatarFallback className="bg-[#0891B2]/20 text-[#0891B2] text-sm font-bold">
                 DM
               </AvatarFallback>
@@ -256,7 +260,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         {/* Página */}
-        <main className="flex-1 p-4 sm:p-6">{children}</main>
+        <main id="main-content" className="flex-1 p-4 sm:p-6">{children}</main>
       </div>
     </div>
   );

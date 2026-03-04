@@ -7,7 +7,7 @@
 ---
 
 **Project:** FisioAll
-**Generated:** 2026-02-23 19:46:45
+**Generated:** 2026-03-04 14:14:12
 **Category:** Healthcare App
 
 ---
@@ -28,14 +28,14 @@
 
 ### Typography
 
-- **Heading Font:** Figtree
-- **Body Font:** Noto Sans
-- **Mood:** medical, clean, accessible, professional, healthcare, trustworthy
-- **Google Fonts:** [Figtree + Noto Sans](https://fonts.google.com/share?selection.family=Figtree:wght@300;400;500;600;700|Noto+Sans:wght@300;400;500;700)
+- **Heading Font:** Fira Code
+- **Body Font:** Fira Sans
+- **Mood:** dashboard, data, analytics, code, technical, precise
+- **Google Fonts:** [Fira Code + Fira Sans](https://fonts.google.com/share?selection.family=Fira+Code:wght@400;500;600;700|Fira+Sans:wght@300;400;500;600;700)
 
 **CSS Import:**
 ```css
-@import url('https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700&family=Noto+Sans:wght@300;400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap');
 ```
 
 ### Spacing Variables

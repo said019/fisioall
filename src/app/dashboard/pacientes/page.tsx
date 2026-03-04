@@ -43,8 +43,21 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import Link from "next/link";
-import BodyMapModal from "@/components/BodyMapModal";
-import BodyMapComparador from "@/components/BodyMapComparador";
+import dynamic from "next/dynamic";
+
+const BodyMapModal = dynamic(() => import("@/components/BodyMapModal"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-10 w-40 rounded-lg bg-cyan-50 animate-pulse" />
+  ),
+});
+
+const BodyMapComparador = dynamic(() => import("@/components/BodyMapComparador"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-64 w-full rounded-xl bg-cyan-50 animate-pulse" />
+  ),
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TIPOS

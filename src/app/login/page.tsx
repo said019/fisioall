@@ -45,8 +45,8 @@ export default function LoginPage() {
                     </CardHeader>
                     <CardContent>
                         {state?.error && (
-                            <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md flex items-center mb-4">
-                                <AlertCircle className="h-4 w-4 mr-2 shrink-0" />
+                            <div role="alert" className="bg-destructive/15 text-destructive text-sm p-3 rounded-md flex items-center mb-4">
+                                <AlertCircle className="h-4 w-4 mr-2 shrink-0" aria-hidden="true" />
                                 {state.error}
                             </div>
                         )}

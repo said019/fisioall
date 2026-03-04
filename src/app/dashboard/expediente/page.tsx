@@ -24,7 +24,14 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import BodyMapModal from "@/components/BodyMapModal";
+import dynamic from "next/dynamic";
+
+const BodyMapModal = dynamic(() => import("@/components/BodyMapModal"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-10 w-40 rounded-lg bg-cyan-50 animate-pulse" />
+  ),
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TÉCNICAS
