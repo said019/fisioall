@@ -441,7 +441,7 @@ export default function BodyMap({
         {zonaSeleccionada && editable && (
           <div
             ref={panelRef}
-            className="absolute right-0 top-0 z-10 w-56 max-h-full overflow-y-auto"
+            className="absolute right-0 top-0 z-10 w-64 max-h-full overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="bg-white border border-[#a8cfe0] rounded-2xl shadow-xl shadow-cyan-900/10 overflow-hidden">
