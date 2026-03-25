@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { Loader2, MapPin, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
@@ -105,6 +104,10 @@ export default function BodyMapModal({
   }, [abierto, pacienteId, modoApertura]);
 
   const handleGuardar = async () => {
+    if (marcasCount === 0) {
+      toast.warning("Selecciona al menos una zona en el cuerpo antes de guardar.");
+      return;
+    }
     if (guardando) return;
     setGuardando(true);
 
@@ -236,19 +239,22 @@ export default function BodyMapModal({
           {/* Actions */}
           {modoApertura !== "ver_historial" && (
             <div className="flex items-center gap-2 shrink-0">
-              <Button
-                variant="outline"
-                size="sm"
+              <button
+                type="button"
                 onClick={() => setAbierto(false)}
-                className="cursor-pointer border-[#a8cfe0] text-[#1e2d3a] hover:bg-[#e4ecf2] h-8 text-xs"
+                className="cursor-pointer inline-flex items-center justify-center rounded-md border border-[#a8cfe0] bg-white px-3 h-8 text-xs font-medium text-[#1e2d3a] hover:bg-[#e4ecf2] transition-colors"
               >
                 Cancelar
-              </Button>
-              <Button
-                size="sm"
+              </button>
+              <button
+                type="button"
                 onClick={handleGuardar}
-                disabled={guardando || marcasCount === 0}
-                className="cursor-pointer bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white gap-1.5 disabled:opacity-50 h-8 text-xs"
+                disabled={guardando}
+                className={`cursor-pointer inline-flex items-center justify-center gap-1.5 rounded-md px-3 h-8 text-xs font-medium text-white transition-colors ${
+                  marcasCount === 0
+                    ? "bg-[#3fa87c]/50"
+                    : "bg-[#3fa87c] hover:bg-[#3fa87c]/90"
+                } disabled:opacity-50`}
               >
                 {guardando ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -256,7 +262,7 @@ export default function BodyMapModal({
                   <MapPin className="h-3.5 w-3.5" />
                 )}
                 Guardar
-              </Button>
+              </button>
             </div>
           )}
         </div>
