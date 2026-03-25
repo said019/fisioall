@@ -195,13 +195,14 @@ export async function getFisioterapeutasPublic() {
 
   const fisios = await prisma.usuario.findMany({
     where: { tenantId, activo: true },
-    select: { id: true, nombre: true, apellido: true },
+    select: { id: true, nombre: true, apellido: true, especialidades: true },
     orderBy: { nombre: "asc" },
   });
 
   return fisios.map((f) => ({
     id: f.id,
     nombre: `${f.nombre} ${f.apellido}`,
+    especialidades: f.especialidades,
   }));
 }
 

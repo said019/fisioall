@@ -34,6 +34,7 @@ import {
   Loader2,
   Star,
   CreditCard,
+  ChevronLeft,
   ChevronRight,
   User,
   AlertCircle,
@@ -82,19 +83,71 @@ type Membresia = {
 };
 
 type Slot = { hora: string; disponible: boolean };
-type Fisio = { id: string; nombre: string };
+type Fisio = { id: string; nombre: string; especialidades: string[] };
 
-const TIPOS_SESION = [
-  "Fisioterapia",
-  "Masaje Terapéutico",
-  "Masaje Relajante",
-  "Masaje Descontracturante",
-  "Drenaje Linfático",
-  "Tratamiento Facial",
-  "Tratamiento Corporal",
-  "Suelo Pélvico",
-  "Rehabilitación",
-  "Epilación",
+type ServicioItem = { nombre: string; duracion: number; precio: number };
+type CategoriaServicio = {
+  id: string;
+  label: string;
+  color: string;
+  especialidad: string;
+  servicios: ServicioItem[];
+};
+
+const CATEGORIAS: CategoriaServicio[] = [
+  {
+    id: "fisioterapia",
+    label: "Fisioterapia",
+    color: "#4a7fa5",
+    especialidad: "Fisioterapia",
+    servicios: [
+      { nombre: "Normal / Antiestrés", duracion: 45, precio: 400 },
+      { nombre: "Descarga de Esfuerzo", duracion: 45, precio: 470 },
+      { nombre: "Drenaje Linfático", duracion: 45, precio: 520 },
+      { nombre: "Presoterapia", duracion: 45, precio: 420 },
+      { nombre: "Ejercicio Terapéutico", duracion: 45, precio: 350 },
+      { nombre: "Valoración", duracion: 45, precio: 450 },
+    ],
+  },
+  {
+    id: "faciales",
+    label: "Faciales",
+    color: "#b07aa8",
+    especialidad: "Tratamientos Faciales",
+    servicios: [
+      { nombre: "Masaje Facial Revitalizante", duracion: 60, precio: 450 },
+      { nombre: "Limpieza Facial Básica", duracion: 60, precio: 350 },
+      { nombre: "Limpieza Facial Profunda", duracion: 60, precio: 450 },
+      { nombre: "Hidratación Profunda", duracion: 60, precio: 500 },
+      { nombre: "Rejuvenecimiento Facial", duracion: 60, precio: 550 },
+      { nombre: "Hilos de Colágeno", duracion: 60, precio: 800 },
+    ],
+  },
+  {
+    id: "corporales",
+    label: "Corporales",
+    color: "#e89b3f",
+    especialidad: "Tratamientos Corporales",
+    servicios: [
+      { nombre: "Tratamiento Corporal", duracion: 60, precio: 600 },
+    ],
+  },
+  {
+    id: "epilacion",
+    label: "Epilación",
+    color: "#3fa87c",
+    especialidad: "Tratamientos Corporales",
+    servicios: [
+      { nombre: "Media Pierna Inferior", duracion: 30, precio: 250 },
+      { nombre: "Media Pierna Superior", duracion: 30, precio: 300 },
+      { nombre: "Piernas Completas", duracion: 45, precio: 400 },
+      { nombre: "Axila", duracion: 15, precio: 200 },
+      { nombre: "Bigote", duracion: 15, precio: 150 },
+      { nombre: "Barbilla", duracion: 15, precio: 150 },
+      { nombre: "Barba Completa", duracion: 20, precio: 200 },
+      { nombre: "Área de Bikini", duracion: 30, precio: 250 },
+    ],
+  },
 ];
 
 const ESTADO_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
@@ -105,6 +158,94 @@ const ESTADO_CONFIG: Record<string, { label: string; color: string; bg: string }
   cancelada:   { label: "Cancelada",  color: "text-[#d9534f]", bg: "bg-[#d9534f]/10" },
   no_show:     { label: "No asistió", color: "text-[#d9534f]", bg: "bg-[#d9534f]/10" },
 };
+
+// ── MINI CALENDARIO ──────────────────────────────────────────────────────────
+function MiniCalendario({
+  selected,
+  onSelect,
+}: {
+  selected: string;
+  onSelect: (fecha: string) => void;
+}) {
+  const [mesOffset, setMesOffset] = useState(0);
+
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+
+  const mesBase = new Date(hoy.getFullYear(), hoy.getMonth() + mesOffset, 1);
+  const mesNombre = mesBase.toLocaleDateString("es-MX", { month: "long", year: "numeric" });
+
+  const primerDia = new Date(mesBase.getFullYear(), mesBase.getMonth(), 1);
+  const ultimoDia = new Date(mesBase.getFullYear(), mesBase.getMonth() + 1, 0);
+
+  let offset = primerDia.getDay() - 1;
+  if (offset < 0) offset = 6;
+
+  const celdas: (number | null)[] = [];
+  for (let i = 0; i < offset; i++) celdas.push(null);
+  for (let d = 1; d <= ultimoDia.getDate(); d++) celdas.push(d);
+
+  return (
+    <div className="select-none">
+      <div className="flex items-center justify-between mb-2">
+        <button
+          type="button"
+          disabled={mesOffset === 0}
+          onClick={() => setMesOffset((p) => p - 1)}
+          className="h-7 w-7 flex items-center justify-center rounded-full hover:bg-[#e4ecf2] disabled:opacity-30 transition-colors cursor-pointer"
+        >
+          <ChevronLeft className="h-4 w-4 text-[#1e2d3a]" />
+        </button>
+        <span className="text-sm font-semibold text-[#1e2d3a] capitalize">{mesNombre}</span>
+        <button
+          type="button"
+          disabled={mesOffset >= 2}
+          onClick={() => setMesOffset((p) => p + 1)}
+          className="h-7 w-7 flex items-center justify-center rounded-full hover:bg-[#e4ecf2] disabled:opacity-30 transition-colors cursor-pointer"
+        >
+          <ChevronRight className="h-4 w-4 text-[#1e2d3a]" />
+        </button>
+      </div>
+      <div className="grid grid-cols-7 mb-1">
+        {["Lu", "Ma", "Mi", "Ju", "Vi", "Sá", "Do"].map((d) => (
+          <div key={d} className="text-center text-[10px] font-semibold text-[#8fa8ba] py-1">{d}</div>
+        ))}
+      </div>
+      <div className="grid grid-cols-7 gap-0.5">
+        {celdas.map((dia, i) => {
+          if (dia === null) return <div key={`e-${i}`} />;
+          const fecha = new Date(mesBase.getFullYear(), mesBase.getMonth(), dia);
+          const dateStr = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
+          const isPast = fecha < hoy;
+          const isDomingo = fecha.getDay() === 0;
+          const isDisabled = isPast || isDomingo;
+          const isSelected = dateStr === selected;
+          const isToday = fecha.getTime() === hoy.getTime();
+
+          return (
+            <button
+              key={dateStr}
+              type="button"
+              disabled={isDisabled}
+              onClick={() => onSelect(dateStr)}
+              className={`h-9 w-full rounded-lg text-xs font-medium transition-all ${
+                isDisabled
+                  ? "text-[#d0d5da] cursor-not-allowed"
+                  : isSelected
+                  ? "bg-[#4a7fa5] text-white shadow-md shadow-[#4a7fa5]/25"
+                  : isToday
+                  ? "bg-[#4a7fa5]/10 text-[#4a7fa5] font-bold hover:bg-[#4a7fa5]/20 cursor-pointer"
+                  : "text-[#1e2d3a] hover:bg-[#e4ecf2] cursor-pointer"
+              }`}
+            >
+              {dia}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 // ── PAGE ─────────────────────────────────────────────────────────────────────
 export default function AgendarPage() {
@@ -125,6 +266,7 @@ export default function AgendarPage() {
 
   // Nueva cita
   const [modalNuevaCita, setModalNuevaCita] = useState(false);
+  const [categoriaId, setCategoriaId] = useState("");
   const [fechaCita, setFechaCita] = useState("");
   const [slots, setSlots] = useState<Slot[]>([]);
   const [horaSeleccionada, setHoraSeleccionada] = useState("");
@@ -209,10 +351,24 @@ export default function AgendarPage() {
     }
   }, [modalNuevaCita]);
 
+  // ── Auto-seleccionar fisio si solo hay uno para la categoría ──
+  useEffect(() => {
+    if (!categoriaId || fisios.length === 0) return;
+    const cat = CATEGORIAS.find((c) => c.id === categoriaId);
+    if (!cat) return;
+    const compatibles = fisios.filter((f) =>
+      f.especialidades.some((e) => e === cat.especialidad)
+    );
+    if (compatibles.length === 1) {
+      setFisioId(compatibles[0].id);
+    }
+  }, [categoriaId, fisios]);
+
   // ── Cuando se agenda exitosamente ──
   useEffect(() => {
     if (formState?.success && paciente) {
       setModalNuevaCita(false);
+      setCategoriaId("");
       setFechaCita("");
       setHoraSeleccionada("");
       setTipoSesion("");
@@ -234,25 +390,11 @@ export default function AgendarPage() {
     });
   }
 
-  // ── Generar fechas disponibles (próximos 14 días, sin domingo) ──
-  function getFechasDisponibles() {
-    const fechas: { value: string; label: string }[] = [];
-    const hoy = new Date();
-    for (let i = 0; i < 14; i++) {
-      const d = new Date(hoy);
-      d.setDate(hoy.getDate() + i);
-      if (d.getDay() === 0) continue; // Sin domingos
-      fechas.push({
-        value: d.toISOString().split("T")[0],
-        label: d.toLocaleDateString("es-MX", {
-          weekday: "short",
-          day: "numeric",
-          month: "short",
-        }),
-      });
-    }
-    return fechas;
-  }
+  // ── Categoría activa y servicios filtrados ──
+  const categoriaActiva = CATEGORIAS.find((c) => c.id === categoriaId);
+  const fisiosFiltrados = categoriaActiva
+    ? fisios.filter((f) => f.especialidades.some((e) => e === categoriaActiva.especialidad))
+    : fisios;
 
   const citasFuturas = citas.filter((c) => c.esFutura && c.estado !== "cancelada");
   const citasPasadas = citas.filter((c) => !c.esFutura || c.estado === "cancelada");
@@ -589,157 +731,279 @@ export default function AgendarPage() {
 
       {/* ── MODAL: NUEVA CITA ── */}
       <Dialog open={modalNuevaCita} onOpenChange={setModalNuevaCita}>
-        <DialogContent className="max-w-md border-[#c8dce8]">
-          <DialogHeader>
-            <DialogTitle className="text-[#1e2d3a] font-bold">Agendar Cita</DialogTitle>
-            <DialogDescription className="text-[#5a7080] text-xs">
-              Elige fecha, horario y tipo de sesión
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="max-w-[26rem] border-[#c8dce8] p-0 gap-0 overflow-hidden">
+          {/* Header con gradiente */}
+          <div className="bg-gradient-to-r from-[#4a7fa5] to-[#3fa87c] px-5 py-4">
+            <DialogHeader>
+              <DialogTitle className="text-white font-bold text-base">Agendar Cita</DialogTitle>
+              <DialogDescription className="text-white/70 text-xs">
+                Elige servicio, fecha y horario
+              </DialogDescription>
+            </DialogHeader>
+          </div>
 
-          <form action={formAction} className="space-y-4 pt-1">
+          <form action={formAction} className="px-5 py-4 space-y-5 max-h-[70vh] overflow-y-auto">
             <input type="hidden" name="pacienteId" value={paciente?.id || ""} />
             <input type="hidden" name="horaInicio" value={horaSeleccionada} />
             <input type="hidden" name="duracion" value={duracion} />
             <input type="hidden" name="fisioterapeutaId" value={fisioId} />
+            <input type="hidden" name="fecha" value={fechaCita} />
+            <input type="hidden" name="tipoSesion" value={tipoSesion} />
 
-            {/* Fecha */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-[#1e2d3a]/70">Fecha</Label>
-              <Select value={fechaCita} onValueChange={setFechaCita} name="fecha">
-                <SelectTrigger className="h-10 text-sm border-[#a8cfe0] cursor-pointer">
-                  <SelectValue placeholder="Elige un día..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {getFechasDisponibles().map((f) => (
-                    <SelectItem key={f.value} value={f.value} className="cursor-pointer">
-                      {f.label}
-                    </SelectItem>
+            {/* ── PASO 1: Categoría ── */}
+            <div className="space-y-2.5">
+              <div className="flex items-center gap-2">
+                <div className="h-6 w-6 rounded-full bg-[#4a7fa5] flex items-center justify-center">
+                  <Star className="h-3 w-3 text-white" />
+                </div>
+                <Label className="text-sm font-semibold text-[#1e2d3a]">Servicio</Label>
+              </div>
+
+              {/* Category pills */}
+              <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+                {CATEGORIAS.map((cat) => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => {
+                      setCategoriaId(cat.id);
+                      setTipoSesion("");
+                      setDuracion("45");
+                      setFisioId("");
+                    }}
+                    className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                      categoriaId === cat.id
+                        ? "text-white shadow-md"
+                        : "bg-[#f0f4f7] text-[#5a7080] hover:bg-[#e4ecf2]"
+                    }`}
+                    style={categoriaId === cat.id ? { backgroundColor: cat.color, boxShadow: `0 4px 12px ${cat.color}40` } : undefined}
+                  >
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Service list for selected category */}
+              {categoriaActiva && (
+                <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                  {categoriaActiva.servicios.map((srv) => (
+                    <button
+                      key={srv.nombre}
+                      type="button"
+                      onClick={() => {
+                        setTipoSesion(srv.nombre);
+                        setDuracion(String(srv.duracion));
+                      }}
+                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left transition-all cursor-pointer ${
+                        tipoSesion === srv.nombre
+                          ? "bg-[#4a7fa5]/8 border-2 border-[#4a7fa5]/30"
+                          : "bg-[#f8fafb] border-2 border-transparent hover:border-[#c8dce8]"
+                      }`}
+                    >
+                      <div>
+                        <p className={`text-xs font-semibold ${tipoSesion === srv.nombre ? "text-[#4a7fa5]" : "text-[#1e2d3a]"}`}>
+                          {srv.nombre}
+                        </p>
+                        <p className="text-[10px] text-[#8fa8ba] mt-0.5">{srv.duracion} min</p>
+                      </div>
+                      <span className={`text-xs font-bold ${tipoSesion === srv.nombre ? "text-[#4a7fa5]" : "text-[#5a7080]"}`}>
+                        ${srv.precio}
+                      </span>
+                    </button>
                   ))}
-                </SelectContent>
-              </Select>
-              <input type="hidden" name="fecha" value={fechaCita} />
+                </div>
+              )}
             </div>
 
-            {/* Horarios disponibles */}
-            {fechaCita && (
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-[#1e2d3a]/70">Horario disponible</Label>
+            {/* ── Divider ── */}
+            {tipoSesion && <div className="border-t border-[#e4ecf2]" />}
+
+            {/* ── PASO 2: Calendario ── */}
+            {tipoSesion && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="h-6 w-6 rounded-full bg-[#4a7fa5] flex items-center justify-center">
+                    <CalendarDays className="h-3 w-3 text-white" />
+                  </div>
+                  <Label className="text-sm font-semibold text-[#1e2d3a]">Fecha</Label>
+                </div>
+                <div className="bg-[#f8fafb] rounded-xl p-3 border border-[#e4ecf2]">
+                  <MiniCalendario
+                    selected={fechaCita}
+                    onSelect={(f) => {
+                      setFechaCita(f);
+                      setHoraSeleccionada("");
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* ── PASO 3: Horarios ── */}
+            {fechaCita && tipoSesion && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="h-6 w-6 rounded-full bg-[#4a7fa5] flex items-center justify-center">
+                    <Clock className="h-3 w-3 text-white" />
+                  </div>
+                  <Label className="text-sm font-semibold text-[#1e2d3a]">Horario</Label>
+                </div>
+
                 {loadingSlots ? (
-                  <div className="flex items-center gap-2 py-4 justify-center">
+                  <div className="flex items-center gap-2 py-6 justify-center bg-[#f8fafb] rounded-xl">
                     <Loader2 className="h-4 w-4 animate-spin text-[#4a7fa5]" />
                     <span className="text-xs text-[#5a7080]">Cargando horarios...</span>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-4 gap-1.5">
-                    {slots.map((s) => (
-                      <button
-                        key={s.hora}
-                        type="button"
-                        disabled={!s.disponible}
-                        onClick={() => setHoraSeleccionada(s.hora)}
-                        className={`py-2 text-xs font-medium rounded-lg transition-all cursor-pointer ${
-                          !s.disponible
-                            ? "bg-[#e4ecf2]/50 text-[#1e2d3a]/20 cursor-not-allowed line-through"
-                            : horaSeleccionada === s.hora
-                            ? "bg-[#4a7fa5] text-white shadow-sm"
-                            : "bg-white border border-[#c8dce8] text-[#1e2d3a] hover:border-[#4a7fa5] hover:text-[#4a7fa5]"
-                        }`}
-                      >
-                        {s.hora}
-                      </button>
-                    ))}
+                  <div className="space-y-3">
+                    {/* Mañana */}
+                    {slots.filter((s) => parseInt(s.hora) < 13).length > 0 && (
+                      <div>
+                        <p className="text-[10px] font-semibold text-[#8fa8ba] uppercase tracking-wider mb-1.5">Mañana</p>
+                        <div className="grid grid-cols-5 gap-1.5">
+                          {slots.filter((s) => parseInt(s.hora) < 13).map((s) => (
+                            <button
+                              key={s.hora}
+                              type="button"
+                              disabled={!s.disponible}
+                              onClick={() => setHoraSeleccionada(s.hora)}
+                              className={`py-2 px-1 text-xs font-medium rounded-lg transition-all ${
+                                !s.disponible
+                                  ? "bg-[#f0f2f4] text-[#c8cdd2] cursor-not-allowed"
+                                  : horaSeleccionada === s.hora
+                                  ? "bg-[#4a7fa5] text-white shadow-md shadow-[#4a7fa5]/25 scale-[1.02]"
+                                  : "bg-white border border-[#dde5ec] text-[#1e2d3a] hover:border-[#4a7fa5] hover:bg-[#4a7fa5]/5 cursor-pointer"
+                              }`}
+                            >
+                              {s.hora}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Tarde */}
+                    {slots.filter((s) => parseInt(s.hora) >= 13).length > 0 && (
+                      <div>
+                        <p className="text-[10px] font-semibold text-[#8fa8ba] uppercase tracking-wider mb-1.5">Tarde</p>
+                        <div className="grid grid-cols-5 gap-1.5">
+                          {slots.filter((s) => parseInt(s.hora) >= 13).map((s) => (
+                            <button
+                              key={s.hora}
+                              type="button"
+                              disabled={!s.disponible}
+                              onClick={() => setHoraSeleccionada(s.hora)}
+                              className={`py-2 px-1 text-xs font-medium rounded-lg transition-all ${
+                                !s.disponible
+                                  ? "bg-[#f0f2f4] text-[#c8cdd2] cursor-not-allowed"
+                                  : horaSeleccionada === s.hora
+                                  ? "bg-[#4a7fa5] text-white shadow-md shadow-[#4a7fa5]/25 scale-[1.02]"
+                                  : "bg-white border border-[#dde5ec] text-[#1e2d3a] hover:border-[#4a7fa5] hover:bg-[#4a7fa5]/5 cursor-pointer"
+                              }`}
+                            >
+                              {s.hora}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {slots.every((s) => !s.disponible) && (
+                      <div className="text-center py-4 bg-[#f8fafb] rounded-xl">
+                        <p className="text-xs text-[#8fa8ba]">No hay horarios disponibles este día</p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
             )}
 
-            {/* Tipo de sesión */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-[#1e2d3a]/70">Tipo de sesión</Label>
-              <Select value={tipoSesion} onValueChange={setTipoSesion}>
-                <SelectTrigger className="h-10 text-sm border-[#a8cfe0] cursor-pointer">
-                  <SelectValue placeholder="Seleccionar..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {TIPOS_SESION.map((t) => (
-                    <SelectItem key={t} value={t} className="cursor-pointer">{t}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <input type="hidden" name="tipoSesion" value={tipoSesion} />
-            </div>
-
-            {/* Duración */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-[#1e2d3a]/70">Duración</Label>
-              <Select value={duracion} onValueChange={setDuracion}>
-                <SelectTrigger className="h-10 text-sm border-[#a8cfe0] cursor-pointer">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="30" className="cursor-pointer">30 min</SelectItem>
-                  <SelectItem value="45" className="cursor-pointer">45 min</SelectItem>
-                  <SelectItem value="60" className="cursor-pointer">60 min</SelectItem>
-                  <SelectItem value="90" className="cursor-pointer">90 min</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Fisioterapeuta */}
-            {fisios.length > 0 && (
+            {/* ── Terapeuta (auto-filtrado por categoría) ── */}
+            {horaSeleccionada && fisiosFiltrados.length > 0 && (
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-[#1e2d3a]/70">Fisioterapeuta (opcional)</Label>
-                <Select value={fisioId} onValueChange={setFisioId}>
-                  <SelectTrigger className="h-10 text-sm border-[#a8cfe0] cursor-pointer">
-                    <SelectValue placeholder="Sin preferencia" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {fisios.map((f) => (
-                      <SelectItem key={f.id} value={f.id} className="cursor-pointer">{f.nombre}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label className="text-[11px] text-[#5a7080]">
+                  Terapeuta {fisiosFiltrados.length === 1 ? "" : "(opcional)"}
+                </Label>
+                {fisiosFiltrados.length === 1 ? (
+                  <div className="bg-[#f8fafb] border border-[#e4ecf2] rounded-xl px-3 py-2.5 flex items-center gap-2">
+                    <div className="h-7 w-7 rounded-full bg-[#4a7fa5]/15 flex items-center justify-center">
+                      <User className="h-3.5 w-3.5 text-[#4a7fa5]" />
+                    </div>
+                    <span className="text-sm font-medium text-[#1e2d3a]">{fisiosFiltrados[0].nombre}</span>
+                  </div>
+                ) : (
+                  <Select value={fisioId} onValueChange={setFisioId}>
+                    <SelectTrigger className="h-10 text-sm border-[#c8dce8] rounded-xl cursor-pointer bg-[#f8fafb] hover:bg-white transition-colors">
+                      <SelectValue placeholder="Sin preferencia" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {fisiosFiltrados.map((f) => (
+                        <SelectItem key={f.id} value={f.id} className="cursor-pointer">{f.nombre}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
             )}
 
             {/* Error */}
             {formState?.error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                <p className="text-xs text-red-600 font-medium">{formState.error}</p>
+              <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+                <p className="text-xs text-red-600 font-medium flex items-center gap-1.5">
+                  <AlertCircle className="h-3.5 w-3.5 shrink-0" /> {formState.error}
+                </p>
               </div>
             )}
 
             {/* Success */}
             {formState?.success && (
-              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3">
                 <p className="text-xs text-emerald-600 font-medium flex items-center gap-1.5">
                   <CheckCircle2 className="h-3.5 w-3.5" /> Cita agendada correctamente
                 </p>
               </div>
             )}
 
-            <DialogFooter className="gap-2 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setModalNuevaCita(false)}
-                className="border-[#a8cfe0] cursor-pointer text-sm"
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="submit"
-                disabled={isPending || !horaSeleccionada || !fechaCita}
-                className="bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white cursor-pointer transition-all duration-200 text-sm"
-              >
-                {isPending ? (
-                  <><Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> Agendando...</>
-                ) : (
-                  <><CalendarDays className="mr-1.5 h-4 w-4" /> Confirmar Cita</>
-                )}
-              </Button>
-            </DialogFooter>
+            {/* ── Resumen + Botones ── */}
+            <div className="pt-1 space-y-3">
+              {horaSeleccionada && fechaCita && tipoSesion && (
+                <div className="bg-[#4a7fa5]/5 border border-[#4a7fa5]/15 rounded-xl p-3 flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-lg bg-[#4a7fa5]/10 flex items-center justify-center shrink-0">
+                    <CheckCircle2 className="h-4 w-4 text-[#4a7fa5]" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-[#1e2d3a]">
+                      {new Date(fechaCita + "T12:00:00").toLocaleDateString("es-MX", { weekday: "short", day: "numeric", month: "short" })} · {horaSeleccionada}
+                    </p>
+                    <p className="text-[10px] text-[#5a7080]">
+                      {tipoSesion} · {duracion} min
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setModalNuevaCita(false)}
+                  className="flex-1 h-11 border-[#c8dce8] cursor-pointer text-sm rounded-xl"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isPending || !horaSeleccionada || !fechaCita || !tipoSesion}
+                  className="flex-1 h-11 bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white cursor-pointer transition-all duration-200 text-sm rounded-xl font-semibold"
+                >
+                  {isPending ? (
+                    <><Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> Agendando...</>
+                  ) : (
+                    <><CalendarDays className="mr-1.5 h-4 w-4" /> Confirmar Cita</>
+                  )}
+                </Button>
+              </div>
+            </div>
           </form>
         </DialogContent>
       </Dialog>
