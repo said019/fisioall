@@ -5,11 +5,6 @@ import { Loader2, MapPin, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Dialog,
-  DialogContent,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import BodyMap from "@/components/BodyMap";
 import { getSnapshotActual, guardarSnapshot } from "@/app/dashboard/expediente/bodymap-actions";
@@ -141,128 +136,111 @@ export default function BodyMapModal({
     }
   };
 
+  if (!abierto) {
+    return <span onClick={() => setAbierto(true)}>{trigger}</span>;
+  }
+
   return (
-    <Dialog open={abierto} onOpenChange={setAbierto}>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="max-w-6xl h-[90vh] p-0 overflow-hidden flex flex-col gap-0">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      onClick={() => setAbierto(false)}
+    >
+      <div
+        className="relative bg-white rounded-2xl shadow-2xl flex flex-col max-h-[96vh] w-[95vw] max-w-5xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* ── HEADER ── */}
-        <div className="sticky top-0 z-10 flex items-center justify-between gap-3 px-5 py-4 border-b border-[#c8dce8] bg-white">
-          <div className="flex items-center gap-3 min-w-0">
+        <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-[#c8dce8] bg-white shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0">
             <div
-              className="h-8 w-8 rounded-lg flex items-center justify-center shrink-0"
+              className="h-7 w-7 rounded-lg flex items-center justify-center shrink-0"
               style={{ background: `${config.color}22` }}
             >
-              <MapPin className="h-4 w-4" style={{ color: config.color }} />
+              <MapPin className="h-3.5 w-3.5" style={{ color: config.color }} />
             </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <p className="text-sm font-bold text-[#1e2d3a]">Body Map</p>
-                <p className="text-xs text-[#1e2d3a]/50 truncate">
-                  {pacienteNombre}
-                </p>
-                <Badge
-                  className="text-[10px] px-2 py-0.5 border-0 font-bold"
-                  style={{
-                    background: `${config.color}20`,
-                    color: config.color,
-                  }}
-                >
-                  {config.badge}
-                </Badge>
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 shrink-0">
-            {marcasCount > 0 && (
-              <span className="text-xs text-[#1e2d3a]/50 hidden sm:block">
-                {marcasCount} zonas marcadas
-              </span>
-            )}
-            <button
-              onClick={() => setAbierto(false)}
-              className="cursor-pointer text-[#1e2d3a]/30 hover:text-[#1e2d3a]/70 transition-colors"
+            <p className="text-sm font-bold text-[#1e2d3a]">Body Map</p>
+            <p className="text-xs text-[#1e2d3a]/50 truncate hidden sm:block">
+              {pacienteNombre}
+            </p>
+            <Badge
+              className="text-[9px] px-1.5 py-0 border-0 font-bold"
+              style={{
+                background: `${config.color}20`,
+                color: config.color,
+              }}
             >
-              <X className="h-5 w-5" />
-            </button>
+              {config.badge}
+            </Badge>
           </div>
+          <button
+            onClick={() => setAbierto(false)}
+            className="cursor-pointer text-[#1e2d3a]/30 hover:text-[#1e2d3a]/70 transition-colors p-1"
+          >
+            <X className="h-5 w-5" />
+          </button>
         </div>
 
-        {/* ── BODY ── */}
-        <div className="flex-1 overflow-y-auto p-5">
+        {/* ── Intro banner ── */}
+        <div className="px-4 pt-2 shrink-0">
+          <p
+            className="text-[11px] font-medium px-3 py-1.5 rounded-lg"
+            style={{
+              background: `${config.color}10`,
+              color: config.color,
+            }}
+          >
+            {config.intro}
+          </p>
+        </div>
+
+        {/* ── BODY — fills remaining space, NO scroll ── */}
+        <div className="flex-1 min-h-0 px-4 py-2">
           {cargando ? (
-            <div className="flex gap-4">
-              <div className="space-y-2 w-40">
-                {[...Array(4)].map((_, i) => (
-                  <Skeleton key={i} className="h-9 w-full rounded-lg" />
-                ))}
-              </div>
-              <Skeleton className="flex-1 h-[500px] rounded-xl" />
+            <div className="flex gap-4 h-full items-center justify-center">
+              <Skeleton className="h-[300px] w-[200px] rounded-xl" />
             </div>
           ) : (
-            <div className="space-y-4">
-              {/* Texto intro */}
-              <p
-                className="text-xs font-medium px-3 py-2 rounded-lg"
-                style={{
-                  background: `${config.color}10`,
-                  color: config.color,
-                }}
-              >
-                {config.intro}
-              </p>
-
-              {/* Body Map interactivo */}
-              <BodyMap
-                marcasIniciales={estadoActual}
-                editable={modoApertura !== "ver_historial"}
-                onCambio={setEstadoActual}
-              />
-
-              {/* Notas del snapshot */}
-              {modoApertura !== "ver_historial" && (
-                <div className="space-y-1.5">
-                  <p className="text-xs font-semibold text-[#1e2d3a]/60">
-                    Notas de esta evaluación
-                  </p>
-                  <textarea
-                    value={notasSnapshot}
-                    onChange={(e) => setNotasSnapshot(e.target.value)}
-                    placeholder="Observaciones generales de la sesión..."
-                    className="w-full text-xs border border-[#a8cfe0] rounded-xl p-3 resize-none focus:outline-none focus:border-[#4a7fa5] text-[#1e2d3a] min-h-[80px]"
-                  />
-                </div>
-              )}
-            </div>
+            <BodyMap
+              marcasIniciales={estadoActual}
+              editable={modoApertura !== "ver_historial"}
+              onCambio={setEstadoActual}
+            />
           )}
         </div>
 
         {/* ── FOOTER ── */}
-        <div className="sticky bottom-0 flex items-center justify-between gap-3 px-5 py-3.5 border-t border-[#c8dce8] bg-white">
+        <div className="shrink-0 border-t border-[#c8dce8] bg-white px-4 py-2.5 flex items-center justify-between gap-3">
           {/* Stats */}
-          <p className="text-xs text-[#1e2d3a]/50">
-            {marcasCount === 0 ? (
-              "Sin hallazgos registrados"
-            ) : (
-              <>
-                <span className="font-semibold text-[#1e2d3a]">
-                  {marcasCount}
-                </span>{" "}
-                zonas marcadas · EVA promedio:{" "}
-                <span className="font-semibold text-[#1e2d3a]">
-                  {evaPromedio}
-                </span>
-              </>
+          <div className="flex items-center gap-3 min-w-0">
+            <p className="text-xs text-[#1e2d3a]/50 shrink-0">
+              {marcasCount === 0 ? (
+                "Sin hallazgos"
+              ) : (
+                <>
+                  <span className="font-semibold text-[#1e2d3a]">{marcasCount}</span> zonas · EVA{" "}
+                  <span className="font-semibold text-[#1e2d3a]">{evaPromedio}</span>
+                </>
+              )}
+            </p>
+            {/* Inline notes input */}
+            {modoApertura !== "ver_historial" && (
+              <input
+                value={notasSnapshot}
+                onChange={(e) => setNotasSnapshot(e.target.value)}
+                placeholder="Notas de evaluación..."
+                className="flex-1 min-w-0 text-xs border border-[#c8dce8] rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-[#4a7fa5] text-[#1e2d3a] placeholder:text-[#1e2d3a]/30"
+              />
             )}
-          </p>
+          </div>
 
-          {/* Acciones */}
+          {/* Actions */}
           {modoApertura !== "ver_historial" && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setAbierto(false)}
-                className="cursor-pointer border-[#a8cfe0] text-[#1e2d3a] hover:bg-[#e4ecf2] transition-all duration-200"
+                className="cursor-pointer border-[#a8cfe0] text-[#1e2d3a] hover:bg-[#e4ecf2] h-8 text-xs"
               >
                 Cancelar
               </Button>
@@ -270,19 +248,19 @@ export default function BodyMapModal({
                 size="sm"
                 onClick={handleGuardar}
                 disabled={guardando || marcasCount === 0}
-                className="cursor-pointer bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white transition-all duration-200 gap-1.5 disabled:opacity-50"
+                className="cursor-pointer bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white gap-1.5 disabled:opacity-50 h-8 text-xs"
               >
                 {guardando ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 ) : (
                   <MapPin className="h-3.5 w-3.5" />
                 )}
-                Guardar snapshot
+                Guardar
               </Button>
             </div>
           )}
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }
