@@ -40,6 +40,7 @@ import {
 } from "lucide-react";
 import {
   buscarPorTelefono,
+  registrarPaciente,
   getCitasPaciente,
   getMembresiasPaciente,
   getHorariosDisponibles,
@@ -107,12 +108,15 @@ const ESTADO_CONFIG: Record<string, { label: string; color: string; bg: string }
 
 // ── PAGE ─────────────────────────────────────────────────────────────────────
 export default function AgendarPage() {
-  // ── State machine: "phone" → "profile" ──
-  const [vista, setVista] = useState<"phone" | "profile">("phone");
+  // ── State machine: "phone" → "register" → "profile" ──
+  const [vista, setVista] = useState<"phone" | "register" | "profile">("phone");
   const [telefono, setTelefono] = useState("");
   const [buscando, setBuscando] = useState(false);
+  const [regNombre, setRegNombre] = useState("");
+  const [regApellido, setRegApellido] = useState("");
+  const [registrando, setRegistrando] = useState(false);
+  const [regError, setRegError] = useState("");
   const [errorTel, setErrorTel] = useState("");
-  const [notFound, setNotFound] = useState(false);
 
   const [paciente, setPaciente] = useState<Paciente | null>(null);
   const [citas, setCitas] = useState<CitaPaciente[]>([]);
@@ -138,7 +142,7 @@ export default function AgendarPage() {
   // ── Buscar paciente por teléfono ──
   async function handleBuscar() {
     setErrorTel("");
-    setNotFound(false);
+
     setBuscando(true);
 
     try {
@@ -147,7 +151,7 @@ export default function AgendarPage() {
       if (result.error) {
         setErrorTel(result.error);
       } else if (result.notFound) {
-        setNotFound(true);
+        setVista("register");
       } else if (result.paciente) {
         setPaciente(result.paciente);
         // Load citas + membresías
@@ -163,6 +167,27 @@ export default function AgendarPage() {
       setErrorTel("Error de conexión. Intenta de nuevo.");
     } finally {
       setBuscando(false);
+    }
+  }
+
+  // ── Registrar paciente nuevo ──
+  async function handleRegistro() {
+    setRegError("");
+    setRegistrando(true);
+    try {
+      const result = await registrarPaciente(telefono, regNombre, regApellido);
+      if (result.error) {
+        setRegError(result.error);
+      } else if (result.paciente) {
+        setPaciente(result.paciente);
+        setCitas([]);
+        setMembresias([]);
+        setVista("profile");
+      }
+    } catch {
+      setRegError("Error de conexión. Intenta de nuevo.");
+    } finally {
+      setRegistrando(false);
     }
   }
 
@@ -274,7 +299,6 @@ export default function AgendarPage() {
                   onChange={(e) => {
                     setTelefono(e.target.value);
                     setErrorTel("");
-                    setNotFound(false);
                   }}
                   onKeyDown={(e) => e.key === "Enter" && handleBuscar()}
                   className="pl-11 h-12 text-base border-[#a8cfe0] focus:border-[#4a7fa5] rounded-xl"
@@ -286,24 +310,6 @@ export default function AgendarPage() {
                 <p className="text-xs text-red-500 flex items-center gap-1">
                   <AlertCircle className="h-3 w-3" /> {errorTel}
                 </p>
-              )}
-
-              {notFound && (
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2">
-                  <p className="text-sm text-amber-800 font-medium">
-                    No encontramos una cuenta con ese número
-                  </p>
-                  <p className="text-xs text-amber-600">
-                    Si es tu primera vez, agenda por WhatsApp al{" "}
-                    <a
-                      href="https://wa.me/524271659204?text=Hola%2C%20quiero%20agendar%20una%20cita"
-                      className="font-bold underline"
-                    >
-                      427 165 92 04
-                    </a>{" "}
-                    y te daremos de alta.
-                  </p>
-                </div>
               )}
 
               <Button
@@ -320,8 +326,91 @@ export default function AgendarPage() {
             </div>
 
             <p className="text-center text-[10px] text-[#8fa8ba]">
-              Solo pacientes registrados pueden acceder. Si eres nuevo, comunícate por WhatsApp.
+              Si es tu primera vez, te registraremos automáticamente.
             </p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // VISTA: REGISTRO NUEVO PACIENTE
+  // ─────────────────────────────────────────────────────────────────────────
+  if (vista === "register") {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-[#f0f4f7] to-white flex flex-col">
+        <header className="border-b border-[#c8dce8] bg-white/80 backdrop-blur-md">
+          <div className="max-w-lg mx-auto px-4 py-4 flex items-center justify-between">
+            <button
+              onClick={() => setVista("phone")}
+              className="flex items-center gap-2 text-sm text-[#4a7fa5] cursor-pointer hover:text-[#2d5f80] transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Volver
+            </button>
+            <span className="text-lg font-semibold text-[#4a7fa5]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+              Kaya Kalp
+            </span>
+            <div className="w-16" />
+          </div>
+        </header>
+
+        <main className="flex-1 flex items-center justify-center px-4 py-12">
+          <div className="w-full max-w-sm space-y-8">
+            <div className="text-center">
+              <div className="mx-auto h-16 w-16 rounded-2xl bg-[#3fa87c]/10 flex items-center justify-center mb-4">
+                <User className="h-8 w-8 text-[#3fa87c]" />
+              </div>
+              <h1 className="text-2xl font-bold text-[#1e2d3a]">Crear tu cuenta</h1>
+              <p className="text-sm text-[#5a7080] mt-2">
+                Es tu primera vez. Ingresa tu nombre para registrarte.
+              </p>
+              <div className="mt-3 inline-flex items-center gap-2 bg-[#e4ecf2] rounded-full px-4 py-1.5">
+                <Phone className="h-3.5 w-3.5 text-[#4a7fa5]" />
+                <span className="text-xs font-medium text-[#1e2d3a]">{telefono}</span>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label className="text-sm font-semibold text-[#1e2d3a]">Nombre(s)</Label>
+                <Input
+                  placeholder="Ej. María"
+                  value={regNombre}
+                  onChange={(e) => setRegNombre(e.target.value)}
+                  className="h-12 text-base border-[#a8cfe0] focus:border-[#4a7fa5] rounded-xl"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm font-semibold text-[#1e2d3a]">Apellido(s)</Label>
+                <Input
+                  placeholder="Ej. González Ríos"
+                  value={regApellido}
+                  onChange={(e) => setRegApellido(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleRegistro()}
+                  className="h-12 text-base border-[#a8cfe0] focus:border-[#4a7fa5] rounded-xl"
+                />
+              </div>
+
+              {regError && (
+                <p className="text-xs text-red-500 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" /> {regError}
+                </p>
+              )}
+
+              <Button
+                onClick={handleRegistro}
+                disabled={registrando || !regNombre.trim() || !regApellido.trim()}
+                className="w-full h-12 bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white font-semibold rounded-xl cursor-pointer transition-all duration-200"
+              >
+                {registrando ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Registrando...</>
+                ) : (
+                  <><CheckCircle2 className="mr-2 h-4 w-4" /> Crear cuenta y continuar</>
+                )}
+              </Button>
+            </div>
           </div>
         </main>
       </div>

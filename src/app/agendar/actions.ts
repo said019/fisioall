@@ -55,6 +55,49 @@ export async function buscarPorTelefono(telefono: string) {
   };
 }
 
+// ─── REGISTRAR PACIENTE NUEVO ──────────────────────────────────────────────
+export async function registrarPaciente(telefono: string, nombre: string, apellido: string) {
+  const tenantId = await getTenantId();
+  const clean = telefono.replace(/\D/g, "").slice(-10);
+
+  if (!nombre.trim() || !apellido.trim()) {
+    return { error: "Nombre y apellido son obligatorios" };
+  }
+  if (clean.length < 10) {
+    return { error: "Número de teléfono inválido" };
+  }
+
+  // Verificar que no exista ya
+  const existe = await prisma.paciente.findFirst({
+    where: { tenantId, telefono: { contains: clean } },
+  });
+  if (existe) {
+    return { error: "Ya existe una cuenta con ese número" };
+  }
+
+  const paciente = await prisma.paciente.create({
+    data: {
+      tenantId,
+      nombre: nombre.trim(),
+      apellido: apellido.trim(),
+      telefono: clean,
+      fechaPrimeraCita: new Date(),
+    },
+  });
+
+  return {
+    paciente: {
+      id: paciente.id,
+      nombre: `${paciente.nombre} ${paciente.apellido}`,
+      iniciales: `${paciente.nombre[0]}${paciente.apellido[0]}`.toUpperCase(),
+      telefono: paciente.telefono,
+      email: paciente.email,
+      totalSesiones: 0,
+      miembroDesde: new Date().toLocaleDateString("es-MX", { month: "long", year: "numeric" }),
+    },
+  };
+}
+
 // ─── OBTENER CITAS DEL PACIENTE ────────────────────────────────────────────
 export async function getCitasPaciente(pacienteId: string) {
   const citas = await prisma.cita.findMany({
