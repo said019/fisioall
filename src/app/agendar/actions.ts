@@ -56,7 +56,7 @@ export async function buscarPorTelefono(telefono: string) {
 }
 
 // ─── REGISTRAR PACIENTE NUEVO ──────────────────────────────────────────────
-export async function registrarPaciente(telefono: string, nombre: string, apellido: string) {
+export async function registrarPaciente(telefono: string, nombre: string, apellido: string, email?: string) {
   const tenantId = await getTenantId();
   const clean = telefono.replace(/\D/g, "").slice(-10);
 
@@ -81,6 +81,7 @@ export async function registrarPaciente(telefono: string, nombre: string, apelli
       nombre: nombre.trim(),
       apellido: apellido.trim(),
       telefono: clean,
+      email: email?.trim() || null,
       fechaPrimeraCita: new Date(),
     },
   });

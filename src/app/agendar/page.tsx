@@ -114,6 +114,7 @@ export default function AgendarPage() {
   const [buscando, setBuscando] = useState(false);
   const [regNombre, setRegNombre] = useState("");
   const [regApellido, setRegApellido] = useState("");
+  const [regEmail, setRegEmail] = useState("");
   const [registrando, setRegistrando] = useState(false);
   const [regError, setRegError] = useState("");
   const [errorTel, setErrorTel] = useState("");
@@ -175,7 +176,7 @@ export default function AgendarPage() {
     setRegError("");
     setRegistrando(true);
     try {
-      const result = await registrarPaciente(telefono, regNombre, regApellido);
+      const result = await registrarPaciente(telefono, regNombre, regApellido, regEmail || undefined);
       if (result.error) {
         setRegError(result.error);
       } else if (result.paciente) {
@@ -388,6 +389,18 @@ export default function AgendarPage() {
                   placeholder="Ej. González Ríos"
                   value={regApellido}
                   onChange={(e) => setRegApellido(e.target.value)}
+                  className="h-12 text-base border-[#a8cfe0] focus:border-[#4a7fa5] rounded-xl"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm font-semibold text-[#1e2d3a]">
+                  Correo electrónico <span className="text-[#8fa8ba] font-normal">(opcional)</span>
+                </Label>
+                <Input
+                  type="email"
+                  placeholder="tu@correo.com"
+                  value={regEmail}
+                  onChange={(e) => setRegEmail(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleRegistro()}
                   className="h-12 text-base border-[#a8cfe0] focus:border-[#4a7fa5] rounded-xl"
                 />
