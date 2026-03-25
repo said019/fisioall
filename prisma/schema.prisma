@@ -144,6 +144,7 @@ model Tenant {
   ejercicios            Ejercicio[]
   notificaciones        Notificacion[]
   plantillasMensaje     PlantillaMensaje[]
+  tarjetasLealtad       TarjetaLealtad[]
 
   @@index([slug])
   @@map("tenants")
@@ -271,6 +272,7 @@ model Paciente {
   encuestas                   EncuestaSesion[]
   notificaciones              Notificacion[]
   progresosDolor              ProgresoDolor[]
+  tarjetasLealtad             TarjetaLealtad[]
 
   @@index([tenantId])
   @@index([fisioterapeutaId])
@@ -794,4 +796,37 @@ enum Lateralidad {
   bilateral
   izquierdo
   derecho
+}
+
+enum TarjetaLealtadEstado {
+  activa
+  completada
+  canjeada
+  expirada
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TARJETA DE LEALTAD (loyalty punch card — free, not tied to packages)
+// ─────────────────────────────────────────────────────────────────────────────
+model TarjetaLealtad {
+  id              String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String                @map("tenant_id") @db.Uuid
+  pacienteId      String                @map("paciente_id") @db.Uuid
+  sellosTotal     Int                   @map("sellos_total")
+  sellosUsados    Int                   @default(0) @map("sellos_usados")
+  recompensa      String                @db.VarChar(255)
+  estado          TarjetaLealtadEstado  @default(activa)
+  fechaCreacion   DateTime              @default(now()) @map("fecha_creacion") @db.Date
+  fechaExpiracion DateTime?             @map("fecha_expiracion") @db.Date
+  notas           String?
+
+  createdAt       DateTime?             @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime?             @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  tenant          Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  paciente        Paciente              @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([pacienteId])
+  @@map("tarjetas_lealtad")
 }

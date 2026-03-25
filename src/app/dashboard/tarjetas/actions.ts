@@ -4,99 +4,43 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
-// ─── FETCH TARJETAS DE LEALTAD (membresías como loyalty cards) ───────────────
+// ─── FETCH TARJETAS DE LEALTAD ──────────────────────────────────────────────
 export async function getTarjetasLealtad() {
   const { tenantId } = await requireAuth();
 
-  const membresias = await prisma.membresia.findMany({
+  const tarjetas = await prisma.tarjetaLealtad.findMany({
     where: { tenantId },
     include: {
       paciente: {
         select: { nombre: true, apellido: true, telefono: true },
       },
-      paquete: {
-        select: { nombre: true, descripcion: true, color: true },
-      },
     },
     orderBy: { updatedAt: "desc" },
   });
 
-  function deriveCategoria(paqueteNombre: string): string {
-    const lower = paqueteNombre.toLowerCase();
-    if (lower.includes("facial")) return "facial";
-    if (lower.includes("masaje")) return "masaje";
-    if (lower.includes("corporal")) return "corporal";
-    return "fisioterapia";
-  }
+  return tarjetas.map((t) => {
+    const usados = t.sellosUsados;
+    const totales = t.sellosTotal;
+    const sellos = Array.from({ length: totales }, (_, i) => i < usados);
 
-  function mapEstado(dbEstado: string, usadas: number, total: number): string {
-    if (dbEstado === "activa" && usadas >= total) return "completada";
-    if (dbEstado === "activa") return "activa";
-    if (dbEstado === "vencida") return "completada";
-    if (dbEstado === "canjeada") return "canjeada";
-    return "activa";
-  }
-
-  return membresias.map((m) => {
-    const usadas = m.sesionesUsadas ?? 0;
-    const totales = m.sesionesTotal;
-    const categoria = deriveCategoria(m.paquete.nombre);
-    const estado = mapEstado(m.estado ?? "activa", usadas, totales);
-    const sellos = Array.from({ length: totales }, (_, i) => i < usadas);
+    let estado: string = t.estado;
+    if (estado === "activa" && usados >= totales) estado = "completada";
 
     return {
-      id: m.id,
-      pacienteNombre: `${m.paciente.nombre} ${m.paciente.apellido}`,
-      pacienteIniciales: `${m.paciente.nombre[0]}${m.paciente.apellido[0]}`.toUpperCase(),
-      telefono: m.paciente.telefono,
-      categoria,
-      plan: m.paquete.nombre,
-      sesionesTotales: totales,
-      sesionesUsadas: usadas,
+      id: t.id,
+      pacienteNombre: `${t.paciente.nombre} ${t.paciente.apellido}`,
+      pacienteIniciales: `${t.paciente.nombre[0]}${t.paciente.apellido[0]}`.toUpperCase(),
+      telefono: t.paciente.telefono,
+      sellosTotal: totales,
+      sellosUsados: usados,
       estado,
       sellos,
-      recompensa: estado === "completada" ? "1 sesión GRATIS" : `Completa ${totales} sesiones`,
-      fechaCreacion: m.fechaCompra.toISOString().split("T")[0],
-      fechaExpiracion: m.fechaVencimiento?.toISOString().split("T")[0] ?? "Sin fecha",
-      ultimaVisita: (m.updatedAt ?? m.fechaCompra).toISOString().split("T")[0],
+      recompensa: t.recompensa,
+      fechaCreacion: t.fechaCreacion.toISOString().split("T")[0],
+      fechaExpiracion: t.fechaExpiracion?.toISOString().split("T")[0] ?? "Sin fecha",
+      ultimaVisita: (t.updatedAt ?? t.fechaCreacion).toISOString().split("T")[0],
     };
   });
-}
-
-// ─── REGISTER STAMP (increment session) ──────────────────────────────────────
-export async function registrarSello(membresiaId: string) {
-  const { tenantId } = await requireAuth();
-
-  try {
-    const membresia = await prisma.membresia.findFirst({
-      where: { id: membresiaId, tenantId },
-    });
-
-    if (!membresia) {
-      return { error: "Tarjeta no encontrada" };
-    }
-
-    if ((membresia.sesionesUsadas ?? 0) >= membresia.sesionesTotal) {
-      return { error: "Todas las sesiones ya fueron completadas" };
-    }
-
-    await prisma.membresia.update({
-      where: { id: membresiaId },
-      data: {
-        sesionesUsadas: { increment: 1 },
-        estado:
-          (membresia.sesionesUsadas ?? 0) + 1 >= membresia.sesionesTotal
-            ? "vencida"
-            : "activa",
-      },
-    });
-
-    revalidatePath("/dashboard/tarjetas");
-    return { success: true };
-  } catch (error) {
-    console.error("Error registering stamp:", error);
-    return { error: "Error al registrar el sello." };
-  }
 }
 
 // ─── FETCH PACIENTES (for create modal) ──────────────────────────────────────
@@ -116,56 +60,28 @@ export async function getPacientesTarjetas() {
   }));
 }
 
-// ─── FETCH PAQUETES (for create modal) ───────────────────────────────────────
-export async function getPaquetesTarjetas() {
-  const { tenantId } = await requireAuth();
-
-  const paquetes = await prisma.paquete.findMany({
-    where: { tenantId, activo: true },
-    select: { id: true, nombre: true, numSesiones: true, precio: true },
-    orderBy: { nombre: "asc" },
-  });
-
-  return paquetes.map((p) => ({
-    id: p.id,
-    nombre: p.nombre,
-    numSesiones: p.numSesiones,
-    precio: Number(p.precio),
-  }));
-}
-
-// ─── CREAR TARJETA (membresía) ───────────────────────────────────────────────
+// ─── CREAR TARJETA DE LEALTAD ────────────────────────────────────────────────
 export async function crearTarjeta(data: {
   pacienteId: string;
-  paqueteId: string;
+  sellosTotal: number;
   recompensa: string;
   fechaExpiracion?: string;
 }) {
   const { tenantId } = await requireAuth();
 
-  const paquete = await prisma.paquete.findFirst({
-    where: { id: data.paqueteId, tenantId },
-  });
-
-  if (!paquete) {
-    return { error: "Paquete no encontrado" };
+  if (data.sellosTotal < 1 || data.sellosTotal > 50) {
+    return { error: "El número de sellos debe ser entre 1 y 50." };
   }
 
   try {
-    await prisma.membresia.create({
+    await prisma.tarjetaLealtad.create({
       data: {
         tenantId,
         pacienteId: data.pacienteId,
-        paqueteId: data.paqueteId,
-        sesionesTotal: paquete.numSesiones,
-        sesionesUsadas: 0,
-        precioPagado: paquete.precio,
-        estado: "activa",
-        fechaCompra: new Date(),
-        fechaVencimiento: data.fechaExpiracion
+        sellosTotal: data.sellosTotal,
+        recompensa: data.recompensa,
+        fechaExpiracion: data.fechaExpiracion
           ? new Date(data.fechaExpiracion)
-          : paquete.duracionDias
-          ? new Date(Date.now() + paquete.duracionDias * 86400000)
           : null,
       },
     });
@@ -178,21 +94,63 @@ export async function crearTarjeta(data: {
   }
 }
 
-// ─── KPIs ────────────────────────────────────────────────────────────────────
-export async function getTarjetasKPIs() {
+// ─── REGISTRAR SELLO ─────────────────────────────────────────────────────────
+export async function registrarSello(tarjetaId: string) {
   const { tenantId } = await requireAuth();
 
-  const [activas, completadas, todas] = await Promise.all([
-    prisma.membresia.count({
-      where: { tenantId, estado: "activa" },
-    }),
-    prisma.membresia.count({
-      where: { tenantId, estado: "vencida" },
-    }),
-    prisma.membresia.count({
-      where: { tenantId },
-    }),
-  ]);
+  try {
+    const tarjeta = await prisma.tarjetaLealtad.findFirst({
+      where: { id: tarjetaId, tenantId },
+    });
 
-  return { activas, completadas, total: todas };
+    if (!tarjeta) {
+      return { error: "Tarjeta no encontrada" };
+    }
+
+    if (tarjeta.sellosUsados >= tarjeta.sellosTotal) {
+      return { error: "Todos los sellos ya fueron completados" };
+    }
+
+    const nuevoTotal = tarjeta.sellosUsados + 1;
+
+    await prisma.tarjetaLealtad.update({
+      where: { id: tarjetaId },
+      data: {
+        sellosUsados: nuevoTotal,
+        estado: nuevoTotal >= tarjeta.sellosTotal ? "completada" : "activa",
+      },
+    });
+
+    revalidatePath("/dashboard/tarjetas");
+    return { success: true };
+  } catch (error) {
+    console.error("Error registering stamp:", error);
+    return { error: "Error al registrar el sello." };
+  }
+}
+
+// ─── CANJEAR RECOMPENSA ──────────────────────────────────────────────────────
+export async function canjearRecompensa(tarjetaId: string) {
+  const { tenantId } = await requireAuth();
+
+  try {
+    const tarjeta = await prisma.tarjetaLealtad.findFirst({
+      where: { id: tarjetaId, tenantId, estado: "completada" },
+    });
+
+    if (!tarjeta) {
+      return { error: "Tarjeta no encontrada o no está completada" };
+    }
+
+    await prisma.tarjetaLealtad.update({
+      where: { id: tarjetaId },
+      data: { estado: "canjeada" },
+    });
+
+    revalidatePath("/dashboard/tarjetas");
+    return { success: true };
+  } catch (error) {
+    console.error("Error redeeming reward:", error);
+    return { error: "Error al canjear la recompensa." };
+  }
 }

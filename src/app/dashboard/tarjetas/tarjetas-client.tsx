@@ -37,23 +37,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { crearTarjeta, registrarSello } from "./actions";
+import { crearTarjeta, registrarSello, canjearRecompensa } from "./actions";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TIPOS
 // ─────────────────────────────────────────────────────────────────────────────
 type TarjetaEstado = "activa" | "completada" | "canjeada" | "expirada";
-type ServicioCategoria = "fisioterapia" | "facial" | "masaje" | "corporal";
 
 interface TarjetaLealtad {
   id: string;
   pacienteNombre: string;
   pacienteIniciales: string;
   telefono: string;
-  categoria: ServicioCategoria;
-  plan: string;
-  sesionesTotales: number;
-  sesionesUsadas: number;
+  sellosTotal: number;
+  sellosUsados: number;
   estado: TarjetaEstado;
   fechaCreacion: string;
   fechaExpiracion: string;
@@ -65,12 +62,6 @@ interface TarjetaLealtad {
 // ─────────────────────────────────────────────────────────────────────────────
 // CONSTANTES
 // ─────────────────────────────────────────────────────────────────────────────
-const CATEGORIA_CONFIG: Record<ServicioCategoria, { label: string; color: string; bg: string; border: string }> = {
-  fisioterapia: { label: "Fisioterapia", color: "text-[#4a7fa5]", bg: "bg-[#4a7fa5]/10", border: "border-[#4a7fa5]/30" },
-  facial:       { label: "Facial",       color: "text-[#9b59b6]", bg: "bg-[#9b59b6]/10", border: "border-[#9b59b6]/30" },
-  masaje:       { label: "Masaje",       color: "text-[#3fa87c]", bg: "bg-[#3fa87c]/10", border: "border-[#3fa87c]/30" },
-  corporal:     { label: "Corporal",     color: "text-[#e89b3f]", bg: "bg-[#e89b3f]/10", border: "border-[#e89b3f]/30" },
-};
 
 const ESTADO_CONFIG: Record<TarjetaEstado, { label: string; color: string; dot: string }> = {
   activa:     { label: "Activa",     color: "text-emerald-600 bg-emerald-50 border-emerald-200", dot: "bg-emerald-500" },
@@ -93,22 +84,21 @@ function formatFecha(fecha: string): string {
 // ─────────────────────────────────────────────────────────────────────────────
 // SELLO VISUAL COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
-function SelloGrid({ sellos, categoria }: { sellos: boolean[]; categoria: ServicioCategoria }) {
-  const catCfg = CATEGORIA_CONFIG[categoria];
-  const cols = sellos.length <= 10 ? 5 : 5;
+function SelloGrid({ sellos }: { sellos: boolean[] }) {
+  const cols = sellos.length <= 10 ? 5 : sellos.length <= 15 ? 5 : 6;
   return (
-    <div className={`grid gap-2`} style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
+    <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
       {sellos.map((activo, i) => (
         <div
           key={i}
           className={`relative h-9 w-9 rounded-full flex items-center justify-center transition-all duration-200 ${
             activo
-              ? `${catCfg.bg} ${catCfg.border} border-2 shadow-sm`
+              ? "bg-[#3fa87c]/15 border-2 border-[#3fa87c]/40 shadow-sm"
               : "bg-slate-100 border-2 border-dashed border-slate-200"
           }`}
         >
           {activo ? (
-            <Star className={`h-4 w-4 ${catCfg.color} fill-current`} />
+            <Star className="h-4 w-4 text-[#3fa87c] fill-current" />
           ) : (
             <span className="text-[10px] font-bold text-slate-300">{i + 1}</span>
           )}
@@ -122,25 +112,23 @@ function SelloGrid({ sellos, categoria }: { sellos: boolean[]; categoria: Servic
 // TARJETA VISUAL COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
 function TarjetaCard({ tarjeta, onView }: { tarjeta: TarjetaLealtad; onView: () => void }) {
-  const catCfg = CATEGORIA_CONFIG[tarjeta.categoria];
   const estadoCfg = ESTADO_CONFIG[tarjeta.estado];
-  const pct = Math.round((tarjeta.sesionesUsadas / tarjeta.sesionesTotales) * 100);
-  const restantes = tarjeta.sesionesTotales - tarjeta.sesionesUsadas;
+  const pct = tarjeta.sellosTotal > 0 ? Math.round((tarjeta.sellosUsados / tarjeta.sellosTotal) * 100) : 0;
+  const restantes = tarjeta.sellosTotal - tarjeta.sellosUsados;
   const casiCompleta = restantes <= 2 && restantes > 0;
 
   return (
     <Card
       className={`border-[#c8dce8] bg-white hover:shadow-lg transition-all duration-300 cursor-pointer group overflow-hidden ${
         casiCompleta ? "ring-2 ring-[#e89b3f]/40" : ""
-      } ${tarjeta.estado === "completada" ? "ring-2 ring-[#4a7fa5]/30" : ""}`}
+      } ${tarjeta.estado === "completada" ? "ring-2 ring-[#3fa87c]/30" : ""}`}
       onClick={onView}
     >
-      {/* Header stripe */}
-      <div className={`h-1.5 ${catCfg.bg.replace("/10", "")} ${
-        tarjeta.categoria === "fisioterapia" ? "bg-[#4a7fa5]" :
-        tarjeta.categoria === "facial" ? "bg-[#9b59b6]" :
-        tarjeta.categoria === "masaje" ? "bg-[#3fa87c]" :
-        "bg-[#e89b3f]"
+      <div className={`h-1.5 ${
+        tarjeta.estado === "completada" ? "bg-[#3fa87c]" :
+        tarjeta.estado === "canjeada" ? "bg-[#9b59b6]" :
+        casiCompleta ? "bg-[#e89b3f]" :
+        "bg-[#4a7fa5]"
       }`} />
 
       <CardContent className="p-5">
@@ -148,7 +136,7 @@ function TarjetaCard({ tarjeta, onView }: { tarjeta: TarjetaLealtad; onView: () 
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
             <Avatar className="h-10 w-10 border-2 border-[#c8dce8] group-hover:border-[#4a7fa5] transition-colors">
-              <AvatarFallback className={`${catCfg.bg} ${catCfg.color} text-xs font-bold`}>
+              <AvatarFallback className="bg-[#4a7fa5]/10 text-[#4a7fa5] text-xs font-bold">
                 {tarjeta.pacienteIniciales}
               </AvatarFallback>
             </Avatar>
@@ -166,24 +154,22 @@ function TarjetaCard({ tarjeta, onView }: { tarjeta: TarjetaLealtad; onView: () 
           </Badge>
         </div>
 
-        {/* Plan + category */}
+        {/* Recompensa */}
         <div className="flex items-center gap-2 mb-4">
-          <Badge variant="outline" className={`text-[10px] ${catCfg.color} ${catCfg.bg} ${catCfg.border}`}>
-            {catCfg.label}
-          </Badge>
-          <span className="text-[11px] text-[#5a7080] font-medium">{tarjeta.plan}</span>
+          <Gift className="h-3.5 w-3.5 text-[#e89b3f] shrink-0" />
+          <span className="text-[11px] text-[#5a7080] font-medium truncate">{tarjeta.recompensa}</span>
         </div>
 
         {/* Sellos */}
         <div className="mb-4">
-          <SelloGrid sellos={tarjeta.sellos} categoria={tarjeta.categoria} />
+          <SelloGrid sellos={tarjeta.sellos} />
         </div>
 
         {/* Progress bar */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-semibold text-[#1e2d3a]/60">
-              {tarjeta.sesionesUsadas}/{tarjeta.sesionesTotales} sesiones
+              {tarjeta.sellosUsados}/{tarjeta.sellosTotal} sellos
             </span>
             <span className="text-[11px] font-bold text-[#1e2d3a]">{pct}%</span>
           </div>
@@ -191,10 +177,10 @@ function TarjetaCard({ tarjeta, onView }: { tarjeta: TarjetaLealtad; onView: () 
             value={pct}
             className={`h-2 ${
               tarjeta.estado === "completada" || tarjeta.estado === "canjeada"
-                ? "bg-[#e4ecf2] [&>div]:bg-[#4a7fa5]"
+                ? "bg-[#e4ecf2] [&>div]:bg-[#3fa87c]"
                 : casiCompleta
                 ? "bg-[#e89b3f]/15 [&>div]:bg-[#e89b3f]"
-                : "bg-slate-100 [&>div]:bg-[#3fa87c]"
+                : "bg-slate-100 [&>div]:bg-[#4a7fa5]"
             }`}
           />
         </div>
@@ -203,14 +189,14 @@ function TarjetaCard({ tarjeta, onView }: { tarjeta: TarjetaLealtad; onView: () 
         {(tarjeta.estado === "completada" || casiCompleta) && (
           <div className={`mt-3 flex items-center gap-2 rounded-lg p-2.5 ${
             tarjeta.estado === "completada"
-              ? "bg-[#4a7fa5]/10 border border-[#4a7fa5]/20"
+              ? "bg-[#3fa87c]/10 border border-[#3fa87c]/20"
               : "bg-[#e89b3f]/10 border border-[#e89b3f]/20"
           }`}>
             <Gift className={`h-4 w-4 shrink-0 ${
-              tarjeta.estado === "completada" ? "text-[#4a7fa5]" : "text-[#e89b3f]"
+              tarjeta.estado === "completada" ? "text-[#3fa87c]" : "text-[#e89b3f]"
             }`} />
             <p className={`text-[10px] font-medium ${
-              tarjeta.estado === "completada" ? "text-[#4a7fa5]" : "text-[#e89b3f]"
+              tarjeta.estado === "completada" ? "text-[#3fa87c]" : "text-[#e89b3f]"
             }`}>
               {tarjeta.estado === "completada"
                 ? `Listo para canjear: ${tarjeta.recompensa}`
@@ -236,30 +222,25 @@ function TarjetaCard({ tarjeta, onView }: { tarjeta: TarjetaLealtad; onView: () 
 // PAGE
 // ─────────────────────────────────────────────────────────────────────────────
 interface PacienteOption { id: string; nombre: string; telefono: string; }
-interface PaqueteOption { id: string; nombre: string; numSesiones: number; precio: number; }
 
 export default function TarjetasClient({
   initialTarjetas,
   pacientes,
-  paquetes,
 }: {
   initialTarjetas?: TarjetaLealtad[];
   pacientes?: PacienteOption[];
-  paquetes?: PaqueteOption[];
 }) {
   const tarjetasData = initialTarjetas ?? [];
   const pacientesData = pacientes ?? [];
-  const paquetesData = paquetes ?? [];
 
   const [busqueda, setBusqueda] = useState("");
-  const [filtroCategoria, setFiltroCategoria] = useState<string>("todas");
   const [filtroEstado, setFiltroEstado] = useState<string>("todos");
   const [modalCrear, setModalCrear] = useState(false);
   const [modalDetalle, setModalDetalle] = useState<TarjetaLealtad | null>(null);
 
   // Create form state
   const [crearPacienteId, setCrearPacienteId] = useState("");
-  const [crearPaqueteId, setCrearPaqueteId] = useState("");
+  const [crearSellosTotal, setCrearSellosTotal] = useState("10");
   const [crearRecompensa, setCrearRecompensa] = useState("");
   const [crearFechaExp, setCrearFechaExp] = useState("");
   const [creando, setCreando] = useState(false);
@@ -269,9 +250,8 @@ export default function TarjetasClient({
     const matchBusqueda =
       t.pacienteNombre.toLowerCase().includes(busqueda.toLowerCase()) ||
       t.telefono.includes(busqueda);
-    const matchCategoria = filtroCategoria === "todas" || t.categoria === filtroCategoria;
     const matchEstado = filtroEstado === "todos" || t.estado === filtroEstado;
-    return matchBusqueda && matchCategoria && matchEstado;
+    return matchBusqueda && matchEstado;
   });
 
   // KPIs
@@ -279,7 +259,7 @@ export default function TarjetasClient({
   const completadas = tarjetasData.filter((t) => t.estado === "completada").length;
   const canjeadas = tarjetasData.filter((t) => t.estado === "canjeada").length;
   const casiCompletas = tarjetasData.filter((t) => {
-    const rest = t.sesionesTotales - t.sesionesUsadas;
+    const rest = t.sellosTotal - t.sellosUsados;
     return t.estado === "activa" && rest <= 2 && rest > 0;
   }).length;
 
@@ -330,18 +310,6 @@ export default function TarjetasClient({
               className="pl-10 border-[#a8cfe0] focus:border-[#4a7fa5] h-10"
             />
           </div>
-          <Select value={filtroCategoria} onValueChange={setFiltroCategoria}>
-            <SelectTrigger className="w-full sm:w-44 border-[#a8cfe0] h-10 cursor-pointer">
-              <Filter className="h-3.5 w-3.5 mr-1.5 text-[#1e2d3a]/40" />
-              <SelectValue placeholder="Categoría" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todas">Todas las categorías</SelectItem>
-              {Object.entries(CATEGORIA_CONFIG).map(([key, cfg]) => (
-                <SelectItem key={key} value={key}>{cfg.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
           <Select value={filtroEstado} onValueChange={setFiltroEstado}>
             <SelectTrigger className="w-full sm:w-40 border-[#a8cfe0] h-10 cursor-pointer">
               <SelectValue placeholder="Estado" />
@@ -387,10 +355,9 @@ export default function TarjetasClient({
       <Dialog open={!!modalDetalle} onOpenChange={() => setModalDetalle(null)}>
         <DialogContent className="max-w-lg">
           {modalDetalle && (() => {
-            const catCfg = CATEGORIA_CONFIG[modalDetalle.categoria];
             const estadoCfg = ESTADO_CONFIG[modalDetalle.estado];
-            const pct = Math.round((modalDetalle.sesionesUsadas / modalDetalle.sesionesTotales) * 100);
-            const restantes = modalDetalle.sesionesTotales - modalDetalle.sesionesUsadas;
+            const pct = modalDetalle.sellosTotal > 0 ? Math.round((modalDetalle.sellosUsados / modalDetalle.sellosTotal) * 100) : 0;
+            const restantes = modalDetalle.sellosTotal - modalDetalle.sellosUsados;
             return (
               <>
                 <DialogHeader>
@@ -403,20 +370,15 @@ export default function TarjetasClient({
                 {/* Patient info */}
                 <div className="flex items-center gap-3 bg-gradient-to-r from-[#f0f4f7] to-white rounded-xl p-4">
                   <Avatar className="h-12 w-12 border-2 border-[#a8cfe0]">
-                    <AvatarFallback className={`${catCfg.bg} ${catCfg.color} font-bold`}>
+                    <AvatarFallback className="bg-[#4a7fa5]/10 text-[#4a7fa5] font-bold">
                       {modalDetalle.pacienteIniciales}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
                     <p className="font-semibold text-[#1e2d3a]">{modalDetalle.pacienteNombre}</p>
-                    <div className="flex items-center gap-3 mt-0.5">
-                      <div className="flex items-center gap-1">
-                        <Phone className="h-3 w-3 text-[#8fa8ba]" />
-                        <span className="text-xs text-[#8fa8ba] font-mono">{modalDetalle.telefono}</span>
-                      </div>
-                      <Badge variant="outline" className={`text-[10px] ${catCfg.color} ${catCfg.bg} ${catCfg.border}`}>
-                        {catCfg.label}
-                      </Badge>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <Phone className="h-3 w-3 text-[#8fa8ba]" />
+                      <span className="text-xs text-[#8fa8ba] font-mono">{modalDetalle.telefono}</span>
                     </div>
                   </div>
                   <Badge variant="outline" className={`text-[10px] border ${estadoCfg.color}`}>
@@ -425,24 +387,19 @@ export default function TarjetasClient({
                   </Badge>
                 </div>
 
-                {/* Plan info */}
+                {/* Sellos */}
                 <div className="bg-white border border-[#c8dce8] rounded-xl p-4 space-y-3">
-                  <p className="text-sm font-semibold text-[#1e2d3a]">{modalDetalle.plan}</p>
-
-                  {/* Sellos grid */}
                   <div className="flex justify-center py-2">
-                    <SelloGrid sellos={modalDetalle.sellos} categoria={modalDetalle.categoria} />
+                    <SelloGrid sellos={modalDetalle.sellos} />
                   </div>
-
-                  {/* Progress */}
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-[#5a7080]">
-                        {modalDetalle.sesionesUsadas} de {modalDetalle.sesionesTotales} sesiones completadas
+                        {modalDetalle.sellosUsados} de {modalDetalle.sellosTotal} sellos
                       </span>
                       <span className="text-xs font-bold text-[#1e2d3a]">{pct}%</span>
                     </div>
-                    <Progress value={pct} className="h-2.5 bg-slate-100 [&>div]:bg-[#4a7fa5]" />
+                    <Progress value={pct} className="h-2.5 bg-slate-100 [&>div]:bg-[#3fa87c]" />
                   </div>
                 </div>
 
@@ -455,7 +412,7 @@ export default function TarjetasClient({
                     <p className="text-xs font-semibold text-[#e89b3f] uppercase tracking-wide">Recompensa</p>
                     <p className="text-sm font-medium text-[#1e2d3a] mt-0.5">{modalDetalle.recompensa}</p>
                     {restantes > 0 && (
-                      <p className="text-[10px] text-[#8fa8ba] mt-0.5">Faltan {restantes} sesiones para canjear</p>
+                      <p className="text-[10px] text-[#8fa8ba] mt-0.5">Faltan {restantes} sellos para canjear</p>
                     )}
                   </div>
                 </div>
@@ -466,7 +423,7 @@ export default function TarjetasClient({
                     { label: "Fecha de creación", value: formatFecha(modalDetalle.fechaCreacion) },
                     { label: "Fecha de expiración", value: formatFecha(modalDetalle.fechaExpiracion) },
                     { label: "Última visita", value: formatFecha(modalDetalle.ultimaVisita) },
-                    { label: "Sesiones restantes", value: restantes.toString() },
+                    { label: "Sellos restantes", value: restantes.toString() },
                   ].map((item) => (
                     <div key={item.label} className="bg-[#f0f4f7] rounded-lg p-3">
                       <p className="text-[10px] font-semibold text-[#8fa8ba] uppercase tracking-wide">{item.label}</p>
@@ -496,7 +453,18 @@ export default function TarjetasClient({
                     </Button>
                   )}
                   {modalDetalle.estado === "completada" && (
-                    <Button className="cursor-pointer bg-[#e89b3f] hover:bg-[#e89b3f]/90 text-white">
+                    <Button
+                      className="cursor-pointer bg-[#e89b3f] hover:bg-[#e89b3f]/90 text-white"
+                      onClick={async () => {
+                        const result = await canjearRecompensa(modalDetalle.id);
+                        if (result.success) {
+                          toast.success("Recompensa canjeada");
+                          setModalDetalle(null);
+                        } else {
+                          toast.error(result.error ?? "Error al canjear");
+                        }
+                      }}
+                    >
                       <Gift className="h-4 w-4 mr-1.5" /> Canjear Recompensa
                     </Button>
                   )}
@@ -512,7 +480,7 @@ export default function TarjetasClient({
         setModalCrear(open);
         if (!open) {
           setCrearPacienteId("");
-          setCrearPaqueteId("");
+          setCrearSellosTotal("10");
           setCrearRecompensa("");
           setCrearFechaExp("");
         }
@@ -551,15 +519,15 @@ export default function TarjetasClient({
               ) : null;
             })()}
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-[#1e2d3a]/60">Paquete / Plan</Label>
-              <Select value={crearPaqueteId} onValueChange={setCrearPaqueteId}>
+              <Label className="text-xs font-semibold text-[#1e2d3a]/60">Sellos para recompensa</Label>
+              <Select value={crearSellosTotal} onValueChange={setCrearSellosTotal}>
                 <SelectTrigger className="border-[#a8cfe0] cursor-pointer">
-                  <SelectValue placeholder="Seleccionar paquete" />
+                  <SelectValue placeholder="Número de sellos" />
                 </SelectTrigger>
                 <SelectContent>
-                  {paquetesData.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.nombre} ({p.numSesiones} sesiones · ${p.precio})
+                  {[5, 8, 10, 12, 15, 20].map((n) => (
+                    <SelectItem key={n} value={String(n)}>
+                      {n} sellos
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -589,12 +557,12 @@ export default function TarjetasClient({
               Cancelar
             </Button>
             <Button
-              disabled={creando || !crearPacienteId || !crearPaqueteId}
+              disabled={creando || !crearPacienteId}
               onClick={async () => {
                 setCreando(true);
                 const result = await crearTarjeta({
                   pacienteId: crearPacienteId,
-                  paqueteId: crearPaqueteId,
+                  sellosTotal: Number(crearSellosTotal),
                   recompensa: crearRecompensa || "1 sesión GRATIS",
                   fechaExpiracion: crearFechaExp || undefined,
                 });
