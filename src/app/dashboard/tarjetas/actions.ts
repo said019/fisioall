@@ -21,20 +21,46 @@ export async function getTarjetasLealtad() {
     orderBy: { updatedAt: "desc" },
   });
 
-  return membresias.map((m) => ({
-    id: m.id,
-    pacienteNombre: `${m.paciente.nombre} ${m.paciente.apellido}`,
-    pacienteIniciales: `${m.paciente.nombre[0]}${m.paciente.apellido[0]}`.toUpperCase(),
-    telefono: m.paciente.telefono,
-    plan: m.paquete.nombre,
-    sesionesTotales: m.sesionesTotal,
-    sesionesUsadas: m.sesionesUsadas ?? 0,
-    estado: m.estado,
-    fechaCreacion: m.fechaCompra.toISOString(),
-    fechaExpiracion: m.fechaVencimiento?.toISOString() ?? null,
-    fechaActivacion: m.fechaActivacion?.toISOString() ?? null,
-    precioPagado: Number(m.precioPagado),
-  }));
+  function deriveCategoria(paqueteNombre: string): string {
+    const lower = paqueteNombre.toLowerCase();
+    if (lower.includes("facial")) return "facial";
+    if (lower.includes("masaje")) return "masaje";
+    if (lower.includes("corporal")) return "corporal";
+    return "fisioterapia";
+  }
+
+  function mapEstado(dbEstado: string, usadas: number, total: number): string {
+    if (dbEstado === "activa" && usadas >= total) return "completada";
+    if (dbEstado === "activa") return "activa";
+    if (dbEstado === "vencida") return "completada";
+    if (dbEstado === "canjeada") return "canjeada";
+    return "activa";
+  }
+
+  return membresias.map((m) => {
+    const usadas = m.sesionesUsadas ?? 0;
+    const totales = m.sesionesTotal;
+    const categoria = deriveCategoria(m.paquete.nombre);
+    const estado = mapEstado(m.estado ?? "activa", usadas, totales);
+    const sellos = Array.from({ length: totales }, (_, i) => i < usadas);
+
+    return {
+      id: m.id,
+      pacienteNombre: `${m.paciente.nombre} ${m.paciente.apellido}`,
+      pacienteIniciales: `${m.paciente.nombre[0]}${m.paciente.apellido[0]}`.toUpperCase(),
+      telefono: m.paciente.telefono,
+      categoria,
+      plan: m.paquete.nombre,
+      sesionesTotales: totales,
+      sesionesUsadas: usadas,
+      estado,
+      sellos,
+      recompensa: estado === "completada" ? "1 sesión GRATIS" : `Completa ${totales} sesiones`,
+      fechaCreacion: m.fechaCompra.toISOString().split("T")[0],
+      fechaExpiracion: m.fechaVencimiento?.toISOString().split("T")[0] ?? "Sin fecha",
+      ultimaVisita: (m.updatedAt ?? m.fechaCompra).toISOString().split("T")[0],
+    };
+  });
 }
 
 // ─── REGISTER STAMP (increment session) ──────────────────────────────────────

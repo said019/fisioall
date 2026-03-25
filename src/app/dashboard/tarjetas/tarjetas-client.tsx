@@ -77,69 +77,14 @@ const ESTADO_CONFIG: Record<TarjetaEstado, { label: string; color: string; dot: 
   expirada:   { label: "Expirada",   color: "text-slate-500 bg-slate-50 border-slate-200",       dot: "bg-slate-400" },
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MOCK DATA
-// ─────────────────────────────────────────────────────────────────────────────
-function generarSellos(usadas: number, totales: number): boolean[] {
-  return Array.from({ length: totales }, (_, i) => i < usadas);
-}
-
-const mockTarjetas: TarjetaLealtad[] = [
-  {
-    id: "t1", pacienteNombre: "Carmen Ruiz López", pacienteIniciales: "CR", telefono: "427-123-4567",
-    categoria: "fisioterapia", plan: "Paquete 10 Sesiones Fisio", sesionesTotales: 10, sesionesUsadas: 7,
-    estado: "activa", fechaCreacion: "2026-01-15", fechaExpiracion: "2026-07-15", ultimaVisita: "2026-03-20",
-    recompensa: "1 sesión de masaje relajante GRATIS", sellos: generarSellos(7, 10),
-  },
-  {
-    id: "t2", pacienteNombre: "Isabel Flores García", pacienteIniciales: "IF", telefono: "427-234-5678",
-    categoria: "facial", plan: "Paquete 10 Faciales", sesionesTotales: 10, sesionesUsadas: 10,
-    estado: "completada", fechaCreacion: "2025-11-01", fechaExpiracion: "2026-05-01", ultimaVisita: "2026-03-18",
-    recompensa: "1 facial hidratante GRATIS", sellos: generarSellos(10, 10),
-  },
-  {
-    id: "t3", pacienteNombre: "Roberto Méndez Vega", pacienteIniciales: "RM", telefono: "427-345-6789",
-    categoria: "masaje", plan: "Paquete 20 Sesiones Masaje", sesionesTotales: 20, sesionesUsadas: 14,
-    estado: "activa", fechaCreacion: "2025-12-10", fechaExpiracion: "2026-06-10", ultimaVisita: "2026-03-22",
-    recompensa: "2 sesiones de masaje GRATIS", sellos: generarSellos(14, 20),
-  },
-  {
-    id: "t4", pacienteNombre: "Ana Sofía Torres", pacienteIniciales: "AT", telefono: "427-456-7890",
-    categoria: "fisioterapia", plan: "Paquete 10 Sesiones Fisio", sesionesTotales: 10, sesionesUsadas: 10,
-    estado: "canjeada", fechaCreacion: "2025-09-01", fechaExpiracion: "2026-03-01", ultimaVisita: "2026-02-28",
-    recompensa: "1 sesión de masaje relajante GRATIS", sellos: generarSellos(10, 10),
-  },
-  {
-    id: "t5", pacienteNombre: "Luis Ángel Ramos", pacienteIniciales: "LR", telefono: "427-567-8901",
-    categoria: "corporal", plan: "Paquete 10 Corporales", sesionesTotales: 10, sesionesUsadas: 3,
-    estado: "activa", fechaCreacion: "2026-02-01", fechaExpiracion: "2026-08-01", ultimaVisita: "2026-03-10",
-    recompensa: "1 drenaje linfático GRATIS", sellos: generarSellos(3, 10),
-  },
-  {
-    id: "t6", pacienteNombre: "Patricia Morales Díaz", pacienteIniciales: "PM", telefono: "427-678-9012",
-    categoria: "facial", plan: "Paquete 20 Faciales Premium", sesionesTotales: 20, sesionesUsadas: 18,
-    estado: "activa", fechaCreacion: "2025-10-15", fechaExpiracion: "2026-04-15", ultimaVisita: "2026-03-21",
-    recompensa: "Kit facial completo + 2 sesiones GRATIS", sellos: generarSellos(18, 20),
-  },
-  {
-    id: "t7", pacienteNombre: "Fernando Díaz Castillo", pacienteIniciales: "FD", telefono: "427-789-0123",
-    categoria: "fisioterapia", plan: "Paquete 20 Sesiones Fisio", sesionesTotales: 20, sesionesUsadas: 5,
-    estado: "activa", fechaCreacion: "2026-02-20", fechaExpiracion: "2026-08-20", ultimaVisita: "2026-03-19",
-    recompensa: "2 sesiones de fisioterapia GRATIS", sellos: generarSellos(5, 20),
-  },
-  {
-    id: "t8", pacienteNombre: "Valentina Ortega León", pacienteIniciales: "VO", telefono: "427-890-1234",
-    categoria: "masaje", plan: "Paquete 10 Sesiones Masaje", sesionesTotales: 10, sesionesUsadas: 10,
-    estado: "completada", fechaCreacion: "2025-12-01", fechaExpiracion: "2026-06-01", ultimaVisita: "2026-03-15",
-    recompensa: "1 sesión de masaje GRATIS", sellos: generarSellos(10, 10),
-  },
-];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
 function formatFecha(fecha: string): string {
+  if (!fecha || fecha === "Sin fecha") return "—";
   const d = new Date(fecha + "T12:00:00");
+  if (isNaN(d.getTime())) return "—";
   return d.toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" });
 }
 
@@ -289,7 +234,7 @@ function TarjetaCard({ tarjeta, onView }: { tarjeta: TarjetaLealtad; onView: () 
 // PAGE
 // ─────────────────────────────────────────────────────────────────────────────
 export default function TarjetasClient({ initialTarjetas }: { initialTarjetas?: TarjetaLealtad[] }) {
-  const tarjetasData = initialTarjetas && initialTarjetas.length > 0 ? initialTarjetas : mockTarjetas;
+  const tarjetasData = initialTarjetas ?? [];
   const [busqueda, setBusqueda] = useState("");
   const [filtroCategoria, setFiltroCategoria] = useState<string>("todas");
   const [filtroEstado, setFiltroEstado] = useState<string>("todos");
