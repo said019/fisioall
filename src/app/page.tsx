@@ -208,7 +208,7 @@ export default function LandingPage() {
                 Iniciar Sesión
               </Button>
             </Link>
-            <Link href="/login">
+            <Link href="/agendar">
               <Button className="cursor-pointer bg-[#4a7fa5] hover:bg-[#2d5f80] text-white transition-all duration-200 text-sm shadow-sm">
                 Agendar Cita
                 <CalendarDays className="ml-1.5 h-3.5 w-3.5" />
@@ -262,7 +262,7 @@ export default function LandingPage() {
 
             {/* CTA */}
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link href="/login">
+              <Link href="/agendar">
                 <Button
                   size="lg"
                   className="cursor-pointer h-12 px-8 bg-[#4a7fa5] hover:bg-[#2d5f80] hover:-translate-y-0.5 text-white font-semibold text-base shadow-lg shadow-[#4a7fa5]/25 transition-all duration-200"
@@ -721,7 +721,7 @@ export default function LandingPage() {
               Agenda tu primera cita hoy. Tu bienestar es nuestra prioridad.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link href="/login">
+              <Link href="/agendar">
                 <Button
                   size="lg"
                   className="cursor-pointer h-12 px-8 bg-[#4a7fa5] text-white hover:bg-[#6b9dbf] hover:-translate-y-0.5 font-bold text-base transition-all duration-200 shadow-lg"

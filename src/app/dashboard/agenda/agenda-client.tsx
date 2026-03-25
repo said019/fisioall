@@ -1,17 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useActionState, useEffect, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   ChevronLeft,
   ChevronRight,
@@ -22,19 +32,12 @@ import {
   CheckCircle2,
   XCircle,
   RefreshCw,
+  Search,
+  Loader2,
 } from "lucide-react";
+import { crearCita, actualizarEstadoCita } from "./actions";
 
-// ── MOCK DATA ──────────────────────────────────────────────────────────────────
-// Semana del 23 al 28 de Marzo 2026
-const diasSemana = [
-  { label: "Lun", fecha: "23 Mar", dayIndex: 0 },
-  { label: "Mar", fecha: "24 Mar", dayIndex: 1 },
-  { label: "Mié", fecha: "25 Mar", dayIndex: 2 },
-  { label: "Jue", fecha: "26 Mar", dayIndex: 3 },
-  { label: "Vie", fecha: "27 Mar", dayIndex: 4 },
-  { label: "Sáb", fecha: "28 Mar", dayIndex: 5 },
-];
-
+// ── TIPOS ───────────────────────────────────────────────────────────────────
 type Cita = {
   id: string;
   paciente: string;
@@ -48,29 +51,46 @@ type Cita = {
   sala: string;
 };
 
+type PacienteOption = {
+  id: string;
+  nombre: string;
+  iniciales: string;
+  telefono: string;
+};
+
+type FisioOption = {
+  id: string;
+  nombre: string;
+  iniciales: string;
+};
+
+// ── MOCK DATA ──────────────────────────────────────────────────────────────
+const diasSemana = [
+  { label: "Lun", fecha: "23 Mar", dayIndex: 0, isoDate: "2026-03-23" },
+  { label: "Mar", fecha: "24 Mar", dayIndex: 1, isoDate: "2026-03-24" },
+  { label: "Mié", fecha: "25 Mar", dayIndex: 2, isoDate: "2026-03-25" },
+  { label: "Jue", fecha: "26 Mar", dayIndex: 3, isoDate: "2026-03-26" },
+  { label: "Vie", fecha: "27 Mar", dayIndex: 4, isoDate: "2026-03-27" },
+  { label: "Sáb", fecha: "28 Mar", dayIndex: 5, isoDate: "2026-03-28" },
+];
+
 const mockCitas: Cita[] = [
-  // Lunes 23
   { id: "1", paciente: "Fernanda Castillo", initials: "FC", motivo: "Fisioterapia — Lumbalgia", hora: "09:00", duracion: 60, estado: "confirmada", dayIndex: 0, sesion: "6/10", sala: "Sala A" },
   { id: "2", paciente: "Diego Ochoa", initials: "DO", motivo: "Masaje Terapéutico", hora: "11:00", duracion: 45, estado: "confirmada", dayIndex: 0, sesion: "3/8", sala: "Sala B" },
   { id: "3", paciente: "Ana Sofía Morales", initials: "AM", motivo: "Tratamiento Facial", hora: "13:30", duracion: 60, estado: "confirmada", dayIndex: 0, sesion: "2/6", sala: "Sala A" },
-  // Martes 24 (hoy)
   { id: "4", paciente: "María González Ríos", initials: "MG", motivo: "Rehab. Rodilla Post-Op", hora: "09:00", duracion: 60, estado: "completada", dayIndex: 1, sesion: "8/10", sala: "Sala A" },
   { id: "5", paciente: "Roberto Hernández", initials: "RH", motivo: "Fisioterapia — Cervicalgia", hora: "10:30", duracion: 60, estado: "en-curso", dayIndex: 1, sesion: "3/5", sala: "Sala B" },
   { id: "6", paciente: "Valeria Soto Pérez", initials: "VS", motivo: "Drenaje Linfático", hora: "12:00", duracion: 45, estado: "confirmada", dayIndex: 1, sesion: "1/8", sala: "Sala A" },
   { id: "7", paciente: "Jorge Ramírez Luna", initials: "JR", motivo: "Suelo Pélvico", hora: "13:00", duracion: 45, estado: "pendiente", dayIndex: 1, sesion: "5/5", sala: "Sala B" },
   { id: "8", paciente: "Ana Sofía Morales", initials: "AM", motivo: "Tratamiento Corporal", hora: "15:30", duracion: 60, estado: "confirmada", dayIndex: 1, sesion: "2/6", sala: "Sala A" },
   { id: "9", paciente: "Luis Alberto Torres", initials: "LT", motivo: "Fisioterapia — Esguince", hora: "17:00", duracion: 45, estado: "cancelada", dayIndex: 1, sesion: "4/5", sala: "Sala B" },
-  // Miércoles 25
   { id: "10", paciente: "Fernanda Castillo", initials: "FC", motivo: "Fisioterapia — Lumbalgia", hora: "09:30", duracion: 60, estado: "confirmada", dayIndex: 2, sesion: "7/10", sala: "Sala A" },
   { id: "11", paciente: "Diego Ochoa", initials: "DO", motivo: "Masaje Descontracturante", hora: "11:30", duracion: 45, estado: "confirmada", dayIndex: 2, sesion: "4/8", sala: "Sala B" },
-  // Jueves 26
   { id: "12", paciente: "Roberto Hernández", initials: "RH", motivo: "Fisioterapia — Cervicalgia", hora: "10:00", duracion: 60, estado: "confirmada", dayIndex: 3, sesion: "4/5", sala: "Sala A" },
   { id: "13", paciente: "Valeria Soto Pérez", initials: "VS", motivo: "Drenaje Linfático", hora: "12:00", duracion: 45, estado: "pendiente", dayIndex: 3, sesion: "2/8", sala: "Sala B" },
   { id: "14", paciente: "María González Ríos", initials: "MG", motivo: "Rehab. Rodilla Post-Op", hora: "14:00", duracion: 60, estado: "confirmada", dayIndex: 3, sesion: "9/10", sala: "Sala A" },
-  // Viernes 27
   { id: "15", paciente: "Ana Sofía Morales", initials: "AM", motivo: "Tratamiento Facial", hora: "09:00", duracion: 60, estado: "confirmada", dayIndex: 4, sesion: "3/6", sala: "Sala A" },
   { id: "16", paciente: "Jorge Ramírez Luna", initials: "JR", motivo: "Suelo Pélvico", hora: "11:00", duracion: 45, estado: "pendiente", dayIndex: 4, sesion: "1/5", sala: "Sala B" },
-  // Sábado 28
   { id: "17", paciente: "Diego Ochoa", initials: "DO", motivo: "Masaje Relajante", hora: "10:00", duracion: 45, estado: "confirmada", dayIndex: 5, sesion: "5/8", sala: "Sala A" },
 ];
 
@@ -82,13 +102,94 @@ const estadoConfig: Record<string, { label: string; bg: string; border: string; 
   completada:  { label: "Completada",  bg: "bg-[#1e2d3a]/5",   border: "border-[#1e2d3a]/15", text: "text-[#1e2d3a]/50" },
 };
 
-const HOY_INDEX = 1; // Martes 24 es "hoy"
+const TIPOS_SESION = [
+  "Fisioterapia",
+  "Masaje Terapéutico",
+  "Masaje Relajante",
+  "Masaje Descontracturante",
+  "Drenaje Linfático",
+  "Tratamiento Facial",
+  "Tratamiento Corporal",
+  "Suelo Pélvico",
+  "Rehabilitación",
+  "Epilación",
+];
 
-export default function AgendaClient({ initialCitas }: { initialCitas?: Cita[] }) {
+const HORAS_DISPONIBLES = [
+  "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
+  "12:00", "12:30", "13:00", "13:30", "14:00", "14:30",
+  "15:00", "15:30", "16:00", "16:30", "17:00", "17:30",
+  "18:00", "18:30", "19:00",
+];
+
+const HOY_INDEX = 1;
+
+// ── COMPONENT ──────────────────────────────────────────────────────────────
+export default function AgendaClient({
+  initialCitas,
+  pacientes,
+  fisioterapeutas,
+}: {
+  initialCitas?: Cita[];
+  pacientes?: PacienteOption[];
+  fisioterapeutas?: FisioOption[];
+}) {
   const citasData = initialCitas && initialCitas.length > 0 ? initialCitas : mockCitas;
 
   const [diaActivo, setDiaActivo] = useState(HOY_INDEX);
   const [citaSeleccionada, setCitaSeleccionada] = useState<Cita | null>(null);
+  const [modalNuevaCita, setModalNuevaCita] = useState(false);
+
+  // ── Form state for nueva cita ──
+  const [busquedaPaciente, setBusquedaPaciente] = useState("");
+  const [pacienteSeleccionado, setPacienteSeleccionado] = useState<PacienteOption | null>(null);
+  const [horaInicio, setHoraInicio] = useState("09:00");
+  const [duracion, setDuracion] = useState("45");
+  const [tipoSesion, setTipoSesion] = useState("");
+  const [fisioId, setFisioId] = useState("");
+  const [sala, setSala] = useState("");
+  const [fechaCita, setFechaCita] = useState(diasSemana[diaActivo]?.isoDate || "2026-03-24");
+
+  // Server action state
+  const [formState, formAction, isPending] = useActionState(crearCita, null);
+  const [statusPending, startStatusTransition] = useTransition();
+
+  // When day changes, update the form date
+  useEffect(() => {
+    if (diasSemana[diaActivo]) {
+      setFechaCita(diasSemana[diaActivo].isoDate);
+    }
+  }, [diaActivo]);
+
+  // When form succeeds, close modal and reset
+  useEffect(() => {
+    if (formState?.success) {
+      setModalNuevaCita(false);
+      resetForm();
+    }
+  }, [formState]);
+
+  function resetForm() {
+    setBusquedaPaciente("");
+    setPacienteSeleccionado(null);
+    setHoraInicio("09:00");
+    setDuracion("45");
+    setTipoSesion("");
+    setFisioId("");
+    setSala("");
+  }
+
+  function openNuevaCita() {
+    resetForm();
+    setFechaCita(diasSemana[diaActivo]?.isoDate || "2026-03-24");
+    setModalNuevaCita(true);
+  }
+
+  // Filter pacientes for search
+  const pacientesFiltrados = (pacientes || []).filter((p) =>
+    p.nombre.toLowerCase().includes(busquedaPaciente.toLowerCase()) ||
+    p.telefono.includes(busquedaPaciente)
+  );
 
   const citasDia = citasData
     .filter((c) => c.dayIndex === diaActivo)
@@ -98,6 +199,13 @@ export default function AgendaClient({ initialCitas }: { initialCitas?: Cita[] }
   const confirmadas = citasData.filter(c => c.estado === "confirmada").length;
   const completadas = citasData.filter(c => c.estado === "completada").length;
   const canceladas = citasData.filter(c => c.estado === "cancelada").length;
+
+  function handleStatusChange(citaId: string, estado: "completada" | "cancelada") {
+    startStatusTransition(async () => {
+      await actualizarEstadoCita(citaId, estado);
+      setCitaSeleccionada(null);
+    });
+  }
 
   return (
     <div className="space-y-5">
@@ -118,7 +226,10 @@ export default function AgendaClient({ initialCitas }: { initialCitas?: Cita[] }
           <Button variant="outline" size="icon" className="border-[#a8cfe0] hover:bg-[#e4ecf2] cursor-pointer h-9 w-9">
             <ChevronRight className="h-4 w-4 text-[#1e2d3a]" />
           </Button>
-          <Button className="bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white cursor-pointer transition-all duration-200 text-sm h-9">
+          <Button
+            onClick={openNuevaCita}
+            className="bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white cursor-pointer transition-all duration-200 text-sm h-9"
+          >
             <Plus className="mr-1.5 h-4 w-4" />
             Nueva Cita
           </Button>
@@ -141,7 +252,7 @@ export default function AgendaClient({ initialCitas }: { initialCitas?: Cita[] }
       </div>
 
       <div className="grid gap-4 lg:grid-cols-7">
-        {/* Selector días (columnas) */}
+        {/* Selector días */}
         <Card className="border-[#c8dce8] bg-white lg:col-span-2">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-bold text-[#1e2d3a]">Días de la Semana</CardTitle>
@@ -209,7 +320,10 @@ export default function AgendaClient({ initialCitas }: { initialCitas?: Cita[] }
               <div className="flex flex-col items-center justify-center py-16 text-center">
                 <CalendarDays className="h-10 w-10 text-[#1e2d3a]/20 mb-3" />
                 <p className="text-sm font-medium text-[#1e2d3a]/50">Sin citas este día</p>
-                <Button className="mt-4 bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white cursor-pointer text-xs h-8">
+                <Button
+                  onClick={openNuevaCita}
+                  className="mt-4 bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white cursor-pointer text-xs h-8"
+                >
                   <Plus className="mr-1.5 h-3.5 w-3.5" />
                   Agendar Cita
                 </Button>
@@ -226,29 +340,20 @@ export default function AgendaClient({ initialCitas }: { initialCitas?: Cita[] }
                         cita.estado === "cancelada" ? "opacity-40" : ""
                       }`}
                     >
-                      {/* Hora */}
                       <div className="flex flex-col items-center w-10 shrink-0">
                         <span className="text-xs font-bold text-[#1e2d3a]">{cita.hora}</span>
                         <span className="text-[10px] text-[#1e2d3a]/30">{cita.duracion}min</span>
                       </div>
-
-                      {/* Indicador estado */}
                       <div className={`w-1 h-10 rounded-full shrink-0 ${conf.bg.replace("/10","").replace("/5","").replace("/15","")} border-l-4 ${conf.border}`} />
-
-                      {/* Avatar */}
                       <Avatar className="h-9 w-9 border border-[#c8dce8] shrink-0">
                         <AvatarFallback className="bg-[#4a7fa5]/10 text-[#4a7fa5] text-xs font-bold">
                           {cita.initials}
                         </AvatarFallback>
                       </Avatar>
-
-                      {/* Info */}
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-[#1e2d3a] truncate">{cita.paciente}</p>
                         <p className="text-xs text-[#1e2d3a]/50 truncate">{cita.motivo} · {cita.sala}</p>
                       </div>
-
-                      {/* Estado + sesión */}
                       <div className="flex flex-col items-end gap-1 shrink-0">
                         <Badge variant="outline" className={`text-[10px] px-1.5 py-0 h-5 ${conf.bg} ${conf.text} ${conf.border}`}>
                           {conf.label}
@@ -264,7 +369,7 @@ export default function AgendaClient({ initialCitas }: { initialCitas?: Cita[] }
         </Card>
       </div>
 
-      {/* Modal detalle cita */}
+      {/* ── MODAL: DETALLE CITA ── */}
       <Dialog open={!!citaSeleccionada} onOpenChange={() => setCitaSeleccionada(null)}>
         {citaSeleccionada && (
           <DialogContent className="max-w-sm border-[#c8dce8]">
@@ -314,21 +419,235 @@ export default function AgendaClient({ initialCitas }: { initialCitas?: Cita[] }
               </div>
 
               <div className="flex gap-2 pt-1">
-                <Button className="flex-1 bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white cursor-pointer transition-all duration-200 text-xs h-9">
-                  <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+                <Button
+                  onClick={() => handleStatusChange(citaSeleccionada.id, "completada")}
+                  disabled={statusPending || citaSeleccionada.estado === "completada"}
+                  className="flex-1 bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white cursor-pointer transition-all duration-200 text-xs h-9"
+                >
+                  {statusPending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />}
                   Completar
                 </Button>
                 <Button variant="outline" className="flex-1 border-[#a8cfe0] hover:bg-[#e4ecf2] cursor-pointer text-xs h-9">
                   <RefreshCw className="mr-1.5 h-3.5 w-3.5 text-[#4a7fa5]" />
                   Reagendar
                 </Button>
-                <Button variant="outline" className="border-[#d9534f]/20 text-[#d9534f] hover:bg-[#d9534f]/5 cursor-pointer text-xs h-9 px-2.5">
+                <Button
+                  onClick={() => handleStatusChange(citaSeleccionada.id, "cancelada")}
+                  disabled={statusPending || citaSeleccionada.estado === "cancelada"}
+                  variant="outline"
+                  className="border-[#d9534f]/20 text-[#d9534f] hover:bg-[#d9534f]/5 cursor-pointer text-xs h-9 px-2.5"
+                >
                   <XCircle className="h-3.5 w-3.5" />
                 </Button>
               </div>
             </div>
           </DialogContent>
         )}
+      </Dialog>
+
+      {/* ── MODAL: NUEVA CITA ── */}
+      <Dialog open={modalNuevaCita} onOpenChange={setModalNuevaCita}>
+        <DialogContent className="max-w-md border-[#c8dce8]">
+          <DialogHeader>
+            <DialogTitle className="text-[#1e2d3a] font-bold">Agendar Nueva Cita</DialogTitle>
+            <DialogDescription className="text-[#1e2d3a]/50 text-xs">
+              {diasSemana[diaActivo].label} {diasSemana[diaActivo].fecha} — Completa los datos para agendar
+            </DialogDescription>
+          </DialogHeader>
+
+          <form action={formAction} className="space-y-4 pt-1">
+            {/* Hidden fields */}
+            <input type="hidden" name="fecha" value={fechaCita} />
+            <input type="hidden" name="pacienteId" value={pacienteSeleccionado?.id || ""} />
+
+            {/* Paciente selector */}
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-[#1e2d3a]/70">Paciente *</Label>
+              {pacienteSeleccionado ? (
+                <div className="flex items-center gap-3 bg-[#e4ecf2]/50 rounded-lg p-3">
+                  <Avatar className="h-9 w-9 border border-[#a8cfe0]">
+                    <AvatarFallback className="bg-[#4a7fa5]/15 text-[#4a7fa5] text-xs font-bold">
+                      {pacienteSeleccionado.iniciales}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-[#1e2d3a] truncate">{pacienteSeleccionado.nombre}</p>
+                    <p className="text-xs text-[#1e2d3a]/40">{pacienteSeleccionado.telefono}</p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => { setPacienteSeleccionado(null); setBusquedaPaciente(""); }}
+                    className="text-xs border-[#a8cfe0] cursor-pointer h-7 px-2"
+                  >
+                    Cambiar
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#1e2d3a]/40" />
+                    <Input
+                      placeholder="Buscar por nombre o teléfono..."
+                      value={busquedaPaciente}
+                      onChange={(e) => setBusquedaPaciente(e.target.value)}
+                      className="pl-9 h-9 text-sm border-[#a8cfe0] focus:border-[#4a7fa5]"
+                    />
+                  </div>
+                  {busquedaPaciente.length >= 2 && (
+                    <div className="border border-[#c8dce8] rounded-lg max-h-36 overflow-y-auto">
+                      {pacientesFiltrados.length === 0 ? (
+                        <p className="text-xs text-[#1e2d3a]/40 p-3 text-center">No se encontraron pacientes</p>
+                      ) : (
+                        pacientesFiltrados.slice(0, 5).map((p) => (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => { setPacienteSeleccionado(p); setBusquedaPaciente(""); }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-[#e4ecf2]/50 transition-colors cursor-pointer text-left"
+                          >
+                            <Avatar className="h-7 w-7 border border-[#c8dce8]">
+                              <AvatarFallback className="bg-[#4a7fa5]/10 text-[#4a7fa5] text-[10px] font-bold">
+                                {p.iniciales}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0">
+                              <p className="text-xs font-semibold text-[#1e2d3a] truncate">{p.nombre}</p>
+                              <p className="text-[10px] text-[#1e2d3a]/40">{p.telefono}</p>
+                            </div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Hora + Duración */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-[#1e2d3a]/70">Hora *</Label>
+                <Select value={horaInicio} onValueChange={setHoraInicio} name="horaInicio">
+                  <SelectTrigger className="h-9 text-sm border-[#a8cfe0] cursor-pointer">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {HORAS_DISPONIBLES.map((h) => (
+                      <SelectItem key={h} value={h} className="cursor-pointer">{h}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <input type="hidden" name="horaInicio" value={horaInicio} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-[#1e2d3a]/70">Duración</Label>
+                <Select value={duracion} onValueChange={setDuracion} name="duracion">
+                  <SelectTrigger className="h-9 text-sm border-[#a8cfe0] cursor-pointer">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="30" className="cursor-pointer">30 min</SelectItem>
+                    <SelectItem value="45" className="cursor-pointer">45 min</SelectItem>
+                    <SelectItem value="60" className="cursor-pointer">60 min</SelectItem>
+                    <SelectItem value="90" className="cursor-pointer">90 min</SelectItem>
+                  </SelectContent>
+                </Select>
+                <input type="hidden" name="duracion" value={duracion} />
+              </div>
+            </div>
+
+            {/* Tipo de sesión */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-[#1e2d3a]/70">Tipo de Sesión</Label>
+              <Select value={tipoSesion} onValueChange={setTipoSesion}>
+                <SelectTrigger className="h-9 text-sm border-[#a8cfe0] cursor-pointer">
+                  <SelectValue placeholder="Seleccionar tipo..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {TIPOS_SESION.map((t) => (
+                    <SelectItem key={t} value={t} className="cursor-pointer">{t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <input type="hidden" name="tipoSesion" value={tipoSesion} />
+            </div>
+
+            {/* Fisioterapeuta + Sala */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-[#1e2d3a]/70">Fisioterapeuta</Label>
+                {fisioterapeutas && fisioterapeutas.length > 0 ? (
+                  <>
+                    <Select value={fisioId} onValueChange={setFisioId}>
+                      <SelectTrigger className="h-9 text-sm border-[#a8cfe0] cursor-pointer">
+                        <SelectValue placeholder="Asignar..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {fisioterapeutas.map((f) => (
+                          <SelectItem key={f.id} value={f.id} className="cursor-pointer">{f.nombre}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <input type="hidden" name="fisioterapeutaId" value={fisioId} />
+                  </>
+                ) : (
+                  <p className="text-xs text-[#1e2d3a]/40 pt-2">Asignación automática</p>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-[#1e2d3a]/70">Sala</Label>
+                <Select value={sala} onValueChange={setSala}>
+                  <SelectTrigger className="h-9 text-sm border-[#a8cfe0] cursor-pointer">
+                    <SelectValue placeholder="Sala..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Sala A" className="cursor-pointer">Sala A</SelectItem>
+                    <SelectItem value="Sala B" className="cursor-pointer">Sala B</SelectItem>
+                  </SelectContent>
+                </Select>
+                <input type="hidden" name="sala" value={sala} />
+              </div>
+            </div>
+
+            {/* Error message */}
+            {formState?.error && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <p className="text-xs text-red-600 font-medium">{formState.error}</p>
+              </div>
+            )}
+
+            {/* Success message */}
+            {formState?.success && (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+                <p className="text-xs text-emerald-600 font-medium">Cita agendada correctamente</p>
+              </div>
+            )}
+
+            <DialogFooter className="gap-2 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setModalNuevaCita(false)}
+                className="border-[#a8cfe0] cursor-pointer text-xs"
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                disabled={isPending || !pacienteSeleccionado}
+                className="bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white cursor-pointer transition-all duration-200 text-xs"
+              >
+                {isPending ? (
+                  <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Agendando...</>
+                ) : (
+                  <><CalendarDays className="mr-1.5 h-3.5 w-3.5" /> Agendar Cita</>
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
       </Dialog>
     </div>
   );

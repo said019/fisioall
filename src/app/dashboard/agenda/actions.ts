@@ -138,3 +138,21 @@ export async function getFisioterapeutas() {
     rol: f.rol,
   }));
 }
+
+// ─── GET PACIENTES LITE (for selectors) ──────────────────────────────────
+export async function getPacientesLite() {
+  const { tenantId } = await requireAuth();
+
+  const pacientes = await prisma.paciente.findMany({
+    where: { tenantId, activo: true },
+    select: { id: true, nombre: true, apellido: true, telefono: true },
+    orderBy: { nombre: "asc" },
+  });
+
+  return pacientes.map((p) => ({
+    id: p.id,
+    nombre: `${p.nombre} ${p.apellido}`,
+    iniciales: `${p.nombre[0]}${p.apellido[0]}`.toUpperCase(),
+    telefono: p.telefono,
+  }));
+}
