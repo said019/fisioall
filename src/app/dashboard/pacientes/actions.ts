@@ -9,6 +9,8 @@ import { revalidatePath } from "next/cache";
 export async function getPacientes() {
   const { tenantId } = await requireAuth();
 
+  const now = new Date();
+
   const pacientes = await prisma.paciente.findMany({
     where: { tenantId, activo: true },
     include: {
@@ -22,6 +24,13 @@ export async function getPacientes() {
         include: { paquete: true },
         take: 1,
       },
+      citas: {
+        orderBy: { fechaHoraInicio: "desc" },
+        take: 20,
+        include: {
+          fisioterapeuta: { select: { nombre: true, apellido: true } },
+        },
+      },
       fisioterapeuta: {
         select: { nombre: true, apellido: true },
       },
@@ -29,32 +38,55 @@ export async function getPacientes() {
     orderBy: { updatedAt: "desc" },
   });
 
-  return pacientes.map((p) => ({
-    id: p.id,
-    nombre: `${p.nombre} ${p.apellido}`,
-    iniciales: `${p.nombre[0]}${p.apellido[0]}`.toUpperCase(),
-    email: p.email,
-    telefono: p.telefono,
-    genero: p.genero,
-    fechaNacimiento: p.fechaNacimiento?.toISOString() ?? null,
-    ocupacion: p.ocupacion,
-    activo: p.activo,
-    totalSesiones: p.totalSesiones ?? 0,
-    diagnostico: p.diagnosticos[0]?.diagnosticoPrincipal ?? null,
-    cie10: p.diagnosticos[0]?.diagnosticoCie10 ?? null,
-    membresia: p.membresias[0]
-      ? {
-          nombre: p.membresias[0].paquete.nombre,
-          sesionesUsadas: p.membresias[0].sesionesUsadas ?? 0,
-          sesionesTotales: p.membresias[0].sesionesTotal,
-          estado: p.membresias[0].estado,
-        }
-      : null,
-    fisioterapeuta: p.fisioterapeuta
-      ? `${p.fisioterapeuta.nombre} ${p.fisioterapeuta.apellido}`
-      : null,
-    createdAt: p.createdAt?.toISOString() ?? null,
-  }));
+  const COLORES = ["bg-[#4a7fa5]", "bg-violet-500", "bg-orange-500", "bg-emerald-500", "bg-pink-500", "bg-amber-500", "bg-cyan-500"];
+
+  return pacientes.map((p, idx) => {
+    const mem = p.membresias[0];
+    const sesionesTotal = mem?.sesionesTotal ?? p.totalSesiones ?? 0;
+    const sesionesUsadas = mem?.sesionesUsadas ?? 0;
+    const sesionesRestantes = Math.max(0, sesionesTotal - sesionesUsadas);
+
+    const ultimaCitaObj = p.citas.find((c) => c.fechaHoraInicio <= now && c.estado !== "cancelada");
+    const proximaCitaObj = p.citas.find((c) => c.fechaHoraInicio > now && c.estado !== "cancelada");
+
+    const formatFecha = (d: Date) =>
+      d.toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" });
+
+    let edad: number | null = null;
+    if (p.fechaNacimiento) {
+      edad = Math.floor((now.getTime() - p.fechaNacimiento.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+    }
+
+    return {
+      id: p.id,
+      nombre: p.nombre,
+      apellido: p.apellido,
+      iniciales: `${p.nombre[0]}${p.apellido[0]}`.toUpperCase(),
+      email: p.email ?? "",
+      telefono: p.telefono ?? "",
+      edad,
+      diagnostico: p.diagnosticos[0]?.diagnosticoPrincipal ?? null,
+      cie10: p.diagnosticos[0]?.diagnosticoCie10 ?? null,
+      sesionesRestantes,
+      sesionesTotal,
+      ultimaCita: ultimaCitaObj ? formatFecha(ultimaCitaObj.fechaHoraInicio) : null,
+      proximaCita: proximaCitaObj ? formatFecha(proximaCitaObj.fechaHoraInicio) : null,
+      dolor: null as number | null,
+      activo: p.activo ?? true,
+      color: COLORES[idx % COLORES.length],
+      ciudad: p.ocupacion ?? null,
+      totalSesiones: p.totalSesiones ?? 0,
+      citas: p.citas.map((c) => ({
+        id: c.id,
+        tipoSesion: c.tipoSesion ?? "Sesión",
+        fecha: formatFecha(c.fechaHoraInicio),
+        hora: c.fechaHoraInicio.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" }),
+        estado: c.estado ?? "agendada",
+        fisioterapeuta: `${c.fisioterapeuta.nombre} ${c.fisioterapeuta.apellido}`,
+        esFutura: c.fechaHoraInicio > now,
+      })),
+    };
+  });
 }
 
 // ─── FETCH SINGLE PATIENT ────────────────────────────────────────────────────

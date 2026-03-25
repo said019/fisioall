@@ -103,8 +103,8 @@ const accesosRapidos = [
   { label: "Nuevo Paciente", href: "/dashboard/pacientes", icono: UserPlus },
   { label: "Nota SOAP", href: "/dashboard/pacientes", icono: ClipboardList },
   { label: "Ver Agenda", href: "/dashboard/agenda", icono: CalendarCheck },
-  { label: "Membresías", href: "/dashboard/membresias", icono: CreditCard },
-  { label: "Ejercicios", href: "/dashboard/pacientes", icono: Dumbbell },
+  { label: "Servicios", href: "/dashboard/servicios", icono: CreditCard },
+  { label: "Tarjetas", href: "/dashboard/tarjetas", icono: Dumbbell },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -426,7 +426,7 @@ export default function DashboardClient({ data }: { data?: DashboardData }) {
               );
             })}
 
-            <Link href="/dashboard/membresias">
+            <Link href="/dashboard/servicios">
               <Button
                 variant="outline"
                 size="sm"

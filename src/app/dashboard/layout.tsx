@@ -44,10 +44,10 @@ const navSections = [
   {
     title: "Negocio",
     items: [
-      { href: "/dashboard/membresias", icon: Sparkles, label: "Servicios", exact: false },
+      { href: "/dashboard/servicios", icon: Sparkles, label: "Servicios", exact: false },
       { href: "/dashboard/pagos", icon: Wallet, label: "Pagos", exact: false },
       {
-        href: "/dashboard/ejercicios",
+        href: "/dashboard/tarjetas",
         icon: Award,
         label: "Tarjetas de Lealtad",
         exact: false,
@@ -200,8 +200,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     "/dashboard/pacientes": "Pacientes",
     "/dashboard/body-map": "Ficha de Evolución",
     "/dashboard/expediente": "Expediente Clínico",
-    "/dashboard/ejercicios": "Tarjetas de Lealtad",
-    "/dashboard/membresias": "Servicios",
+    "/dashboard/tarjetas": "Tarjetas de Lealtad",
+    "/dashboard/servicios": "Servicios",
     "/dashboard/pagos": "Pagos",
     "/dashboard/encuestas": "Encuestas NPS",
     "/dashboard/notificaciones": "Notificaciones",

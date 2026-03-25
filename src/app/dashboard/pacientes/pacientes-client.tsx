@@ -16,7 +16,6 @@ import {
   CreditCard,
   Phone,
   Mail,
-  CheckCircle2,
   Activity,
   TrendingUp,
   MapPin,
@@ -62,199 +61,50 @@ const BodyMapComparador = dynamic(() => import("@/components/BodyMapComparador")
 // ─────────────────────────────────────────────────────────────────────────────
 // TIPOS
 // ─────────────────────────────────────────────────────────────────────────────
+interface CitaResumen {
+  id: string;
+  tipoSesion: string;
+  fecha: string;
+  hora: string;
+  estado: string;
+  fisioterapeuta: string;
+  esFutura: boolean;
+}
+
 interface Paciente {
   id: string;
   nombre: string;
   apellido: string;
   iniciales: string;
-  email: string;
+  email: string | null;
   telefono: string;
-  edad: number;
-  diagnostico: string;
-  cie10: string;
+  edad: number | null;
+  diagnostico: string | null;
+  cie10: string | null;
   sesionesRestantes: number;
   sesionesTotal: number;
-  ultimaCita: string;
-  proximaCita: string;
-  dolor: number;
+  ultimaCita: string | null;
+  proximaCita: string | null;
+  dolor: number | null;
   activo: boolean;
   color: string;
-  ciudad: string;
+  ciudad: string | null;
+  totalSesiones?: number;
+  citas?: CitaResumen[];
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MOCK DATA
+// EMPTY STATE HELPER
 // ─────────────────────────────────────────────────────────────────────────────
-const mockPacientes: Paciente[] = [
-  {
-    id: "1",
-    nombre: "Ana",
-    apellido: "Flores Torres",
-    iniciales: "AF",
-    email: "ana.flores@gmail.com",
-    telefono: "+52 55 1234 5678",
-    edad: 34,
-    diagnostico: "Síndrome de banda iliotibial derecha",
-    cie10: "M76.3",
-    sesionesRestantes: 2,
-    sesionesTotal: 10,
-    ultimaCita: "24 feb 2026",
-    proximaCita: "26 feb 2026",
-    dolor: 4,
-    activo: true,
-    color: "bg-[#e4ecf2]0",
-    ciudad: "CDMX",
-  },
-  {
-    id: "2",
-    nombre: "Carlos",
-    apellido: "Mendoza López",
-    iniciales: "CM",
-    email: "cmendoza@outlook.com",
-    telefono: "+52 81 9876 5432",
-    edad: 45,
-    diagnostico: "Hernia discal C4-C5 con radiculopatía",
-    cie10: "M50.1",
-    sesionesRestantes: 5,
-    sesionesTotal: 12,
-    ultimaCita: "24 feb 2026",
-    proximaCita: "27 feb 2026",
-    dolor: 3,
-    activo: true,
-    color: "bg-violet-500",
-    ciudad: "Monterrey",
-  },
-  {
-    id: "3",
-    nombre: "Patricia",
-    apellido: "Morales Vega",
-    iniciales: "PM",
-    email: "pmorales@gmail.com",
-    telefono: "+52 33 5555 0101",
-    edad: 62,
-    diagnostico: "Gonartrosis bilateral grado III",
-    cie10: "M17.1",
-    sesionesRestantes: 1,
-    sesionesTotal: 8,
-    ultimaCita: "22 feb 2026",
-    proximaCita: "25 feb 2026",
-    dolor: 6,
-    activo: true,
-    color: "bg-orange-500",
-    ciudad: "Guadalajara",
-  },
-  {
-    id: "4",
-    nombre: "Roberto",
-    apellido: "Sánchez Vega",
-    iniciales: "RS",
-    email: "rsanchez@hotmail.com",
-    telefono: "+52 55 6677 8899",
-    edad: 28,
-    diagnostico: "Esguince de tobillo grado II",
-    cie10: "S93.4",
-    sesionesRestantes: 6,
-    sesionesTotal: 6,
-    ultimaCita: "21 feb 2026",
-    proximaCita: "24 feb 2026",
-    dolor: 2,
-    activo: true,
-    color: "bg-emerald-500",
-    ciudad: "CDMX",
-  },
-  {
-    id: "5",
-    nombre: "Daniela",
-    apellido: "Martínez Cruz",
-    iniciales: "DM",
-    email: "dani.mtz@gmail.com",
-    telefono: "+52 55 2233 4455",
-    edad: 31,
-    diagnostico: "Tendinopatía del manguito rotador izquierdo",
-    cie10: "M75.1",
-    sesionesRestantes: 8,
-    sesionesTotal: 10,
-    ultimaCita: "20 feb 2026",
-    proximaCita: "25 feb 2026",
-    dolor: 5,
-    activo: true,
-    color: "bg-pink-500",
-    ciudad: "Puebla",
-  },
-  {
-    id: "6",
-    nombre: "José",
-    apellido: "Hernández Paz",
-    iniciales: "JH",
-    email: "jose.hz@gmail.com",
-    telefono: "+52 33 9988 7766",
-    edad: 52,
-    diagnostico: "Lumbalgia crónica con espasmo muscular",
-    cie10: "M54.5",
-    sesionesRestantes: 3,
-    sesionesTotal: 12,
-    ultimaCita: "19 feb 2026",
-    proximaCita: "26 feb 2026",
-    dolor: 5,
-    activo: true,
-    color: "bg-amber-500",
-    ciudad: "Guadalajara",
-  },
-];
-
-const NOTAS_SOAP = [
-  {
-    sesion: 7,
-    fecha: "24 feb 2026",
-    eva: 4,
-    badge: "Progreso positivo",
-    S: "Paciente refiere dolor moderado en cara lateral de rodilla derecha al subir escaleras. Refiere haber corrido 3 km el fin de semana sin recomendación.",
-    O: "EVA 4/10. Tensión palpable en TFL. Prueba de Ober positiva. ROM completo. Sin edema.",
-    A: "Síndrome de banda iliotibial en fase subaguda. Progreso favorable respecto sesión anterior (EVA 6).",
-    P: "Liberación miofascial TFL y glúteo medio. Estiramientos activos. Electroterapia TENS 20 min. Ejercicios excéntricos cadena cinética cerrada. Próxima cita 26-feb.",
-  },
-  {
-    sesion: 6,
-    fecha: "20 feb 2026",
-    eva: 6,
-    badge: "Seguimiento",
-    S: "Dolor en cara lateral de rodilla al correr más de 2 km. Mejoría leve comparado con sesión previa.",
-    O: "EVA 6/10. Test de compresión TFL positivo. Leve restricción en rotación interna de cadera.",
-    A: "Síndrome iliotibial bilateral, mayor afectación derecha. Adherencias en TFL.",
-    P: "Masoterapia profunda. Estiramientos asistidos. Indicaciones de reposo deportivo parcial.",
-  },
-];
-
-const EJERCICIOS = [
-  { id: "1", nombre: "Puente de glúteo unilateral", tipo: "Fuerza", series: 3, reps: 15, completado: true },
-  { id: "2", nombre: "Estiramiento de TFL en decúbito", tipo: "Flexibilidad", series: 2, reps: 30, completado: true },
-  { id: "3", nombre: "Sentadilla monopodal excéntrica", tipo: "Excéntrico", series: 3, reps: 10, completado: false },
-];
-
-const PAGOS_PACIENTE = [
-  { id: "P-201", fecha: "10 feb 2026", concepto: "Paquete 10 sesiones", monto: 4500, metodo: "Tarjeta débito", estado: "pagado" },
-  { id: "P-145", fecha: "12 ene 2026", concepto: "Evaluación inicial", monto: 600, metodo: "Efectivo", estado: "pagado" },
-];
-
-const DOLOR_HISTORIAL = [7, 6, 6, 5, 5, 6, 4];
-
-// ─────────────────────────────────────────────────────────────────────────────
-// HELPER: Dolor SVG
-// ─────────────────────────────────────────────────────────────────────────────
-function DolorMiniSVG({ data }: { data: number[] }) {
-  const W = 120;
-  const H = 32;
-  const max = 10;
-  const stepX = W / (data.length - 1);
-  const pts = data.map((v, i) => ({ x: Math.round(i * stepX), y: Math.round(H - (v / max) * H) }));
-  const pathD = pts.map((p, i) => (i === 0 ? `M${p.x} ${p.y}` : `L${p.x} ${p.y}`)).join(" ");
+function EmptyTabState({ icono: Icono, mensaje, submensaje }: { icono: React.ElementType; mensaje: string; submensaje: string }) {
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-8" aria-label="historial dolor">
-      <path d={pathD} stroke="#3fa87c" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-      {pts.map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r={i === pts.length - 1 ? 3.5 : 2.5} fill="#3fa87c" />
-      ))}
-    </svg>
+    <div className="flex flex-col items-center justify-center py-12 gap-2">
+      <div className="h-12 w-12 rounded-2xl bg-[#e4ecf2] flex items-center justify-center">
+        <Icono className="h-6 w-6 text-[#1e2d3a]/30" />
+      </div>
+      <p className="text-sm font-semibold text-[#1e2d3a]/50">{mensaje}</p>
+      <p className="text-xs text-[#1e2d3a]/30">{submensaje}</p>
+    </div>
   );
 }
 
@@ -318,7 +168,7 @@ function PerfilPaciente({ paciente, onClose }: { paciente: Paciente; onClose: ()
             </div>
             <div className="flex-1 min-w-0">
               <h2 className="text-lg font-bold text-[#1e2d3a]">{paciente.nombre} {paciente.apellido}</h2>
-              <p className="text-sm text-[#1e2d3a]/50">{paciente.edad} años · {paciente.ciudad}</p>
+              <p className="text-sm text-[#1e2d3a]/50">{paciente.edad ? `${paciente.edad} años` : ""}{paciente.ciudad ? ` · ${paciente.ciudad}` : ""}</p>
               <div className="flex items-center gap-3 mt-2">
                 <div className="flex items-center gap-2">
                   <p className={`text-xs font-bold ${alerta ? "text-orange-600" : "text-emerald-600"}`}>
@@ -327,7 +177,7 @@ function PerfilPaciente({ paciente, onClose }: { paciente: Paciente; onClose: ()
                   {alerta && <AlertCircle className="h-3.5 w-3.5 text-orange-500" />}
                 </div>
                 <Progress
-                  value={Math.round(((paciente.sesionesTotal - paciente.sesionesRestantes) / paciente.sesionesTotal) * 100)}
+                  value={paciente.sesionesTotal > 0 ? Math.round(((paciente.sesionesTotal - paciente.sesionesRestantes) / paciente.sesionesTotal) * 100) : 0}
                   className={`h-1.5 w-20 ${alerta ? "[&>div]:bg-orange-400" : "[&>div]:bg-[#4a7fa5]"}`}
                 />
               </div>
@@ -364,8 +214,8 @@ function PerfilPaciente({ paciente, onClose }: { paciente: Paciente; onClose: ()
                 {[
                   { icono: Phone, label: "Teléfono", valor: paciente.telefono },
                   { icono: Mail, label: "Email", valor: paciente.email },
-                  { icono: CalendarDays, label: "Última cita", valor: paciente.ultimaCita },
-                  { icono: CalendarDays, label: "Próxima cita", valor: paciente.proximaCita },
+                  { icono: CalendarDays, label: "Última cita", valor: paciente.ultimaCita || "—" },
+                  { icono: CalendarDays, label: "Próxima cita", valor: paciente.proximaCita || "—" },
                 ].map((item) => (
                   <div key={item.label} className="bg-[#f0f4f7] rounded-xl p-3 flex items-start gap-2.5">
                     <div className="h-7 w-7 rounded-lg bg-white flex items-center justify-center shrink-0">
@@ -415,184 +265,69 @@ function PerfilPaciente({ paciente, onClose }: { paciente: Paciente; onClose: ()
 
               {/* Diagnóstico */}
               <div className="bg-white border border-[#c8dce8] rounded-xl p-4 space-y-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="text-xs font-bold text-[#1e2d3a] uppercase tracking-wide">Diagnóstico</p>
-                    <p className="text-sm text-[#1e2d3a]/70 mt-1 leading-relaxed">{paciente.diagnostico}</p>
+                <p className="text-xs font-bold text-[#1e2d3a] uppercase tracking-wide">Diagnóstico</p>
+                {paciente.diagnostico ? (
+                  <>
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-sm text-[#1e2d3a]/70 leading-relaxed">{paciente.diagnostico}</p>
+                      {paciente.cie10 && (
+                        <Badge variant="outline" className="text-[10px] bg-[#e4ecf2] text-[#4a7fa5] border-[#a8cfe0] shrink-0">
+                          CIE-10: {paciente.cie10}
+                        </Badge>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-xs text-[#1e2d3a]/40">Sin diagnóstico registrado</p>
+                    <p className="text-[10px] text-[#1e2d3a]/30 mt-1">Se registrará en la evaluación inicial</p>
                   </div>
-                  <Badge variant="outline" className="text-[10px] bg-[#e4ecf2] text-[#4a7fa5] border-[#a8cfe0] shrink-0">
-                    CIE-10: {paciente.cie10}
-                  </Badge>
-                </div>
-
-                {/* Mini gráfica EVA */}
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <p className="text-[10px] font-bold text-[#1e2d3a]/50 uppercase">Evolución EVA</p>
-                    <span className="text-[10px] text-emerald-600 font-bold">
-                      {DOLOR_HISTORIAL[0]} → {DOLOR_HISTORIAL[DOLOR_HISTORIAL.length - 1]} / 10
-                    </span>
-                  </div>
-                  <DolorMiniSVG data={DOLOR_HISTORIAL} />
-                </div>
+                )}
               </div>
 
-              {/* Body map básico */}
-              <div className="bg-white border border-[#c8dce8] rounded-xl p-4">
-                <p className="text-xs font-bold text-[#1e2d3a] uppercase tracking-wide mb-3">Mapa Corporal</p>
-                <div className="flex items-center gap-6">
-                  <div className="relative">
-                    <svg viewBox="0 0 80 160" className="h-32 w-auto" aria-label="silueta corporal">
-                      {/* Cabeza */}
-                      <ellipse cx="40" cy="16" rx="13" ry="15" fill="#E0F7FA" stroke="#A5F3FC" strokeWidth="1.5" />
-                      {/* Torso */}
-                      <rect x="22" y="31" width="36" height="50" rx="6" fill="#E0F7FA" stroke="#A5F3FC" strokeWidth="1.5" />
-                      {/* Brazo izq */}
-                      <rect x="7" y="32" width="14" height="42" rx="6" fill="#E0F7FA" stroke="#A5F3FC" strokeWidth="1.5" />
-                      {/* Brazo der */}
-                      <rect x="59" y="32" width="14" height="42" rx="6" fill="#E0F7FA" stroke="#A5F3FC" strokeWidth="1.5" />
-                      {/* Pierna izq */}
-                      <rect x="23" y="82" width="15" height="72" rx="6" fill="#E0F7FA" stroke="#A5F3FC" strokeWidth="1.5" />
-                      {/* Pierna der */}
-                      <rect x="42" y="82" width="15" height="72" rx="6" fill="#E0F7FA" stroke="#A5F3FC" strokeWidth="1.5" />
-                      {/* Punto de lesión — rodilla derecha */}
-                      <circle cx="50" cy="116" r="5" fill="#F97316" opacity="0.85" />
-                      <circle cx="50" cy="116" r="8" fill="#F97316" opacity="0.25" />
-                    </svg>
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="h-3 w-3 rounded-full bg-orange-400" />
-                      <p className="text-xs text-[#1e2d3a]/60">Zona de lesión principal</p>
-                    </div>
-                    <p className="text-xs font-semibold text-[#1e2d3a]">Rodilla derecha</p>
-                    <p className="text-[10px] text-[#1e2d3a]/50 mt-1">Cara lateral — banda iliotibial</p>
-                    <div className="mt-3 bg-[#f0f4f7] rounded-lg p-2">
-                      <p className="text-[10px] text-[#1e2d3a]/40">Dolor actual (EVA)</p>
-                      <p className={`text-sm font-bold ${paciente.dolor <= 3 ? "text-emerald-600" : paciente.dolor <= 6 ? "text-amber-500" : "text-red-500"}`}>
-                        {paciente.dolor} / 10
-                      </p>
-                    </div>
+              {/* Citas del paciente */}
+              {paciente.citas && paciente.citas.length > 0 && (
+                <div className="bg-white border border-[#c8dce8] rounded-xl p-4 space-y-3">
+                  <p className="text-xs font-bold text-[#1e2d3a] uppercase tracking-wide">Citas</p>
+                  <div className="space-y-2">
+                    {paciente.citas.slice(0, 5).map((cita) => (
+                      <div key={cita.id} className="flex items-center gap-3 bg-[#f0f4f7]/50 rounded-lg p-2.5">
+                        <div className={`h-7 w-7 rounded-lg flex items-center justify-center shrink-0 ${cita.esFutura ? "bg-[#4a7fa5]/10" : "bg-[#e4ecf2]"}`}>
+                          <CalendarDays className={`h-3.5 w-3.5 ${cita.esFutura ? "text-[#4a7fa5]" : "text-[#1e2d3a]/30"}`} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-[#1e2d3a] truncate">{cita.tipoSesion}</p>
+                          <p className="text-[10px] text-[#1e2d3a]/50">{cita.fecha} · {cita.hora}</p>
+                        </div>
+                        <Badge variant="outline" className={`text-[10px] shrink-0 ${
+                          cita.estado === "completada" ? "bg-emerald-50 text-emerald-600 border-emerald-200"
+                          : cita.estado === "cancelada" ? "bg-red-50 text-red-500 border-red-200"
+                          : cita.esFutura ? "bg-[#4a7fa5]/10 text-[#4a7fa5] border-[#a8cfe0]"
+                          : "bg-[#e4ecf2] text-[#1e2d3a]/50 border-[#c8dce8]"
+                        }`}>
+                          {cita.estado === "completada" ? "Completada" : cita.estado === "cancelada" ? "Cancelada" : cita.esFutura ? "Agendada" : cita.estado}
+                        </Badge>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
 
           {/* ── TAB SOAP ── */}
           {tab === "soap" && (
-            <div className="space-y-4">
-              {NOTAS_SOAP.map((nota) => (
-                <div key={nota.sesion} className="border border-[#c8dce8] rounded-xl overflow-hidden">
-                  {/* Header nota */}
-                  <div className="bg-[#f0f4f7] px-4 py-3 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs font-bold text-[#1e2d3a]">Sesión #{nota.sesion}</span>
-                      <span className="text-[10px] text-[#1e2d3a]/50">{nota.fecha}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${nota.eva <= 3 ? "bg-emerald-100 text-emerald-700" : nota.eva <= 6 ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-600"}`}>
-                        EVA {nota.eva}/10
-                      </span>
-                      <Badge variant="outline" className="text-[10px] border-[#a8cfe0] text-[#4a7fa5] bg-white">
-                        {nota.badge}
-                      </Badge>
-                    </div>
-                  </div>
-                  {/* Body SOAP */}
-                  <div className="px-4 py-3 space-y-2.5">
-                    {[
-                      { key: "S", label: "Subjetivo", color: "border-cyan-400", bg: "bg-[#e4ecf2]", text: nota.S },
-                      { key: "O", label: "Objetivo", color: "border-violet-400", bg: "bg-violet-50", text: nota.O },
-                      { key: "A", label: "Análisis", color: "border-amber-400", bg: "bg-amber-50", text: nota.A },
-                      { key: "P", label: "Plan", color: "border-emerald-400", bg: "bg-emerald-50", text: nota.P },
-                    ].map((s) => (
-                      <div key={s.key} className={`border-l-4 ${s.color} ${s.bg} rounded-r-lg pl-3 pr-2 py-2`}>
-                        <p className="text-[10px] font-bold text-[#1e2d3a]/50 uppercase mb-0.5">{s.key} — {s.label}</p>
-                        <p className="text-xs text-[#1e2d3a]/80 leading-relaxed">{s.text}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
+            <EmptyTabState icono={ClipboardList} mensaje="Sin notas SOAP" submensaje="Las notas clínicas aparecerán aquí después de cada sesión" />
           )}
 
           {/* ── TAB EJERCICIOS ── */}
           {tab === "ejercicios" && (
-            <div className="space-y-3">
-              {EJERCICIOS.map((ej) => (
-                <div key={ej.id} className={`flex items-center gap-3 p-3.5 rounded-xl border transition-all duration-200 ${ej.completado ? "bg-emerald-50 border-emerald-200" : "bg-[#f0f4f7]/50 border-[#c8dce8]"}`}>
-                  <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${ej.completado ? "bg-emerald-100" : "bg-[#e4ecf2]"}`}>
-                    {ej.completado
-                      ? <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                      : <Dumbbell className="h-4 w-4 text-[#4a7fa5]" />
-                    }
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-[#1e2d3a]">{ej.nombre}</p>
-                    <p className="text-[10px] text-[#1e2d3a]/50">{ej.tipo}</p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-xs font-bold text-[#1e2d3a]">{ej.series}×{ej.reps}</p>
-                    <p className="text-[10px] text-[#1e2d3a]/40">series×{ej.tipo === "Flexibilidad" ? "seg" : "reps"}</p>
-                  </div>
-                </div>
-              ))}
-
-              {/* Progreso cumplimiento */}
-              <div className="bg-white border border-[#c8dce8] rounded-xl p-4 mt-2">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs font-bold text-[#1e2d3a]">Cumplimiento del plan</p>
-                  <span className="text-xs font-bold text-emerald-600">
-                    {EJERCICIOS.filter((e) => e.completado).length}/{EJERCICIOS.length} completados
-                  </span>
-                </div>
-                <Progress
-                  value={Math.round((EJERCICIOS.filter((e) => e.completado).length / EJERCICIOS.length) * 100)}
-                  className="h-2 [&>div]:bg-emerald-500"
-                />
-                <p className="text-[10px] text-[#1e2d3a]/40 mt-1.5">
-                  {Math.round((EJERCICIOS.filter((e) => e.completado).length / EJERCICIOS.length) * 100)}% de cumplimiento esta semana
-                </p>
-              </div>
-            </div>
+            <EmptyTabState icono={Dumbbell} mensaje="Sin ejercicios asignados" submensaje="Los ejercicios del plan terapéutico aparecerán aquí" />
           )}
 
           {/* ── TAB PAGOS ── */}
           {tab === "pagos" && (
-            <div className="space-y-3">
-              <div className="divide-y divide-[#c8dce8] border border-[#c8dce8] rounded-xl overflow-hidden">
-                {PAGOS_PACIENTE.map((p) => (
-                  <div key={p.id} className="flex items-center gap-3 p-3.5 bg-white hover:bg-[#f0f4f7]/50 transition-colors duration-200">
-                    <div className="h-8 w-8 rounded-lg bg-[#e4ecf2] flex items-center justify-center shrink-0">
-                      <CreditCard className="h-4 w-4 text-[#4a7fa5]" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-[#1e2d3a]">{p.concepto}</p>
-                      <p className="text-[10px] text-[#1e2d3a]/50">{p.fecha} · {p.metodo}</p>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-sm font-bold text-[#1e2d3a]">${p.monto.toLocaleString("es-MX")}</p>
-                      <Badge
-                        variant="outline"
-                        className={`text-[10px] ${p.estado === "pagado" ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-amber-50 text-amber-600 border-amber-200"}`}
-                      >
-                        {p.estado === "pagado" ? "Pagado" : "Pendiente"}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Total */}
-              <div className="bg-[#f0f4f7] rounded-xl p-3.5 flex items-center justify-between border border-[#c8dce8]">
-                <p className="text-xs font-semibold text-[#1e2d3a]">Total pagado</p>
-                <p className="text-base font-bold text-[#1e2d3a]">
-                  ${PAGOS_PACIENTE.filter((p) => p.estado === "pagado").reduce((a, p) => a + p.monto, 0).toLocaleString("es-MX")}
-                </p>
-              </div>
-            </div>
+            <EmptyTabState icono={CreditCard} mensaje="Sin pagos registrados" submensaje="Los pagos del paciente aparecerán aquí" />
           )}
 
           {/* ── TAB PROGRESO ── */}
@@ -614,7 +349,7 @@ function PerfilPaciente({ paciente, onClose }: { paciente: Paciente; onClose: ()
 // PAGE PRINCIPAL
 // ─────────────────────────────────────────────────────────────────────────────
 export default function PacientesClient({ initialPacientes }: { initialPacientes?: Paciente[] }) {
-  const pacientesSource = initialPacientes && initialPacientes.length > 0 ? initialPacientes : mockPacientes;
+  const pacientesSource = initialPacientes ?? [];
   const [busqueda, setBusqueda] = useState("");
   const [vistaActiva, setVistaActiva] = useState<"grid" | "lista">("grid");
   const [pacienteActivo, setPacienteActivo] = useState<Paciente | null>(null);
@@ -658,7 +393,7 @@ export default function PacientesClient({ initialPacientes }: { initialPacientes
 
   const pacientesFiltrados = pacientesSource.filter((p) => {
     const matchBusqueda =
-      `${p.nombre} ${p.apellido} ${p.diagnostico}`.toLowerCase().includes(busqueda.toLowerCase());
+      `${p.nombre} ${p.apellido} ${p.diagnostico ?? ""}`.toLowerCase().includes(busqueda.toLowerCase());
     const matchAlerta = filtroEstado === "todos" || p.sesionesRestantes <= 2;
     return matchBusqueda && matchAlerta;
   });
@@ -888,7 +623,7 @@ export default function PacientesClient({ initialPacientes }: { initialPacientes
           {pacientesFiltrados.map((paciente) => {
             const alerta = paciente.sesionesRestantes <= 2;
             const usadas = paciente.sesionesTotal - paciente.sesionesRestantes;
-            const pct = Math.round((usadas / paciente.sesionesTotal) * 100);
+            const pct = paciente.sesionesTotal > 0 ? Math.round((usadas / paciente.sesionesTotal) * 100) : 0;
 
             return (
               <Card
@@ -910,13 +645,13 @@ export default function PacientesClient({ initialPacientes }: { initialPacientes
                       <p className="text-sm font-bold text-[#1e2d3a] truncate">
                         {paciente.nombre} {paciente.apellido}
                       </p>
-                      <p className="text-[10px] text-[#1e2d3a]/50">{paciente.edad} años · {paciente.ciudad}</p>
+                      <p className="text-[10px] text-[#1e2d3a]/50">{paciente.edad ? `${paciente.edad} años` : ""}{paciente.edad && paciente.ciudad ? " · " : ""}{paciente.ciudad ?? ""}</p>
                     </div>
                     {alerta && <AlertCircle className="h-4 w-4 text-orange-500 shrink-0 mt-0.5" />}
                   </div>
 
                   {/* Diagnóstico */}
-                  <p className="text-xs text-[#1e2d3a]/60 leading-snug line-clamp-2">{paciente.diagnostico}</p>
+                  <p className="text-xs text-[#1e2d3a]/60 leading-snug line-clamp-2">{paciente.diagnostico ?? "Sin diagnóstico"}</p>
 
                   {/* Sesiones progress */}
                   <div className="space-y-1.5">
@@ -935,7 +670,7 @@ export default function PacientesClient({ initialPacientes }: { initialPacientes
                   {/* Footer */}
                   <div className="flex items-center justify-between pt-1 border-t border-current/5">
                     <p className="text-[10px] text-[#1e2d3a]/40">
-                      Próxima: <span className="font-medium text-[#1e2d3a]/60">{paciente.proximaCita}</span>
+                      Próxima: <span className="font-medium text-[#1e2d3a]/60">{paciente.proximaCita ?? "—"}</span>
                     </p>
                     <div className="flex items-center gap-0.5 text-xs font-medium text-[#4a7fa5] cursor-pointer hover:text-[#4a7fa5]/80 transition-colors">
                       Ver perfil
@@ -971,13 +706,13 @@ export default function PacientesClient({ initialPacientes }: { initialPacientes
                     <p className="text-sm font-semibold text-[#1e2d3a] truncate">
                       {paciente.nombre} {paciente.apellido}
                     </p>
-                    <p className="text-[10px] text-[#1e2d3a]/50 truncate">{paciente.diagnostico}</p>
+                    <p className="text-[10px] text-[#1e2d3a]/50 truncate">{paciente.diagnostico ?? "Sin diagnóstico"}</p>
                   </div>
 
                   {/* Próxima cita */}
                   <div className="hidden sm:block text-right shrink-0">
                     <p className="text-[10px] text-[#1e2d3a]/40">Próxima cita</p>
-                    <p className="text-xs font-medium text-[#1e2d3a]">{paciente.proximaCita}</p>
+                    <p className="text-xs font-medium text-[#1e2d3a]">{paciente.proximaCita ?? "—"}</p>
                   </div>
 
                   {/* Sesiones */}

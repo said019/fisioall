@@ -65,7 +65,7 @@ export async function registrarSello(membresiaId: string) {
       },
     });
 
-    revalidatePath("/dashboard/ejercicios");
+    revalidatePath("/dashboard/tarjetas");
     return { success: true };
   } catch (error) {
     console.error("Error registering stamp:", error);
