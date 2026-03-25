@@ -101,6 +101,81 @@ export async function getExpediente(pacienteId: string) {
   };
 }
 
+// ─── FETCH PACIENTE PARA EXPEDIENTE PAGE ─────────────────────────────────────
+export async function getExpedientePaciente(pacienteId: string) {
+  const { tenantId } = await requireAuth();
+
+  const paciente = await prisma.paciente.findFirst({
+    where: { id: pacienteId, tenantId },
+    include: {
+      membresias: {
+        where: { estado: "activa" },
+        orderBy: { updatedAt: "desc" },
+        take: 1,
+        include: {
+          paquete: { select: { nombre: true } },
+        },
+      },
+      citas: {
+        orderBy: { fechaHoraInicio: "desc" },
+        take: 1,
+        select: { id: true, estado: true, tipoSesion: true, numeroSesion: true },
+      },
+      notasSesion: {
+        orderBy: { fecha: "desc" },
+        take: 10,
+        include: {
+          fisioterapeuta: { select: { nombre: true, apellido: true } },
+        },
+      },
+      progresosDolor: {
+        orderBy: { fecha: "asc" },
+      },
+    },
+  });
+
+  if (!paciente) return null;
+
+  const membresia = paciente.membresias[0] ?? null;
+  const ultimaCita = paciente.citas[0] ?? null;
+
+  return {
+    paciente: {
+      id: paciente.id,
+      nombre: `${paciente.nombre} ${paciente.apellido}`,
+      iniciales: `${paciente.nombre[0]}${paciente.apellido[0]}`.toUpperCase(),
+    },
+    sesion: {
+      citaId: ultimaCita?.id ?? null,
+      tipoSesion: ultimaCita?.tipoSesion ?? membresia?.paquete.nombre ?? "Sesión",
+      estado: ultimaCita?.estado ?? "agendada",
+      numeroSesion: ultimaCita?.numeroSesion ?? (membresia ? (membresia.sesionesUsadas ?? 0) + 1 : 1),
+      sesionesTotal: membresia?.sesionesTotal ?? null,
+    },
+    notasSesion: paciente.notasSesion.map((n) => ({
+      id: n.id,
+      fecha: n.fecha.toISOString(),
+      subjetivo: n.subjetivo,
+      objetivo: n.objetivo,
+      analisis: n.analisis,
+      plan: n.plan,
+      dolorInicio: n.dolorInicio,
+      dolorFin: n.dolorFin,
+      tecnicasUtilizadas: n.tecnicasUtilizadas,
+      evolucion: n.evolucion,
+      porcentajeObjetivo: n.porcentajeObjetivo,
+      fisioterapeuta: `${n.fisioterapeuta.nombre} ${n.fisioterapeuta.apellido}`,
+    })),
+    progresosDolor: paciente.progresosDolor.map((p) => ({
+      fecha: p.fecha.toISOString(),
+      dolorInicio: p.dolorInicio,
+      dolorFin: p.dolorFin,
+      evolucion: p.evolucion,
+      numeroSesion: p.numeroSesion,
+    })),
+  };
+}
+
 // ─── CREATE NOTA SOAP ────────────────────────────────────────────────────────
 export async function crearNotaSesion(prevState: unknown, formData: FormData) {
   const { userId } = await requireAuth();

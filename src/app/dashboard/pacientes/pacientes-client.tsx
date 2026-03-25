@@ -151,7 +151,7 @@ function PerfilPaciente({ paciente, onClose }: { paciente: Paciente; onClose: ()
                 Nueva Cita
               </Button>
             </Link>
-            <Link href="/dashboard/expediente">
+            <Link href={`/dashboard/expediente?pacienteId=${paciente.id}`}>
               <Button size="sm" className="cursor-pointer bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white transition-all duration-200 gap-1.5 text-xs">
                 <ClipboardList className="h-3.5 w-3.5" />
                 Nota SOAP
