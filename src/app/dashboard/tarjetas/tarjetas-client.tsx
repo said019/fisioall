@@ -36,6 +36,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { toast } from "sonner";
+import { crearTarjeta, registrarSello } from "./actions";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TIPOS
@@ -233,13 +235,34 @@ function TarjetaCard({ tarjeta, onView }: { tarjeta: TarjetaLealtad; onView: () 
 // ─────────────────────────────────────────────────────────────────────────────
 // PAGE
 // ─────────────────────────────────────────────────────────────────────────────
-export default function TarjetasClient({ initialTarjetas }: { initialTarjetas?: TarjetaLealtad[] }) {
+interface PacienteOption { id: string; nombre: string; telefono: string; }
+interface PaqueteOption { id: string; nombre: string; numSesiones: number; precio: number; }
+
+export default function TarjetasClient({
+  initialTarjetas,
+  pacientes,
+  paquetes,
+}: {
+  initialTarjetas?: TarjetaLealtad[];
+  pacientes?: PacienteOption[];
+  paquetes?: PaqueteOption[];
+}) {
   const tarjetasData = initialTarjetas ?? [];
+  const pacientesData = pacientes ?? [];
+  const paquetesData = paquetes ?? [];
+
   const [busqueda, setBusqueda] = useState("");
   const [filtroCategoria, setFiltroCategoria] = useState<string>("todas");
   const [filtroEstado, setFiltroEstado] = useState<string>("todos");
   const [modalCrear, setModalCrear] = useState(false);
   const [modalDetalle, setModalDetalle] = useState<TarjetaLealtad | null>(null);
+
+  // Create form state
+  const [crearPacienteId, setCrearPacienteId] = useState("");
+  const [crearPaqueteId, setCrearPaqueteId] = useState("");
+  const [crearRecompensa, setCrearRecompensa] = useState("");
+  const [crearFechaExp, setCrearFechaExp] = useState("");
+  const [creando, setCreando] = useState(false);
 
   // Filtrado
   const tarjetasFiltradas = tarjetasData.filter((t) => {
@@ -457,7 +480,18 @@ export default function TarjetasClient({ initialTarjetas }: { initialTarjetas?: 
                     Cerrar
                   </Button>
                   {modalDetalle.estado === "activa" && (
-                    <Button className="cursor-pointer bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white">
+                    <Button
+                      className="cursor-pointer bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white"
+                      onClick={async () => {
+                        const result = await registrarSello(modalDetalle.id);
+                        if (result.success) {
+                          toast.success("Sello registrado");
+                          setModalDetalle(null);
+                        } else {
+                          toast.error(result.error ?? "Error al registrar sello");
+                        }
+                      }}
+                    >
                       <Star className="h-4 w-4 mr-1.5" /> Registrar Sello
                     </Button>
                   )}
@@ -474,7 +508,15 @@ export default function TarjetasClient({ initialTarjetas }: { initialTarjetas?: 
       </Dialog>
 
       {/* ── MODAL: CREAR TARJETA ── */}
-      <Dialog open={modalCrear} onOpenChange={setModalCrear}>
+      <Dialog open={modalCrear} onOpenChange={(open) => {
+        setModalCrear(open);
+        if (!open) {
+          setCrearPacienteId("");
+          setCrearPaqueteId("");
+          setCrearRecompensa("");
+          setCrearFechaExp("");
+        }
+      }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="text-[#1e2d3a] flex items-center gap-2">
@@ -485,67 +527,87 @@ export default function TarjetasClient({ initialTarjetas }: { initialTarjetas?: 
           <div className="space-y-4">
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-[#1e2d3a]/60">Paciente</Label>
-              <Select>
+              <Select value={crearPacienteId} onValueChange={setCrearPacienteId}>
                 <SelectTrigger className="border-[#a8cfe0] cursor-pointer">
                   <SelectValue placeholder="Seleccionar paciente" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="cr">Carmen Ruiz López</SelectItem>
-                  <SelectItem value="if">Isabel Flores García</SelectItem>
-                  <SelectItem value="rm">Roberto Méndez Vega</SelectItem>
-                  <SelectItem value="at">Ana Sofía Torres</SelectItem>
-                  <SelectItem value="lr">Luis Ángel Ramos</SelectItem>
+                  {pacientesData.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {crearPacienteId && (() => {
+              const pac = pacientesData.find((p) => p.id === crearPacienteId);
+              return pac ? (
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-[#1e2d3a]/60">Teléfono</Label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#1e2d3a]/30" />
+                    <Input value={pac.telefono} readOnly className="pl-9 border-[#a8cfe0] font-mono bg-[#f0f4f7]" />
+                  </div>
+                </div>
+              ) : null;
+            })()}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-[#1e2d3a]/60">Paquete / Plan</Label>
+              <Select value={crearPaqueteId} onValueChange={setCrearPaqueteId}>
+                <SelectTrigger className="border-[#a8cfe0] cursor-pointer">
+                  <SelectValue placeholder="Seleccionar paquete" />
+                </SelectTrigger>
+                <SelectContent>
+                  {paquetesData.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.nombre} ({p.numSesiones} sesiones · ${p.precio})
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-[#1e2d3a]/60">Teléfono</Label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#1e2d3a]/30" />
-                <Input placeholder="427-000-0000" className="pl-9 border-[#a8cfe0] font-mono" />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-[#1e2d3a]/60">Categoría</Label>
-                <Select>
-                  <SelectTrigger className="border-[#a8cfe0] cursor-pointer">
-                    <SelectValue placeholder="Categoría" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(CATEGORIA_CONFIG).map(([key, cfg]) => (
-                      <SelectItem key={key} value={key}>{cfg.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-[#1e2d3a]/60">Plan</Label>
-                <Select>
-                  <SelectTrigger className="border-[#a8cfe0] cursor-pointer">
-                    <SelectValue placeholder="Plan" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="10">Paquete 10 Sesiones</SelectItem>
-                    <SelectItem value="20">Paquete 20 Sesiones</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-[#1e2d3a]/60">Recompensa</Label>
-              <Input placeholder="Ej: 1 sesión de masaje relajante GRATIS" className="border-[#a8cfe0]" />
+              <Input
+                value={crearRecompensa}
+                onChange={(e) => setCrearRecompensa(e.target.value)}
+                placeholder="Ej: 1 sesión de masaje relajante GRATIS"
+                className="border-[#a8cfe0]"
+              />
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-[#1e2d3a]/60">Fecha de expiración</Label>
-              <Input type="date" className="border-[#a8cfe0] cursor-pointer" />
+              <Input
+                type="date"
+                value={crearFechaExp}
+                onChange={(e) => setCrearFechaExp(e.target.value)}
+                className="border-[#a8cfe0] cursor-pointer"
+              />
             </div>
           </div>
           <DialogFooter className="gap-2 mt-4">
             <Button variant="outline" onClick={() => setModalCrear(false)} className="cursor-pointer">
               Cancelar
             </Button>
-            <Button onClick={() => setModalCrear(false)} className="cursor-pointer bg-[#4a7fa5] hover:bg-[#4a7fa5]/90 text-white">
+            <Button
+              disabled={creando || !crearPacienteId || !crearPaqueteId}
+              onClick={async () => {
+                setCreando(true);
+                const result = await crearTarjeta({
+                  pacienteId: crearPacienteId,
+                  paqueteId: crearPaqueteId,
+                  recompensa: crearRecompensa || "1 sesión GRATIS",
+                  fechaExpiracion: crearFechaExp || undefined,
+                });
+                setCreando(false);
+                if (result.success) {
+                  toast.success("Tarjeta de lealtad creada");
+                  setModalCrear(false);
+                } else {
+                  toast.error(result.error ?? "Error al crear tarjeta");
+                }
+              }}
+              className="cursor-pointer bg-[#4a7fa5] hover:bg-[#4a7fa5]/90 text-white disabled:opacity-50"
+            >
               <Award className="h-4 w-4 mr-1.5" /> Crear Tarjeta
             </Button>
           </DialogFooter>

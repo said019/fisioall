@@ -99,6 +99,85 @@ export async function registrarSello(membresiaId: string) {
   }
 }
 
+// ─── FETCH PACIENTES (for create modal) ──────────────────────────────────────
+export async function getPacientesTarjetas() {
+  const { tenantId } = await requireAuth();
+
+  const pacientes = await prisma.paciente.findMany({
+    where: { tenantId, activo: true },
+    select: { id: true, nombre: true, apellido: true, telefono: true },
+    orderBy: { nombre: "asc" },
+  });
+
+  return pacientes.map((p) => ({
+    id: p.id,
+    nombre: `${p.nombre} ${p.apellido}`,
+    telefono: p.telefono,
+  }));
+}
+
+// ─── FETCH PAQUETES (for create modal) ───────────────────────────────────────
+export async function getPaquetesTarjetas() {
+  const { tenantId } = await requireAuth();
+
+  const paquetes = await prisma.paquete.findMany({
+    where: { tenantId, activo: true },
+    select: { id: true, nombre: true, numSesiones: true, precio: true },
+    orderBy: { nombre: "asc" },
+  });
+
+  return paquetes.map((p) => ({
+    id: p.id,
+    nombre: p.nombre,
+    numSesiones: p.numSesiones,
+    precio: Number(p.precio),
+  }));
+}
+
+// ─── CREAR TARJETA (membresía) ───────────────────────────────────────────────
+export async function crearTarjeta(data: {
+  pacienteId: string;
+  paqueteId: string;
+  recompensa: string;
+  fechaExpiracion?: string;
+}) {
+  const { tenantId } = await requireAuth();
+
+  const paquete = await prisma.paquete.findFirst({
+    where: { id: data.paqueteId, tenantId },
+  });
+
+  if (!paquete) {
+    return { error: "Paquete no encontrado" };
+  }
+
+  try {
+    await prisma.membresia.create({
+      data: {
+        tenantId,
+        pacienteId: data.pacienteId,
+        paqueteId: data.paqueteId,
+        sesionesTotal: paquete.numSesiones,
+        sesionesUsadas: 0,
+        precioPagado: paquete.precio,
+        estado: "activa",
+        fechaCompra: new Date(),
+        fechaVencimiento: data.fechaExpiracion
+          ? new Date(data.fechaExpiracion)
+          : paquete.duracionDias
+          ? new Date(Date.now() + paquete.duracionDias * 86400000)
+          : null,
+      },
+    });
+
+    revalidatePath("/dashboard/tarjetas");
+    return { success: true };
+  } catch (error) {
+    console.error("Error creating tarjeta:", error);
+    return { error: "Error al crear la tarjeta." };
+  }
+}
+
 // ─── KPIs ────────────────────────────────────────────────────────────────────
 export async function getTarjetasKPIs() {
   const { tenantId } = await requireAuth();

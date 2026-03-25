@@ -1,13 +1,25 @@
 import TarjetasClient from "./tarjetas-client";
-import { getTarjetasLealtad } from "./actions";
+import { getTarjetasLealtad, getPacientesTarjetas, getPaquetesTarjetas } from "./actions";
 
 export default async function TarjetasLealtadPage() {
-  let tarjetas;
+  let tarjetas, pacientes, paquetes;
   try {
-    tarjetas = await getTarjetasLealtad();
+    [tarjetas, pacientes, paquetes] = await Promise.all([
+      getTarjetasLealtad(),
+      getPacientesTarjetas(),
+      getPaquetesTarjetas(),
+    ]);
   } catch {
     tarjetas = undefined;
+    pacientes = undefined;
+    paquetes = undefined;
   }
 
-  return <TarjetasClient initialTarjetas={tarjetas as any} />;
+  return (
+    <TarjetasClient
+      initialTarjetas={tarjetas as any}
+      pacientes={pacientes as any}
+      paquetes={paquetes as any}
+    />
+  );
 }
