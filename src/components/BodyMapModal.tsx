@@ -39,13 +39,13 @@ const MODO_CONFIG: Record<ModoApertura, ModoConfig> = {
       "Marca TODAS las zonas afectadas. Este será el estado base del tratamiento.",
   },
   seguimiento: {
-    color: "#059669",
+    color: "#3fa87c",
     badge: "SEGUIMIENTO",
     intro:
       "Solo actualiza las zonas que hayan cambiado desde la última sesión.",
   },
   reevaluacion: {
-    color: "#0891B2",
+    color: "#4a7fa5",
     badge: "RE-EVALUACIÓN",
     intro:
       "Registra el estado actual completo del paciente para la re-evaluación.",
@@ -146,7 +146,7 @@ export default function BodyMapModal({
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="max-w-6xl h-[90vh] p-0 overflow-hidden flex flex-col gap-0">
         {/* ── HEADER ── */}
-        <div className="sticky top-0 z-10 flex items-center justify-between gap-3 px-5 py-4 border-b border-cyan-100 bg-white">
+        <div className="sticky top-0 z-10 flex items-center justify-between gap-3 px-5 py-4 border-b border-[#c8dce8] bg-white">
           <div className="flex items-center gap-3 min-w-0">
             <div
               className="h-8 w-8 rounded-lg flex items-center justify-center shrink-0"
@@ -156,8 +156,8 @@ export default function BodyMapModal({
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <p className="text-sm font-bold text-[#164E63]">Body Map</p>
-                <p className="text-xs text-[#164E63]/50 truncate">
+                <p className="text-sm font-bold text-[#1e2d3a]">Body Map</p>
+                <p className="text-xs text-[#1e2d3a]/50 truncate">
                   {pacienteNombre}
                 </p>
                 <Badge
@@ -174,13 +174,13 @@ export default function BodyMapModal({
           </div>
           <div className="flex items-center gap-3 shrink-0">
             {marcasCount > 0 && (
-              <span className="text-xs text-[#164E63]/50 hidden sm:block">
+              <span className="text-xs text-[#1e2d3a]/50 hidden sm:block">
                 {marcasCount} zonas marcadas
               </span>
             )}
             <button
               onClick={() => setAbierto(false)}
-              className="cursor-pointer text-[#164E63]/30 hover:text-[#164E63]/70 transition-colors"
+              className="cursor-pointer text-[#1e2d3a]/30 hover:text-[#1e2d3a]/70 transition-colors"
             >
               <X className="h-5 w-5" />
             </button>
@@ -221,14 +221,14 @@ export default function BodyMapModal({
               {/* Notas del snapshot */}
               {modoApertura !== "ver_historial" && (
                 <div className="space-y-1.5">
-                  <p className="text-xs font-semibold text-[#164E63]/60">
+                  <p className="text-xs font-semibold text-[#1e2d3a]/60">
                     Notas de esta evaluación
                   </p>
                   <textarea
                     value={notasSnapshot}
                     onChange={(e) => setNotasSnapshot(e.target.value)}
                     placeholder="Observaciones generales de la sesión..."
-                    className="w-full text-xs border border-cyan-200 rounded-xl p-3 resize-none focus:outline-none focus:border-[#0891B2] text-[#164E63] min-h-[80px]"
+                    className="w-full text-xs border border-[#a8cfe0] rounded-xl p-3 resize-none focus:outline-none focus:border-[#4a7fa5] text-[#1e2d3a] min-h-[80px]"
                   />
                 </div>
               )}
@@ -237,18 +237,18 @@ export default function BodyMapModal({
         </div>
 
         {/* ── FOOTER ── */}
-        <div className="sticky bottom-0 flex items-center justify-between gap-3 px-5 py-3.5 border-t border-cyan-100 bg-white">
+        <div className="sticky bottom-0 flex items-center justify-between gap-3 px-5 py-3.5 border-t border-[#c8dce8] bg-white">
           {/* Stats */}
-          <p className="text-xs text-[#164E63]/50">
+          <p className="text-xs text-[#1e2d3a]/50">
             {marcasCount === 0 ? (
               "Sin hallazgos registrados"
             ) : (
               <>
-                <span className="font-semibold text-[#164E63]">
+                <span className="font-semibold text-[#1e2d3a]">
                   {marcasCount}
                 </span>{" "}
                 zonas marcadas · EVA promedio:{" "}
-                <span className="font-semibold text-[#164E63]">
+                <span className="font-semibold text-[#1e2d3a]">
                   {evaPromedio}
                 </span>
               </>
@@ -262,7 +262,7 @@ export default function BodyMapModal({
                 variant="outline"
                 size="sm"
                 onClick={() => setAbierto(false)}
-                className="cursor-pointer border-cyan-200 text-[#164E63] hover:bg-cyan-50 transition-all duration-200"
+                className="cursor-pointer border-[#a8cfe0] text-[#1e2d3a] hover:bg-[#e4ecf2] transition-all duration-200"
               >
                 Cancelar
               </Button>
@@ -270,7 +270,7 @@ export default function BodyMapModal({
                 size="sm"
                 onClick={handleGuardar}
                 disabled={guardando || marcasCount === 0}
-                className="cursor-pointer bg-[#059669] hover:bg-[#059669]/90 text-white transition-all duration-200 gap-1.5 disabled:opacity-50"
+                className="cursor-pointer bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white transition-all duration-200 gap-1.5 disabled:opacity-50"
               >
                 {guardando ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />

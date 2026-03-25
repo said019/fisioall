@@ -1,0 +1,611 @@
+"use client";
+
+import { useState } from "react";
+import {
+  Award,
+  Search,
+  Plus,
+  Phone,
+  Gift,
+  Star,
+  CheckCircle2,
+  Clock,
+  Sparkles,
+  Filter,
+  ArrowUpRight,
+} from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Progress } from "@/components/ui/progress";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TIPOS
+// ─────────────────────────────────────────────────────────────────────────────
+type TarjetaEstado = "activa" | "completada" | "canjeada" | "expirada";
+type ServicioCategoria = "fisioterapia" | "facial" | "masaje" | "corporal";
+
+interface TarjetaLealtad {
+  id: string;
+  pacienteNombre: string;
+  pacienteIniciales: string;
+  telefono: string;
+  categoria: ServicioCategoria;
+  plan: string;
+  sesionesTotales: number;
+  sesionesUsadas: number;
+  estado: TarjetaEstado;
+  fechaCreacion: string;
+  fechaExpiracion: string;
+  ultimaVisita: string;
+  recompensa: string;
+  sellos: boolean[];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CONSTANTES
+// ─────────────────────────────────────────────────────────────────────────────
+const CATEGORIA_CONFIG: Record<ServicioCategoria, { label: string; color: string; bg: string; border: string }> = {
+  fisioterapia: { label: "Fisioterapia", color: "text-[#4a7fa5]", bg: "bg-[#4a7fa5]/10", border: "border-[#4a7fa5]/30" },
+  facial:       { label: "Facial",       color: "text-[#9b59b6]", bg: "bg-[#9b59b6]/10", border: "border-[#9b59b6]/30" },
+  masaje:       { label: "Masaje",       color: "text-[#3fa87c]", bg: "bg-[#3fa87c]/10", border: "border-[#3fa87c]/30" },
+  corporal:     { label: "Corporal",     color: "text-[#e89b3f]", bg: "bg-[#e89b3f]/10", border: "border-[#e89b3f]/30" },
+};
+
+const ESTADO_CONFIG: Record<TarjetaEstado, { label: string; color: string; dot: string }> = {
+  activa:     { label: "Activa",     color: "text-emerald-600 bg-emerald-50 border-emerald-200", dot: "bg-emerald-500" },
+  completada: { label: "Completada", color: "text-[#4a7fa5] bg-[#e4ecf2] border-[#a8cfe0]",     dot: "bg-[#4a7fa5]" },
+  canjeada:   { label: "Canjeada",   color: "text-[#9b59b6] bg-purple-50 border-purple-200",     dot: "bg-[#9b59b6]" },
+  expirada:   { label: "Expirada",   color: "text-slate-500 bg-slate-50 border-slate-200",       dot: "bg-slate-400" },
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MOCK DATA
+// ─────────────────────────────────────────────────────────────────────────────
+function generarSellos(usadas: number, totales: number): boolean[] {
+  return Array.from({ length: totales }, (_, i) => i < usadas);
+}
+
+const mockTarjetas: TarjetaLealtad[] = [
+  {
+    id: "t1", pacienteNombre: "Carmen Ruiz López", pacienteIniciales: "CR", telefono: "427-123-4567",
+    categoria: "fisioterapia", plan: "Paquete 10 Sesiones Fisio", sesionesTotales: 10, sesionesUsadas: 7,
+    estado: "activa", fechaCreacion: "2026-01-15", fechaExpiracion: "2026-07-15", ultimaVisita: "2026-03-20",
+    recompensa: "1 sesión de masaje relajante GRATIS", sellos: generarSellos(7, 10),
+  },
+  {
+    id: "t2", pacienteNombre: "Isabel Flores García", pacienteIniciales: "IF", telefono: "427-234-5678",
+    categoria: "facial", plan: "Paquete 10 Faciales", sesionesTotales: 10, sesionesUsadas: 10,
+    estado: "completada", fechaCreacion: "2025-11-01", fechaExpiracion: "2026-05-01", ultimaVisita: "2026-03-18",
+    recompensa: "1 facial hidratante GRATIS", sellos: generarSellos(10, 10),
+  },
+  {
+    id: "t3", pacienteNombre: "Roberto Méndez Vega", pacienteIniciales: "RM", telefono: "427-345-6789",
+    categoria: "masaje", plan: "Paquete 20 Sesiones Masaje", sesionesTotales: 20, sesionesUsadas: 14,
+    estado: "activa", fechaCreacion: "2025-12-10", fechaExpiracion: "2026-06-10", ultimaVisita: "2026-03-22",
+    recompensa: "2 sesiones de masaje GRATIS", sellos: generarSellos(14, 20),
+  },
+  {
+    id: "t4", pacienteNombre: "Ana Sofía Torres", pacienteIniciales: "AT", telefono: "427-456-7890",
+    categoria: "fisioterapia", plan: "Paquete 10 Sesiones Fisio", sesionesTotales: 10, sesionesUsadas: 10,
+    estado: "canjeada", fechaCreacion: "2025-09-01", fechaExpiracion: "2026-03-01", ultimaVisita: "2026-02-28",
+    recompensa: "1 sesión de masaje relajante GRATIS", sellos: generarSellos(10, 10),
+  },
+  {
+    id: "t5", pacienteNombre: "Luis Ángel Ramos", pacienteIniciales: "LR", telefono: "427-567-8901",
+    categoria: "corporal", plan: "Paquete 10 Corporales", sesionesTotales: 10, sesionesUsadas: 3,
+    estado: "activa", fechaCreacion: "2026-02-01", fechaExpiracion: "2026-08-01", ultimaVisita: "2026-03-10",
+    recompensa: "1 drenaje linfático GRATIS", sellos: generarSellos(3, 10),
+  },
+  {
+    id: "t6", pacienteNombre: "Patricia Morales Díaz", pacienteIniciales: "PM", telefono: "427-678-9012",
+    categoria: "facial", plan: "Paquete 20 Faciales Premium", sesionesTotales: 20, sesionesUsadas: 18,
+    estado: "activa", fechaCreacion: "2025-10-15", fechaExpiracion: "2026-04-15", ultimaVisita: "2026-03-21",
+    recompensa: "Kit facial completo + 2 sesiones GRATIS", sellos: generarSellos(18, 20),
+  },
+  {
+    id: "t7", pacienteNombre: "Fernando Díaz Castillo", pacienteIniciales: "FD", telefono: "427-789-0123",
+    categoria: "fisioterapia", plan: "Paquete 20 Sesiones Fisio", sesionesTotales: 20, sesionesUsadas: 5,
+    estado: "activa", fechaCreacion: "2026-02-20", fechaExpiracion: "2026-08-20", ultimaVisita: "2026-03-19",
+    recompensa: "2 sesiones de fisioterapia GRATIS", sellos: generarSellos(5, 20),
+  },
+  {
+    id: "t8", pacienteNombre: "Valentina Ortega León", pacienteIniciales: "VO", telefono: "427-890-1234",
+    categoria: "masaje", plan: "Paquete 10 Sesiones Masaje", sesionesTotales: 10, sesionesUsadas: 10,
+    estado: "completada", fechaCreacion: "2025-12-01", fechaExpiracion: "2026-06-01", ultimaVisita: "2026-03-15",
+    recompensa: "1 sesión de masaje GRATIS", sellos: generarSellos(10, 10),
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+function formatFecha(fecha: string): string {
+  const d = new Date(fecha + "T12:00:00");
+  return d.toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SELLO VISUAL COMPONENT
+// ─────────────────────────────────────────────────────────────────────────────
+function SelloGrid({ sellos, categoria }: { sellos: boolean[]; categoria: ServicioCategoria }) {
+  const catCfg = CATEGORIA_CONFIG[categoria];
+  const cols = sellos.length <= 10 ? 5 : 5;
+  return (
+    <div className={`grid gap-2`} style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
+      {sellos.map((activo, i) => (
+        <div
+          key={i}
+          className={`relative h-9 w-9 rounded-full flex items-center justify-center transition-all duration-200 ${
+            activo
+              ? `${catCfg.bg} ${catCfg.border} border-2 shadow-sm`
+              : "bg-slate-100 border-2 border-dashed border-slate-200"
+          }`}
+        >
+          {activo ? (
+            <Star className={`h-4 w-4 ${catCfg.color} fill-current`} />
+          ) : (
+            <span className="text-[10px] font-bold text-slate-300">{i + 1}</span>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TARJETA VISUAL COMPONENT
+// ─────────────────────────────────────────────────────────────────────────────
+function TarjetaCard({ tarjeta, onView }: { tarjeta: TarjetaLealtad; onView: () => void }) {
+  const catCfg = CATEGORIA_CONFIG[tarjeta.categoria];
+  const estadoCfg = ESTADO_CONFIG[tarjeta.estado];
+  const pct = Math.round((tarjeta.sesionesUsadas / tarjeta.sesionesTotales) * 100);
+  const restantes = tarjeta.sesionesTotales - tarjeta.sesionesUsadas;
+  const casiCompleta = restantes <= 2 && restantes > 0;
+
+  return (
+    <Card
+      className={`border-[#c8dce8] bg-white hover:shadow-lg transition-all duration-300 cursor-pointer group overflow-hidden ${
+        casiCompleta ? "ring-2 ring-[#e89b3f]/40" : ""
+      } ${tarjeta.estado === "completada" ? "ring-2 ring-[#4a7fa5]/30" : ""}`}
+      onClick={onView}
+    >
+      {/* Header stripe */}
+      <div className={`h-1.5 ${catCfg.bg.replace("/10", "")} ${
+        tarjeta.categoria === "fisioterapia" ? "bg-[#4a7fa5]" :
+        tarjeta.categoria === "facial" ? "bg-[#9b59b6]" :
+        tarjeta.categoria === "masaje" ? "bg-[#3fa87c]" :
+        "bg-[#e89b3f]"
+      }`} />
+
+      <CardContent className="p-5">
+        {/* Top row: patient + status */}
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <Avatar className="h-10 w-10 border-2 border-[#c8dce8] group-hover:border-[#4a7fa5] transition-colors">
+              <AvatarFallback className={`${catCfg.bg} ${catCfg.color} text-xs font-bold`}>
+                {tarjeta.pacienteIniciales}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="text-sm font-semibold text-[#1e2d3a]">{tarjeta.pacienteNombre}</p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <Phone className="h-3 w-3 text-[#8fa8ba]" />
+                <span className="text-[11px] text-[#8fa8ba] font-mono">{tarjeta.telefono}</span>
+              </div>
+            </div>
+          </div>
+          <Badge variant="outline" className={`text-[10px] border shrink-0 ${estadoCfg.color}`}>
+            <span className={`inline-block h-1.5 w-1.5 rounded-full ${estadoCfg.dot} mr-1.5`} />
+            {estadoCfg.label}
+          </Badge>
+        </div>
+
+        {/* Plan + category */}
+        <div className="flex items-center gap-2 mb-4">
+          <Badge variant="outline" className={`text-[10px] ${catCfg.color} ${catCfg.bg} ${catCfg.border}`}>
+            {catCfg.label}
+          </Badge>
+          <span className="text-[11px] text-[#5a7080] font-medium">{tarjeta.plan}</span>
+        </div>
+
+        {/* Sellos */}
+        <div className="mb-4">
+          <SelloGrid sellos={tarjeta.sellos} categoria={tarjeta.categoria} />
+        </div>
+
+        {/* Progress bar */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold text-[#1e2d3a]/60">
+              {tarjeta.sesionesUsadas}/{tarjeta.sesionesTotales} sesiones
+            </span>
+            <span className="text-[11px] font-bold text-[#1e2d3a]">{pct}%</span>
+          </div>
+          <Progress
+            value={pct}
+            className={`h-2 ${
+              tarjeta.estado === "completada" || tarjeta.estado === "canjeada"
+                ? "bg-[#e4ecf2] [&>div]:bg-[#4a7fa5]"
+                : casiCompleta
+                ? "bg-[#e89b3f]/15 [&>div]:bg-[#e89b3f]"
+                : "bg-slate-100 [&>div]:bg-[#3fa87c]"
+            }`}
+          />
+        </div>
+
+        {/* Reward preview */}
+        {(tarjeta.estado === "completada" || casiCompleta) && (
+          <div className={`mt-3 flex items-center gap-2 rounded-lg p-2.5 ${
+            tarjeta.estado === "completada"
+              ? "bg-[#4a7fa5]/10 border border-[#4a7fa5]/20"
+              : "bg-[#e89b3f]/10 border border-[#e89b3f]/20"
+          }`}>
+            <Gift className={`h-4 w-4 shrink-0 ${
+              tarjeta.estado === "completada" ? "text-[#4a7fa5]" : "text-[#e89b3f]"
+            }`} />
+            <p className={`text-[10px] font-medium ${
+              tarjeta.estado === "completada" ? "text-[#4a7fa5]" : "text-[#e89b3f]"
+            }`}>
+              {tarjeta.estado === "completada"
+                ? `Listo para canjear: ${tarjeta.recompensa}`
+                : `Faltan ${restantes} para: ${tarjeta.recompensa}`}
+            </p>
+          </div>
+        )}
+
+        {/* Footer: last visit */}
+        <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#c8dce8]/50">
+          <div className="flex items-center gap-1.5">
+            <Clock className="h-3 w-3 text-[#8fa8ba]" />
+            <span className="text-[10px] text-[#8fa8ba]">Última visita: {formatFecha(tarjeta.ultimaVisita)}</span>
+          </div>
+          <span className="text-[10px] text-[#8fa8ba]">Expira: {formatFecha(tarjeta.fechaExpiracion)}</span>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PAGE
+// ─────────────────────────────────────────────────────────────────────────────
+export default function TarjetasClient({ initialTarjetas }: { initialTarjetas?: TarjetaLealtad[] }) {
+  const tarjetasData = initialTarjetas && initialTarjetas.length > 0 ? initialTarjetas : mockTarjetas;
+  const [busqueda, setBusqueda] = useState("");
+  const [filtroCategoria, setFiltroCategoria] = useState<string>("todas");
+  const [filtroEstado, setFiltroEstado] = useState<string>("todos");
+  const [modalCrear, setModalCrear] = useState(false);
+  const [modalDetalle, setModalDetalle] = useState<TarjetaLealtad | null>(null);
+
+  // Filtrado
+  const tarjetasFiltradas = tarjetasData.filter((t) => {
+    const matchBusqueda =
+      t.pacienteNombre.toLowerCase().includes(busqueda.toLowerCase()) ||
+      t.telefono.includes(busqueda);
+    const matchCategoria = filtroCategoria === "todas" || t.categoria === filtroCategoria;
+    const matchEstado = filtroEstado === "todos" || t.estado === filtroEstado;
+    return matchBusqueda && matchCategoria && matchEstado;
+  });
+
+  // KPIs
+  const activas = tarjetasData.filter((t) => t.estado === "activa").length;
+  const completadas = tarjetasData.filter((t) => t.estado === "completada").length;
+  const canjeadas = tarjetasData.filter((t) => t.estado === "canjeada").length;
+  const casiCompletas = tarjetasData.filter((t) => {
+    const rest = t.sesionesTotales - t.sesionesUsadas;
+    return t.estado === "activa" && rest <= 2 && rest > 0;
+  }).length;
+
+  return (
+    <div className="space-y-6">
+      {/* ── KPI CARDS ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: "Tarjetas Activas", valor: activas.toString(), icon: Award, color: "text-emerald-600", bg: "bg-emerald-50", sub: "En progreso" },
+          { label: "Listas para Canjear", valor: completadas.toString(), icon: Gift, color: "text-[#4a7fa5]", bg: "bg-[#e4ecf2]", sub: "Recompensa pendiente" },
+          { label: "Canjeadas", valor: canjeadas.toString(), icon: CheckCircle2, color: "text-[#9b59b6]", bg: "bg-purple-50", sub: "Este trimestre" },
+          { label: "Casi Completas", valor: casiCompletas.toString(), icon: Sparkles, color: "text-[#e89b3f]", bg: "bg-amber-50", sub: "Faltan ≤2 sellos", trend: true },
+        ].map((kpi) => (
+          <Card key={kpi.label} className="border-[#c8dce8] shadow-sm">
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs font-semibold text-[#1e2d3a]/50 uppercase tracking-wide">{kpi.label}</p>
+                  <div className="flex items-baseline gap-2 mt-1">
+                    <p className="text-2xl font-bold text-[#1e2d3a]">{kpi.valor}</p>
+                    {kpi.trend && (
+                      <span className="text-[10px] font-bold flex items-center gap-0.5 text-[#e89b3f]">
+                        <ArrowUpRight className="h-3 w-3" />
+                        Prioridad
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-[#1e2d3a]/40 mt-0.5">{kpi.sub}</p>
+                </div>
+                <div className={`${kpi.bg} h-10 w-10 rounded-xl flex items-center justify-center`}>
+                  <kpi.icon className={`h-5 w-5 ${kpi.color}`} />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* ── SEARCH + FILTERS ── */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="flex flex-col sm:flex-row gap-3 flex-1 w-full">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#1e2d3a]/40" />
+            <Input
+              placeholder="Buscar por nombre o teléfono..."
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              className="pl-10 border-[#a8cfe0] focus:border-[#4a7fa5] h-10"
+            />
+          </div>
+          <Select value={filtroCategoria} onValueChange={setFiltroCategoria}>
+            <SelectTrigger className="w-full sm:w-44 border-[#a8cfe0] h-10 cursor-pointer">
+              <Filter className="h-3.5 w-3.5 mr-1.5 text-[#1e2d3a]/40" />
+              <SelectValue placeholder="Categoría" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todas">Todas las categorías</SelectItem>
+              {Object.entries(CATEGORIA_CONFIG).map(([key, cfg]) => (
+                <SelectItem key={key} value={key}>{cfg.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={filtroEstado} onValueChange={setFiltroEstado}>
+            <SelectTrigger className="w-full sm:w-40 border-[#a8cfe0] h-10 cursor-pointer">
+              <SelectValue placeholder="Estado" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos los estados</SelectItem>
+              {Object.entries(ESTADO_CONFIG).map(([key, cfg]) => (
+                <SelectItem key={key} value={key}>{cfg.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <Button
+          onClick={() => setModalCrear(true)}
+          className="cursor-pointer bg-[#4a7fa5] hover:bg-[#4a7fa5]/90 text-white text-sm shadow-sm shrink-0"
+        >
+          <Plus className="h-4 w-4 mr-1.5" /> Nueva Tarjeta
+        </Button>
+      </div>
+
+      {/* ── GRID DE TARJETAS ── */}
+      {tarjetasFiltradas.length === 0 ? (
+        <Card className="border-[#c8dce8] shadow-sm">
+          <CardContent className="py-16 text-center">
+            <Award className="h-12 w-12 text-[#1e2d3a]/15 mx-auto mb-3" />
+            <p className="text-sm font-semibold text-[#1e2d3a]/40">No se encontraron tarjetas de lealtad</p>
+            <p className="text-xs text-[#1e2d3a]/30 mt-1">Intenta ajustar los filtros de búsqueda</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
+          {tarjetasFiltradas.map((tarjeta) => (
+            <TarjetaCard
+              key={tarjeta.id}
+              tarjeta={tarjeta}
+              onView={() => setModalDetalle(tarjeta)}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* ── MODAL: DETALLE TARJETA ── */}
+      <Dialog open={!!modalDetalle} onOpenChange={() => setModalDetalle(null)}>
+        <DialogContent className="max-w-lg">
+          {modalDetalle && (() => {
+            const catCfg = CATEGORIA_CONFIG[modalDetalle.categoria];
+            const estadoCfg = ESTADO_CONFIG[modalDetalle.estado];
+            const pct = Math.round((modalDetalle.sesionesUsadas / modalDetalle.sesionesTotales) * 100);
+            const restantes = modalDetalle.sesionesTotales - modalDetalle.sesionesUsadas;
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="text-[#1e2d3a] flex items-center gap-2">
+                    <Award className="h-5 w-5 text-[#4a7fa5]" />
+                    Tarjeta de Lealtad
+                  </DialogTitle>
+                </DialogHeader>
+
+                {/* Patient info */}
+                <div className="flex items-center gap-3 bg-gradient-to-r from-[#f0f4f7] to-white rounded-xl p-4">
+                  <Avatar className="h-12 w-12 border-2 border-[#a8cfe0]">
+                    <AvatarFallback className={`${catCfg.bg} ${catCfg.color} font-bold`}>
+                      {modalDetalle.pacienteIniciales}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <p className="font-semibold text-[#1e2d3a]">{modalDetalle.pacienteNombre}</p>
+                    <div className="flex items-center gap-3 mt-0.5">
+                      <div className="flex items-center gap-1">
+                        <Phone className="h-3 w-3 text-[#8fa8ba]" />
+                        <span className="text-xs text-[#8fa8ba] font-mono">{modalDetalle.telefono}</span>
+                      </div>
+                      <Badge variant="outline" className={`text-[10px] ${catCfg.color} ${catCfg.bg} ${catCfg.border}`}>
+                        {catCfg.label}
+                      </Badge>
+                    </div>
+                  </div>
+                  <Badge variant="outline" className={`text-[10px] border ${estadoCfg.color}`}>
+                    <span className={`inline-block h-1.5 w-1.5 rounded-full ${estadoCfg.dot} mr-1.5`} />
+                    {estadoCfg.label}
+                  </Badge>
+                </div>
+
+                {/* Plan info */}
+                <div className="bg-white border border-[#c8dce8] rounded-xl p-4 space-y-3">
+                  <p className="text-sm font-semibold text-[#1e2d3a]">{modalDetalle.plan}</p>
+
+                  {/* Sellos grid */}
+                  <div className="flex justify-center py-2">
+                    <SelloGrid sellos={modalDetalle.sellos} categoria={modalDetalle.categoria} />
+                  </div>
+
+                  {/* Progress */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-[#5a7080]">
+                        {modalDetalle.sesionesUsadas} de {modalDetalle.sesionesTotales} sesiones completadas
+                      </span>
+                      <span className="text-xs font-bold text-[#1e2d3a]">{pct}%</span>
+                    </div>
+                    <Progress value={pct} className="h-2.5 bg-slate-100 [&>div]:bg-[#4a7fa5]" />
+                  </div>
+                </div>
+
+                {/* Reward */}
+                <div className="flex items-center gap-3 bg-gradient-to-r from-[#e89b3f]/10 to-[#e89b3f]/5 border border-[#e89b3f]/20 rounded-xl p-4">
+                  <div className="h-10 w-10 rounded-full bg-[#e89b3f]/20 flex items-center justify-center shrink-0">
+                    <Gift className="h-5 w-5 text-[#e89b3f]" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-[#e89b3f] uppercase tracking-wide">Recompensa</p>
+                    <p className="text-sm font-medium text-[#1e2d3a] mt-0.5">{modalDetalle.recompensa}</p>
+                    {restantes > 0 && (
+                      <p className="text-[10px] text-[#8fa8ba] mt-0.5">Faltan {restantes} sesiones para canjear</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Details */}
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  {[
+                    { label: "Fecha de creación", value: formatFecha(modalDetalle.fechaCreacion) },
+                    { label: "Fecha de expiración", value: formatFecha(modalDetalle.fechaExpiracion) },
+                    { label: "Última visita", value: formatFecha(modalDetalle.ultimaVisita) },
+                    { label: "Sesiones restantes", value: restantes.toString() },
+                  ].map((item) => (
+                    <div key={item.label} className="bg-[#f0f4f7] rounded-lg p-3">
+                      <p className="text-[10px] font-semibold text-[#8fa8ba] uppercase tracking-wide">{item.label}</p>
+                      <p className="text-sm font-medium text-[#1e2d3a] mt-0.5">{item.value}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <DialogFooter className="gap-2 mt-2">
+                  <Button variant="outline" onClick={() => setModalDetalle(null)} className="cursor-pointer">
+                    Cerrar
+                  </Button>
+                  {modalDetalle.estado === "activa" && (
+                    <Button className="cursor-pointer bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white">
+                      <Star className="h-4 w-4 mr-1.5" /> Registrar Sello
+                    </Button>
+                  )}
+                  {modalDetalle.estado === "completada" && (
+                    <Button className="cursor-pointer bg-[#e89b3f] hover:bg-[#e89b3f]/90 text-white">
+                      <Gift className="h-4 w-4 mr-1.5" /> Canjear Recompensa
+                    </Button>
+                  )}
+                </DialogFooter>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+
+      {/* ── MODAL: CREAR TARJETA ── */}
+      <Dialog open={modalCrear} onOpenChange={setModalCrear}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-[#1e2d3a] flex items-center gap-2">
+              <Plus className="h-5 w-5 text-[#4a7fa5]" />
+              Nueva Tarjeta de Lealtad
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-[#1e2d3a]/60">Paciente</Label>
+              <Select>
+                <SelectTrigger className="border-[#a8cfe0] cursor-pointer">
+                  <SelectValue placeholder="Seleccionar paciente" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cr">Carmen Ruiz López</SelectItem>
+                  <SelectItem value="if">Isabel Flores García</SelectItem>
+                  <SelectItem value="rm">Roberto Méndez Vega</SelectItem>
+                  <SelectItem value="at">Ana Sofía Torres</SelectItem>
+                  <SelectItem value="lr">Luis Ángel Ramos</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-[#1e2d3a]/60">Teléfono</Label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#1e2d3a]/30" />
+                <Input placeholder="427-000-0000" className="pl-9 border-[#a8cfe0] font-mono" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-[#1e2d3a]/60">Categoría</Label>
+                <Select>
+                  <SelectTrigger className="border-[#a8cfe0] cursor-pointer">
+                    <SelectValue placeholder="Categoría" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(CATEGORIA_CONFIG).map(([key, cfg]) => (
+                      <SelectItem key={key} value={key}>{cfg.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-[#1e2d3a]/60">Plan</Label>
+                <Select>
+                  <SelectTrigger className="border-[#a8cfe0] cursor-pointer">
+                    <SelectValue placeholder="Plan" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">Paquete 10 Sesiones</SelectItem>
+                    <SelectItem value="20">Paquete 20 Sesiones</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-[#1e2d3a]/60">Recompensa</Label>
+              <Input placeholder="Ej: 1 sesión de masaje relajante GRATIS" className="border-[#a8cfe0]" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-[#1e2d3a]/60">Fecha de expiración</Label>
+              <Input type="date" className="border-[#a8cfe0] cursor-pointer" />
+            </div>
+          </div>
+          <DialogFooter className="gap-2 mt-4">
+            <Button variant="outline" onClick={() => setModalCrear(false)} className="cursor-pointer">
+              Cancelar
+            </Button>
+            <Button onClick={() => setModalCrear(false)} className="cursor-pointer bg-[#4a7fa5] hover:bg-[#4a7fa5]/90 text-white">
+              <Award className="h-4 w-4 mr-1.5" /> Crear Tarjeta
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

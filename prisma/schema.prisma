@@ -470,7 +470,7 @@ model Cita {
 }
 
 model NotaSesion {
-  id                          String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id                          String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   citaId                      String          @map("cita_id") @db.Uuid
   fisioterapeutaId            String          @map("fisioterapeuta_id") @db.Uuid
   pacienteId                  String          @map("paciente_id") @db.Uuid
@@ -508,7 +508,7 @@ model NotaSesion {
 }
 
 model SesionFoto {
-  id              String      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id              String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   notaSesionId    String?     @map("nota_sesion_id") @db.Uuid
   pacienteId      String      @map("paciente_id") @db.Uuid
   url             String
@@ -525,7 +525,7 @@ model SesionFoto {
 }
 
 model Pago {
-  id                  String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id                  String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenantId            String          @map("tenant_id") @db.Uuid
   pacienteId          String          @map("paciente_id") @db.Uuid
   membresiaId         String?         @map("membresía_id") @db.Uuid
@@ -557,7 +557,7 @@ model Pago {
 }
 
 model Ejercicio {
-  id                  String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id                  String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenantId            String?         @map("tenant_id") @db.Uuid
   nombre              String          @db.VarChar(200)
   descripcion         String?
@@ -594,7 +594,7 @@ model Ejercicio {
 }
 
 model EjercicioAsignado {
-  id                          String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id                          String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   pacienteId                  String          @map("paciente_id") @db.Uuid
   ejercicioId                 String          @map("ejercicio_id") @db.Uuid
   citaId                      String?         @map("cita_id") @db.Uuid
@@ -623,7 +623,7 @@ model EjercicioAsignado {
 }
 
 model EjercicioRegistro {
-  id                    String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id                    String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   ejercicioAsignadoId   String          @map("ejercicio_asignado_id") @db.Uuid
   pacienteId            String          @map("paciente_id") @db.Uuid
   fecha                 DateTime        @default(dbgenerated("CURRENT_DATE")) @db.Date
@@ -642,7 +642,7 @@ model EjercicioRegistro {
 }
 
 model EncuestaSesion {
-  id                  String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id                  String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   citaId              String          @map("cita_id") @db.Uuid
   pacienteId          String          @map("paciente_id") @db.Uuid
   
@@ -664,7 +664,7 @@ model EncuestaSesion {
 }
 
 model Notificacion {
-  id                  String            @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id                  String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenantId            String            @map("tenant_id") @db.Uuid
   pacienteId          String?           @map("paciente_id") @db.Uuid
   usuarioId           String?           @map("usuario_id") @db.Uuid
@@ -695,7 +695,7 @@ model Notificacion {
 }
 
 model PlantillaMensaje {
-  id                  String            @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id                  String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenantId            String?           @map("tenant_id") @db.Uuid
   nombre              String            @db.VarChar(100)
   tipo                NotificacionTipo
@@ -711,7 +711,7 @@ model PlantillaMensaje {
 }
 
 model ProgresoDolor {
-  id                  String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id                  String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   pacienteId          String          @map("paciente_id") @db.Uuid
   diagnosticoId       String?         @map("diagnostico_id") @db.Uuid
   citaId              String?         @map("cita_id") @db.Uuid

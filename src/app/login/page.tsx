@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Activity, Loader2, ArrowLeft, AlertCircle } from "lucide-react";
+import { Loader2, ArrowLeft, AlertCircle } from "lucide-react";
 import { loginAction } from "./actions/auth";
 
 export default function LoginPage() {
@@ -29,11 +29,13 @@ export default function LoginPage() {
 
             <div className="w-full max-w-md space-y-6">
                 <div className="flex flex-col items-center space-y-2 text-center">
-                    <div className="h-12 w-12 bg-primary/10 rounded-full flex items-center justify-center mb-2">
-                        <Activity className="h-6 w-6 text-primary" />
-                    </div>
-                    <h1 className="text-3xl font-bold tracking-tight text-foreground">FisioAll</h1>
-                    <p className="text-muted-foreground">Ingresa tus credenciales para acceder a tu clínica</p>
+                    <span
+                        className="text-3xl font-semibold text-[#4a7fa5]"
+                        style={{ fontFamily: "'Cormorant Garamond', serif" }}
+                    >
+                        Kaya Kalp
+                    </span>
+                    <p className="text-muted-foreground">Ingresa tus credenciales para acceder al sistema</p>
                 </div>
 
                 <Card className="border-border shadow-lg">
@@ -97,7 +99,7 @@ export default function LoginPage() {
                         <div className="text-sm text-center text-muted-foreground">
                             ¿No tienes una cuenta?{" "}
                             <Link href="#" className="font-semibold text-primary hover:underline cursor-pointer">
-                                Registra tu Clínica
+                                Crear cuenta
                             </Link>
                         </div>
                     </CardFooter>

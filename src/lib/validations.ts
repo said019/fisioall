@@ -61,3 +61,62 @@ export const pacienteSchema = z.object({
 });
 
 export type PacienteInput = z.infer<typeof pacienteSchema>;
+
+/**
+ * Appointment creation schema.
+ */
+export const citaSchema = z.object({
+  pacienteId: z.string().uuid("Selecciona un paciente"),
+  fisioterapeutaId: z.string().uuid("Selecciona un fisioterapeuta").optional(),
+  fecha: z.string().min(1, "La fecha es obligatoria"),
+  horaInicio: z.string().min(1, "La hora de inicio es obligatoria"),
+  duracion: z.number().int().min(15).max(180).default(45),
+  tipoSesion: z
+    .string()
+    .max(100, "El tipo de sesión no puede exceder 100 caracteres")
+    .optional(),
+  sala: z
+    .string()
+    .max(60, "La sala no puede exceder 60 caracteres")
+    .optional(),
+});
+
+export type CitaInput = z.infer<typeof citaSchema>;
+
+/**
+ * Payment registration schema.
+ */
+export const pagoSchema = z.object({
+  pacienteId: z.string().uuid("Selecciona un paciente"),
+  monto: z
+    .number({ message: "Ingresa un monto válido" })
+    .positive("El monto debe ser mayor a 0"),
+  metodo: z.enum(["efectivo", "transferencia", "tarjeta_debito", "tarjeta_credito", "otro"], {
+    message: "Selecciona un método de pago",
+  }),
+  concepto: z
+    .string()
+    .min(3, "El concepto debe tener al menos 3 caracteres")
+    .max(300, "El concepto no puede exceder 300 caracteres"),
+  referenciaExterna: z.string().max(200).optional().or(z.literal("")),
+  fechaPago: z.string().optional(),
+  notas: z.string().max(500).optional().or(z.literal("")),
+});
+
+export type PagoInput = z.infer<typeof pagoSchema>;
+
+/**
+ * SOAP note schema.
+ */
+export const notaSesionSchema = z.object({
+  citaId: z.string().uuid("Selecciona una cita"),
+  pacienteId: z.string().uuid("Selecciona un paciente"),
+  subjetivo: z.string().max(2000).optional().or(z.literal("")),
+  objetivo: z.string().max(2000).optional().or(z.literal("")),
+  analisis: z.string().max(2000).optional().or(z.literal("")),
+  plan: z.string().max(2000).optional().or(z.literal("")),
+  dolorInicio: z.string().optional(),
+  dolorFin: z.string().optional(),
+});
+
+export type NotaSesionInput = z.infer<typeof notaSesionSchema>;

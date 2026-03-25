@@ -8,7 +8,7 @@ export default function MembresiasLoading() {
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className="bg-white rounded-xl border border-cyan-100 p-4 space-y-3"
+            className="bg-white rounded-xl border border-[#c8dce8] p-4 space-y-3"
           >
             <div className="flex items-center gap-2">
               <Skeleton className="h-8 w-8 rounded-lg" />
@@ -23,12 +23,12 @@ export default function MembresiasLoading() {
       <Skeleton className="h-10 w-80 rounded-lg" />
 
       {/* Table skeleton */}
-      <div className="bg-white rounded-xl border border-cyan-100 overflow-hidden">
-        <div className="p-4 border-b border-cyan-100 flex items-center justify-between">
+      <div className="bg-white rounded-xl border border-[#c8dce8] overflow-hidden">
+        <div className="p-4 border-b border-[#c8dce8] flex items-center justify-between">
           <Skeleton className="h-10 w-64 rounded-lg" />
           <Skeleton className="h-10 w-28 rounded-lg" />
         </div>
-        <div className="divide-y divide-cyan-50">
+        <div className="divide-y divide-[#e4ecf2]">
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="flex items-center gap-4 px-4 py-3">
               <Skeleton className="h-9 w-9 rounded-full" />

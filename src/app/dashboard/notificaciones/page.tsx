@@ -47,7 +47,7 @@ interface Alerta {
 }
 
 const TIPO_CONFIG: Record<Alerta["tipo"], { color: string; bgIcon: string; icon: React.ElementType }> = {
-  recordatorio_cita:   { color: "text-cyan-600",    bgIcon: "bg-cyan-50",    icon: CalendarCheck },
+  recordatorio_cita:   { color: "text-cyan-600",    bgIcon: "bg-[#e4ecf2]",    icon: CalendarCheck },
   sesion_por_vencer:   { color: "text-orange-600",  bgIcon: "bg-orange-50",  icon: AlertTriangle },
   membresia_vencida:   { color: "text-red-600",     bgIcon: "bg-red-50",     icon: XCircle },
   seguimiento:         { color: "text-blue-600",    bgIcon: "bg-blue-50",    icon: Heart },
@@ -127,12 +127,12 @@ export default function NotificacionesPage() {
   });
 
   return (
-    <div className="flex flex-col gap-5 p-4 md:p-6 bg-[#ECFEFF] min-h-full">
+    <div className="flex flex-col gap-5 p-4 md:p-6 bg-[#f0f4f7] min-h-full">
       {/* ── HEADER ── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-[#164E63]">Notificaciones</h1>
-          <p className="text-xs text-[#164E63]/50 mt-0.5">
+          <h1 className="text-xl font-bold text-[#1e2d3a]">Notificaciones</h1>
+          <p className="text-xs text-[#1e2d3a]/50 mt-0.5">
             {sinLeer > 0
               ? `${sinLeer} alerta${sinLeer > 1 ? "s" : ""} sin leer`
               : "Todas las alertas leídas"}
@@ -142,7 +142,7 @@ export default function NotificacionesPage() {
           <Button
             variant="outline"
             onClick={marcarTodasLeidas}
-            className="cursor-pointer border-cyan-200 text-[#0891B2] hover:bg-cyan-50 transition-all duration-200 text-sm gap-1.5"
+            className="cursor-pointer border-[#a8cfe0] text-[#4a7fa5] hover:bg-[#e4ecf2] transition-all duration-200 text-sm gap-1.5"
           >
             <CheckCheck className="h-4 w-4" />
             Marcar todas leídas
@@ -152,8 +152,8 @@ export default function NotificacionesPage() {
 
       {/* ── TABS ── */}
       <Tabs defaultValue="alertas" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3 max-w-md bg-[#ECFEFF] border border-cyan-100">
-          <TabsTrigger value="alertas" className="flex gap-2 data-[state=active]:bg-white data-[state=active]:text-[#164E63]">
+        <TabsList className="grid w-full grid-cols-3 max-w-md bg-[#f0f4f7] border border-[#c8dce8]">
+          <TabsTrigger value="alertas" className="flex gap-2 data-[state=active]:bg-white data-[state=active]:text-[#1e2d3a]">
             <Bell className="h-4 w-4" />
             <span className="hidden sm:inline">Alertas</span>
             {sinLeer > 0 && (
@@ -162,11 +162,11 @@ export default function NotificacionesPage() {
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="plantillas" className="flex gap-2 data-[state=active]:bg-white data-[state=active]:text-[#164E63]">
+          <TabsTrigger value="plantillas" className="flex gap-2 data-[state=active]:bg-white data-[state=active]:text-[#1e2d3a]">
             <FileText className="h-4 w-4" />
             <span className="hidden sm:inline">Plantillas</span>
           </TabsTrigger>
-          <TabsTrigger value="historial" className="flex gap-2 data-[state=active]:bg-white data-[state=active]:text-[#164E63]">
+          <TabsTrigger value="historial" className="flex gap-2 data-[state=active]:bg-white data-[state=active]:text-[#1e2d3a]">
             <History className="h-4 w-4" />
             <span className="hidden sm:inline">Historial</span>
           </TabsTrigger>
@@ -182,8 +182,8 @@ export default function NotificacionesPage() {
                 onClick={() => setFiltro(f)}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-all duration-200 ${
                   filtro === f
-                    ? "bg-[#0891B2] text-white"
-                    : "bg-white border border-cyan-100 text-[#164E63]/60 hover:border-cyan-300"
+                    ? "bg-[#4a7fa5] text-white"
+                    : "bg-white border border-[#c8dce8] text-[#1e2d3a]/60 hover:border-[#7ab5d4]"
                 }`}
               >
                 {f === "todas" ? "Todas" : f === "no_leidas" ? "No leídas" : "Críticas"}
@@ -192,11 +192,11 @@ export default function NotificacionesPage() {
           </div>
 
           {/* Lista */}
-          <Card className="border-cyan-100 bg-white divide-y divide-cyan-100">
+          <Card className="border-[#c8dce8] bg-white divide-y divide-[#c8dce8]">
             {alertasFiltradas.length === 0 ? (
               <div className="p-8 text-center">
-                <Bell className="h-8 w-8 text-[#0891B2]/20 mx-auto mb-2" />
-                <p className="text-sm text-[#164E63]/40">No hay alertas en este filtro</p>
+                <Bell className="h-8 w-8 text-[#4a7fa5]/20 mx-auto mb-2" />
+                <p className="text-sm text-[#1e2d3a]/40">No hay alertas en este filtro</p>
               </div>
             ) : (
               alertasFiltradas.map((a) => {
@@ -206,7 +206,7 @@ export default function NotificacionesPage() {
                   <div
                     key={a.id}
                     className={`flex gap-4 p-4 transition-all duration-200 ${
-                      !a.leida ? "bg-[#ECFEFF]/50" : ""
+                      !a.leida ? "bg-[#f0f4f7]/50" : ""
                     }`}
                   >
                     <div className={`h-9 w-9 rounded-xl ${cfg.bgIcon} flex items-center justify-center shrink-0`}>
@@ -215,34 +215,34 @@ export default function NotificacionesPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <p className={`text-sm ${!a.leida ? "font-bold" : "font-medium"} text-[#164E63]`}>
+                          <p className={`text-sm ${!a.leida ? "font-bold" : "font-medium"} text-[#1e2d3a]`}>
                             {a.titulo}
                           </p>
-                          <p className="text-xs text-[#164E63]/50 mt-0.5 line-clamp-2">
+                          <p className="text-xs text-[#1e2d3a]/50 mt-0.5 line-clamp-2">
                             {a.texto}
                           </p>
                         </div>
                         {!a.leida && (
-                          <div className="h-2 w-2 rounded-full bg-[#0891B2] shrink-0 mt-1.5" />
+                          <div className="h-2 w-2 rounded-full bg-[#4a7fa5] shrink-0 mt-1.5" />
                         )}
                       </div>
                       <div className="flex items-center gap-3 mt-2">
-                        <span className="text-[10px] text-[#164E63]/40">{a.tiempo}</span>
-                        <span className="text-[10px] text-[#164E63]/40">·</span>
-                        <span className="text-[10px] text-[#164E63]/50 font-medium">{a.paciente}</span>
+                        <span className="text-[10px] text-[#1e2d3a]/40">{a.tiempo}</span>
+                        <span className="text-[10px] text-[#1e2d3a]/40">·</span>
+                        <span className="text-[10px] text-[#1e2d3a]/50 font-medium">{a.paciente}</span>
                       </div>
                       <div className="flex items-center gap-2 mt-2">
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-6 text-[10px] cursor-pointer border-cyan-200 text-[#164E63] hover:bg-cyan-50 transition-all duration-200"
+                          className="h-6 text-[10px] cursor-pointer border-[#a8cfe0] text-[#1e2d3a] hover:bg-[#e4ecf2] transition-all duration-200"
                         >
                           Resolver
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-6 text-[10px] cursor-pointer text-[#0891B2] hover:bg-cyan-50 transition-all duration-200"
+                          className="h-6 text-[10px] cursor-pointer text-[#4a7fa5] hover:bg-[#e4ecf2] transition-all duration-200"
                         >
                           <Eye className="h-3 w-3 mr-1" />
                           Ver paciente
@@ -260,10 +260,10 @@ export default function NotificacionesPage() {
         <TabsContent value="plantillas" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             {mockPlantillas.map((p) => (
-              <Card key={p.id} className="border-cyan-100 bg-white flex flex-col">
+              <Card key={p.id} className="border-[#c8dce8] bg-white flex flex-col">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-bold text-[#164E63]">
+                    <CardTitle className="text-sm font-bold text-[#1e2d3a]">
                       {p.nombre}
                     </CardTitle>
                     <Badge
@@ -271,13 +271,13 @@ export default function NotificacionesPage() {
                       className={`text-[10px] ${
                         p.canal === "whatsapp"
                           ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                          : "bg-cyan-50 text-cyan-700 border-cyan-200"
+                          : "bg-[#e4ecf2] text-cyan-700 border-[#a8cfe0]"
                       }`}
                     >
                       {p.canal === "whatsapp" ? "WhatsApp" : "Email"}
                     </Badge>
                   </div>
-                  <CardDescription className="text-xs text-[#164E63]/50">
+                  <CardDescription className="text-xs text-[#1e2d3a]/50">
                     Tipo: {p.tipo.replace(/_/g, " ")}
                   </CardDescription>
                 </CardHeader>
@@ -285,15 +285,15 @@ export default function NotificacionesPage() {
                   <textarea
                     defaultValue={p.cuerpo}
                     rows={4}
-                    className="w-full min-h-[100px] rounded-lg border border-cyan-200 bg-[#ECFEFF]/30 px-3 py-2 text-xs text-[#164E63] placeholder:text-[#164E63]/30 focus:outline-none focus:border-[#0891B2] transition-colors resize-none"
+                    className="w-full min-h-[100px] rounded-lg border border-[#a8cfe0] bg-[#f0f4f7]/30 px-3 py-2 text-xs text-[#1e2d3a] placeholder:text-[#1e2d3a]/30 focus:outline-none focus:border-[#4a7fa5] transition-colors resize-none"
                   />
                 </CardContent>
-                <CardFooter className="pt-3 border-t border-cyan-100 flex items-center justify-between">
-                  <p className="text-[10px] text-[#164E63]/30">Última edición: hace 3 días</p>
+                <CardFooter className="pt-3 border-t border-[#c8dce8] flex items-center justify-between">
+                  <p className="text-[10px] text-[#1e2d3a]/30">Última edición: hace 3 días</p>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-7 text-xs cursor-pointer border-cyan-200 text-[#164E63] hover:bg-cyan-50 transition-all duration-200"
+                    className="h-7 text-xs cursor-pointer border-[#a8cfe0] text-[#1e2d3a] hover:bg-[#e4ecf2] transition-all duration-200"
                   >
                     Guardar cambios
                   </Button>
@@ -305,45 +305,45 @@ export default function NotificacionesPage() {
 
         {/* ── TAB HISTORIAL ── */}
         <TabsContent value="historial" className="space-y-4">
-          <Card className="border-cyan-100 bg-white">
+          <Card className="border-[#c8dce8] bg-white">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-bold text-[#164E63]">
+              <CardTitle className="text-sm font-bold text-[#1e2d3a]">
                 Mensajes Enviados
               </CardTitle>
-              <CardDescription className="text-xs text-[#164E63]/50">
+              <CardDescription className="text-xs text-[#1e2d3a]/50">
                 Historial de comunicaciones automáticas y manuales
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-cyan-100 bg-[#ECFEFF]/50">
-                    <TableHead className="text-[10px] font-bold text-[#164E63]/50 uppercase">Fecha</TableHead>
-                    <TableHead className="text-[10px] font-bold text-[#164E63]/50 uppercase">Paciente</TableHead>
-                    <TableHead className="text-[10px] font-bold text-[#164E63]/50 uppercase">Canal</TableHead>
-                    <TableHead className="text-[10px] font-bold text-[#164E63]/50 uppercase hidden sm:table-cell">Mensaje</TableHead>
-                    <TableHead className="text-[10px] font-bold text-[#164E63]/50 uppercase text-right">Estado</TableHead>
+                  <TableRow className="border-[#c8dce8] bg-[#f0f4f7]/50">
+                    <TableHead className="text-[10px] font-bold text-[#1e2d3a]/50 uppercase">Fecha</TableHead>
+                    <TableHead className="text-[10px] font-bold text-[#1e2d3a]/50 uppercase">Paciente</TableHead>
+                    <TableHead className="text-[10px] font-bold text-[#1e2d3a]/50 uppercase">Canal</TableHead>
+                    <TableHead className="text-[10px] font-bold text-[#1e2d3a]/50 uppercase hidden sm:table-cell">Mensaje</TableHead>
+                    <TableHead className="text-[10px] font-bold text-[#1e2d3a]/50 uppercase text-right">Estado</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {mockHistorial.map((m) => (
-                    <TableRow key={m.id} className="border-cyan-100 hover:bg-[#ECFEFF]/30 transition-colors">
+                    <TableRow key={m.id} className="border-[#c8dce8] hover:bg-[#f0f4f7]/30 transition-colors">
                       <TableCell className="py-3">
-                        <p className="text-xs font-medium text-[#164E63]">
+                        <p className="text-xs font-medium text-[#1e2d3a]">
                           {format(m.fecha, "dd/MM/yyyy")}
                         </p>
-                        <p className="text-[10px] text-[#164E63]/40">
+                        <p className="text-[10px] text-[#1e2d3a]/40">
                           {format(m.fecha, "HH:mm")}
                         </p>
                       </TableCell>
                       <TableCell className="py-3">
                         <div className="flex items-center gap-2">
                           <Avatar className="h-6 w-6">
-                            <AvatarFallback className="text-[9px] bg-[#0891B2]/10 text-[#0891B2]">
+                            <AvatarFallback className="text-[9px] bg-[#4a7fa5]/10 text-[#4a7fa5]">
                               {m.paciente.substring(0, 2).toUpperCase()}
                             </AvatarFallback>
                           </Avatar>
-                          <span className="text-xs text-[#164E63]">{m.paciente}</span>
+                          <span className="text-xs text-[#1e2d3a]">{m.paciente}</span>
                         </div>
                       </TableCell>
                       <TableCell className="py-3">
@@ -352,14 +352,14 @@ export default function NotificacionesPage() {
                           className={`text-[10px] ${
                             m.canal === "whatsapp"
                               ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                              : "bg-cyan-50 text-cyan-700 border-cyan-200"
+                              : "bg-[#e4ecf2] text-cyan-700 border-[#a8cfe0]"
                           }`}
                         >
                           {m.canal === "whatsapp" ? "WhatsApp" : "Email"}
                         </Badge>
                       </TableCell>
                       <TableCell className="py-3 hidden sm:table-cell max-w-[200px]">
-                        <p className="text-xs text-[#164E63]/60 truncate">{m.resumen}</p>
+                        <p className="text-xs text-[#1e2d3a]/60 truncate">{m.resumen}</p>
                       </TableCell>
                       <TableCell className="py-3 text-right">
                         <Badge

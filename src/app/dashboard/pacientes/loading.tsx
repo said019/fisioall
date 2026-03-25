@@ -18,7 +18,7 @@ export default function PacientesLoading() {
         {Array.from({ length: 6 }).map((_, i) => (
           <div
             key={i}
-            className="bg-white rounded-xl border border-cyan-100 p-5 space-y-4"
+            className="bg-white rounded-xl border border-[#c8dce8] p-5 space-y-4"
           >
             <div className="flex items-center gap-3">
               <Skeleton className="h-11 w-11 rounded-full" />

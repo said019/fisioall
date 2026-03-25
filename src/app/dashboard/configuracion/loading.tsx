@@ -9,7 +9,7 @@ export default function ConfiguracionLoading() {
       {/* Settings cards */}
       <div className="grid md:grid-cols-2 gap-6">
         {/* Profile card */}
-        <div className="bg-white rounded-xl border border-cyan-100 p-6 space-y-5">
+        <div className="bg-white rounded-xl border border-[#c8dce8] p-6 space-y-5">
           <div className="flex items-center gap-4">
             <Skeleton className="h-16 w-16 rounded-full" />
             <div className="space-y-2">
@@ -28,7 +28,7 @@ export default function ConfiguracionLoading() {
         </div>
 
         {/* Clinic card */}
-        <div className="bg-white rounded-xl border border-cyan-100 p-6 space-y-5">
+        <div className="bg-white rounded-xl border border-[#c8dce8] p-6 space-y-5">
           <Skeleton className="h-5 w-32" />
           <div className="space-y-4">
             {Array.from({ length: 5 }).map((_, i) => (

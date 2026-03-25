@@ -6,7 +6,7 @@ export default function LoadingPagos() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="rounded-xl border border-cyan-100 bg-white p-4">
+          <div key={i} className="rounded-xl border border-[#c8dce8] bg-white p-4">
             <div className="flex items-start justify-between">
               <div className="space-y-2">
                 <Skeleton className="h-3 w-24" />
@@ -26,14 +26,14 @@ export default function LoadingPagos() {
         <Skeleton className="h-10 w-36 rounded-lg" />
       </div>
       {/* Table */}
-      <div className="rounded-xl border border-cyan-100 bg-white overflow-hidden">
-        <div className="bg-[#ECFEFF] px-4 py-3 flex gap-4">
+      <div className="rounded-xl border border-[#c8dce8] bg-white overflow-hidden">
+        <div className="bg-[#f0f4f7] px-4 py-3 flex gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
             <Skeleton key={i} className="h-4 w-20" />
           ))}
         </div>
         {Array.from({ length: 7 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-4 px-4 py-3 border-t border-cyan-50">
+          <div key={i} className="flex items-center gap-4 px-4 py-3 border-t border-[#e4ecf2]">
             <Skeleton className="h-8 w-8 rounded-full" />
             <Skeleton className="h-4 w-28" />
             <Skeleton className="h-4 w-40 flex-1" />

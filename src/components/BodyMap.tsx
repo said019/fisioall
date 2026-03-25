@@ -25,7 +25,7 @@ function getHeatFill(intensidad: number): string {
 }
 
 function getHeatStroke(intensidad: number): string {
-  if (intensidad <= 2) return "#059669";
+  if (intensidad <= 2) return "#3fa87c";
   if (intensidad <= 4) return "#CA8A04";
   if (intensidad <= 6) return "#EA580C";
   if (intensidad <= 8) return "#DC2626";
@@ -33,7 +33,7 @@ function getHeatStroke(intensidad: number): string {
 }
 
 function evaColor(val: number): string {
-  if (val <= 2) return "#059669";
+  if (val <= 2) return "#3fa87c";
   if (val <= 4) return "#CA8A04";
   if (val <= 6) return "#EA580C";
   if (val <= 8) return "#DC2626";
@@ -366,14 +366,14 @@ export default function BodyMap({
                 onClick={() => { setVistaActual(vista); setZonaSeleccionada(null); }}
                 className={`relative flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer border min-w-[90px] ${
                   isActive
-                    ? "bg-[#0891B2] border-[#0891B2] text-white shadow-md shadow-[#0891B2]/30"
-                    : "bg-white border-cyan-100 text-[#164E63]/60 hover:border-[#0891B2]/50 hover:text-[#164E63] hover:bg-[#ECFEFF]"
+                    ? "bg-[#4a7fa5] border-[#4a7fa5] text-white shadow-md shadow-[#4a7fa5]/30"
+                    : "bg-white border-[#c8dce8] text-[#1e2d3a]/60 hover:border-[#4a7fa5]/50 hover:text-[#1e2d3a] hover:bg-[#f0f4f7]"
                 }`}
               >
                 <span>{VISTA_LABELS[vista]}</span>
                 {count > 0 && (
                   <span className={`text-[10px] font-bold px-1.5 py-0 rounded-full min-w-[18px] text-center ${
-                    isActive ? "bg-white/25 text-white" : "bg-[#0891B2] text-white"
+                    isActive ? "bg-white/25 text-white" : "bg-[#4a7fa5] text-white"
                   }`}>
                     {count}
                   </span>
@@ -408,14 +408,14 @@ export default function BodyMap({
             className="shrink-0 w-64 self-start"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="bg-white border border-cyan-200 rounded-2xl shadow-xl shadow-cyan-900/10 overflow-hidden">
+            <div className="bg-white border border-[#a8cfe0] rounded-2xl shadow-xl shadow-cyan-900/10 overflow-hidden">
               {/* Header */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-cyan-100 bg-gradient-to-r from-[#ECFEFF] to-white">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-[#c8dce8] bg-gradient-to-r from-[#f0f4f7] to-white">
                 <div>
-                  <p className="text-sm font-bold text-[#164E63]">
+                  <p className="text-sm font-bold text-[#1e2d3a]">
                     {zonaSeleccionada.zonaLabel}
                   </p>
-                  <p className="text-[10px] text-[#164E63]/40">
+                  <p className="text-[10px] text-[#1e2d3a]/40">
                     Vista {VISTA_LABELS[vistaActual]}
                   </p>
                 </div>
@@ -430,7 +430,7 @@ export default function BodyMap({
                   )}
                   <button
                     onClick={() => setZonaSeleccionada(null)}
-                    className="cursor-pointer p-1.5 rounded-lg text-[#164E63]/30 hover:text-[#164E63]/70 hover:bg-cyan-50 transition-all"
+                    className="cursor-pointer p-1.5 rounded-lg text-[#1e2d3a]/30 hover:text-[#1e2d3a]/70 hover:bg-[#e4ecf2] transition-all"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -441,7 +441,7 @@ export default function BodyMap({
                 {/* EVA slider */}
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold text-[#164E63]/60">Intensidad (EVA)</p>
+                    <p className="text-xs font-semibold text-[#1e2d3a]/60">Intensidad (EVA)</p>
                     <span
                       className="text-2xl font-black tabular-nums"
                       style={{ color: evaColor(formulario.intensidad) }}
@@ -461,13 +461,13 @@ export default function BodyMap({
                     className="w-full h-3 rounded-full cursor-pointer appearance-none"
                     style={{
                       background: `linear-gradient(to right,
-                        #059669 0%, #16a34a 20%,
+                        #3fa87c 0%, #16a34a 20%,
                         #eab308 30%, #f97316 50%,
-                        #ef4444 70%, #b91c1c 100%)`,
+                        #d9534f 70%, #b91c1c 100%)`,
                       accentColor: evaColor(formulario.intensidad),
                     }}
                   />
-                  <div className="flex justify-between text-[10px] text-[#164E63]/40">
+                  <div className="flex justify-between text-[10px] text-[#1e2d3a]/40">
                     <span>Sin dolor</span>
                     <span>Máximo</span>
                   </div>
@@ -475,7 +475,7 @@ export default function BodyMap({
 
                 {/* Tipo */}
                 <div className="space-y-1.5">
-                  <p className="text-xs font-semibold text-[#164E63]/60">Tipo</p>
+                  <p className="text-xs font-semibold text-[#1e2d3a]/60">Tipo</p>
                   <div className="grid grid-cols-2 gap-1.5">
                     {(Object.keys(TIPO_LABELS) as TipoHallazgo[]).map((tipo) => {
                       const color = TIPO_COLORS[tipo];
@@ -500,7 +500,7 @@ export default function BodyMap({
 
                 {/* Lateralidad */}
                 <div className="space-y-1.5">
-                  <p className="text-xs font-semibold text-[#164E63]/60">Lateralidad</p>
+                  <p className="text-xs font-semibold text-[#1e2d3a]/60">Lateralidad</p>
                   <div className="flex gap-1.5">
                     {(["bilateral", "izquierdo", "derecho"] as Lateralidad[]).map((lat) => (
                       <button
@@ -508,8 +508,8 @@ export default function BodyMap({
                         onClick={() => setFormulario((p) => ({ ...p, lateralidad: lat }))}
                         className={`flex-1 text-[10px] font-bold py-2 rounded-xl border transition-all duration-200 cursor-pointer ${
                           formulario.lateralidad === lat
-                            ? "bg-[#0891B2] border-[#0891B2] text-white shadow-sm"
-                            : "bg-white border-cyan-100 text-[#164E63]/60 hover:border-[#0891B2]/50"
+                            ? "bg-[#4a7fa5] border-[#4a7fa5] text-white shadow-sm"
+                            : "bg-white border-[#c8dce8] text-[#1e2d3a]/60 hover:border-[#4a7fa5]/50"
                         }`}
                       >
                         {LATERALIDAD_LABELS[lat]}
@@ -520,20 +520,20 @@ export default function BodyMap({
 
                 {/* Notas */}
                 <div className="space-y-1">
-                  <p className="text-xs font-semibold text-[#164E63]/60">Notas clínicas</p>
+                  <p className="text-xs font-semibold text-[#1e2d3a]/60">Notas clínicas</p>
                   <textarea
                     value={formulario.notas}
                     onChange={(e) => setFormulario((p) => ({ ...p, notas: e.target.value }))}
                     placeholder="Notas clínicas..."
                     rows={3}
-                    className="w-full text-xs border border-cyan-200 rounded-xl px-3 py-2 resize-none focus:outline-none focus:border-[#0891B2] text-[#164E63] placeholder:text-[#164E63]/30"
+                    className="w-full text-xs border border-[#a8cfe0] rounded-xl px-3 py-2 resize-none focus:outline-none focus:border-[#4a7fa5] text-[#1e2d3a] placeholder:text-[#1e2d3a]/30"
                   />
                 </div>
 
                 {/* Guardar */}
                 <Button
                   onClick={guardarMarca}
-                  className="w-full bg-[#059669] hover:bg-[#059669]/90 text-white text-xs cursor-pointer font-bold h-10 rounded-xl transition-all duration-200"
+                  className="w-full bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white text-xs cursor-pointer font-bold h-10 rounded-xl transition-all duration-200"
                 >
                   Guardar hallazgo
                 </Button>
@@ -545,21 +545,21 @@ export default function BodyMap({
 
       {/* ── HALLAZGOS REGISTRADOS ── */}
       {totalMarcas > 0 && (
-        <div className="border border-cyan-100 rounded-xl overflow-hidden bg-white">
+        <div className="border border-[#c8dce8] rounded-xl overflow-hidden bg-white">
           <button
             onClick={() => setListaAbierta((p) => !p)}
-            className="w-full flex items-center justify-between px-4 py-2.5 cursor-pointer hover:bg-[#ECFEFF]/60 transition-colors"
+            className="w-full flex items-center justify-between px-4 py-2.5 cursor-pointer hover:bg-[#f0f4f7]/60 transition-colors"
           >
             <div className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-[#0891B2] animate-pulse" />
-              <p className="text-xs font-bold text-[#164E63]">
+              <span className="h-2 w-2 rounded-full bg-[#4a7fa5] animate-pulse" />
+              <p className="text-xs font-bold text-[#1e2d3a]">
                 {totalMarcas} hallazgo{totalMarcas !== 1 ? "s" : ""} registrado{totalMarcas !== 1 ? "s" : ""}
               </p>
             </div>
             {listaAbierta ? (
-              <ChevronUp className="h-4 w-4 text-[#164E63]/40" />
+              <ChevronUp className="h-4 w-4 text-[#1e2d3a]/40" />
             ) : (
-              <ChevronDown className="h-4 w-4 text-[#164E63]/40" />
+              <ChevronDown className="h-4 w-4 text-[#1e2d3a]/40" />
             )}
           </button>
 
@@ -583,12 +583,12 @@ export default function BodyMap({
                     className="h-2 w-2 rounded-full shrink-0"
                     style={{ background: marca.colorHex }}
                   />
-                  <span className="text-[#164E63] font-semibold">{marca.zonaLabel}</span>
+                  <span className="text-[#1e2d3a] font-semibold">{marca.zonaLabel}</span>
                   <span className="font-black">·{marca.intensidad}</span>
                   {editable && (
                     <button
                       onClick={(e) => { e.stopPropagation(); eliminarMarca(key); }}
-                      className="ml-0.5 cursor-pointer hover:text-red-500 transition-colors text-[#164E63]/30"
+                      className="ml-0.5 cursor-pointer hover:text-red-500 transition-colors text-[#1e2d3a]/30"
                     >
                       <X className="h-3 w-3" />
                     </button>
@@ -602,7 +602,7 @@ export default function BodyMap({
 
       {/* ── EVA LEYENDA ── */}
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-[10px] text-[#164E63]/40 font-semibold">EVA:</span>
+        <span className="text-[10px] text-[#1e2d3a]/40 font-semibold">EVA:</span>
         {[
           { label: "0-2", color: "rgba(16,185,129,0.75)" },
           { label: "3-4", color: "rgba(234,179,8,0.80)" },
@@ -612,7 +612,7 @@ export default function BodyMap({
         ].map((item) => (
           <div key={item.label} className="flex items-center gap-1">
             <span className="h-3 w-3 rounded-sm border border-black/10" style={{ background: item.color }} />
-            <span className="text-[10px] text-[#164E63]/50">{item.label}</span>
+            <span className="text-[10px] text-[#1e2d3a]/50">{item.label}</span>
           </div>
         ))}
       </div>

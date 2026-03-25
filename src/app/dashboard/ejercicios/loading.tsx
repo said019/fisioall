@@ -6,7 +6,7 @@ export default function LoadingEjercicios() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="rounded-xl border border-cyan-100 bg-white p-4">
+          <div key={i} className="rounded-xl border border-[#c8dce8] bg-white p-4">
             <div className="flex items-start justify-between">
               <div className="space-y-2">
                 <Skeleton className="h-3 w-20" />
@@ -31,7 +31,7 @@ export default function LoadingEjercicios() {
       {/* Cards Grid */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="rounded-xl border border-cyan-100 bg-white p-5 space-y-3">
+          <div key={i} className="rounded-xl border border-[#c8dce8] bg-white p-5 space-y-3">
             <div className="flex items-start justify-between">
               <Skeleton className="h-10 w-10 rounded-xl" />
               <Skeleton className="h-5 w-12 rounded-full" />

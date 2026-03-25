@@ -86,7 +86,7 @@ export default function ComparativaFotos({
       {/* Slider container */}
       <div
         ref={containerRef}
-        className="relative w-full max-h-[400px] aspect-[4/3] overflow-hidden rounded-xl border border-cyan-100 bg-[#164E63]/5 select-none"
+        className="relative w-full max-h-[400px] aspect-[4/3] overflow-hidden rounded-xl border border-[#c8dce8] bg-[#1e2d3a]/5 select-none"
         style={{ cursor: isDragging ? "ew-resize" : "default" }}
       >
         {/* Image: ANTES (full background) */}
@@ -126,10 +126,10 @@ export default function ComparativaFotos({
           onMouseDown={handleMouseDown}
           onTouchStart={handleTouchStart}
         >
-          <div className={`h-10 w-10 rounded-full bg-white border-2 border-[#0891B2] shadow-lg flex items-center justify-center cursor-ew-resize transition-all duration-150 ${
-            isDragging ? "scale-110 shadow-xl shadow-[#0891B2]/30" : "hover:scale-105"
+          <div className={`h-10 w-10 rounded-full bg-white border-2 border-[#4a7fa5] shadow-lg flex items-center justify-center cursor-ew-resize transition-all duration-150 ${
+            isDragging ? "scale-110 shadow-xl shadow-[#4a7fa5]/30" : "hover:scale-105"
           }`}>
-            <MoveHorizontal className="h-4 w-4 text-[#0891B2]" />
+            <MoveHorizontal className="h-4 w-4 text-[#4a7fa5]" />
           </div>
         </div>
 
@@ -143,12 +143,12 @@ export default function ComparativaFotos({
 
         {/* Date labels */}
         <div className="absolute bottom-3 left-3 z-10">
-          <Badge className="bg-[#059669]/80 text-white border-none text-[10px] backdrop-blur-sm">
+          <Badge className="bg-[#3fa87c]/80 text-white border-none text-[10px] backdrop-blur-sm">
             {new Date(fotoDespues.fecha).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" })}
           </Badge>
         </div>
         <div className="absolute bottom-3 right-3 z-10">
-          <Badge className="bg-[#EF4444]/80 text-white border-none text-[10px] backdrop-blur-sm">
+          <Badge className="bg-[#d9534f]/80 text-white border-none text-[10px] backdrop-blur-sm">
             {new Date(fotoAntes.fecha).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" })}
           </Badge>
         </div>
@@ -156,13 +156,13 @@ export default function ComparativaFotos({
 
       {/* Annotation */}
       {anotacion && (
-        <div className="rounded-lg border border-cyan-100 bg-[#ECFEFF] px-4 py-2.5">
-          <p className="text-xs text-[#164E63]/70 leading-relaxed">{anotacion}</p>
+        <div className="rounded-lg border border-[#c8dce8] bg-[#f0f4f7] px-4 py-2.5">
+          <p className="text-xs text-[#1e2d3a]/70 leading-relaxed">{anotacion}</p>
         </div>
       )}
 
       {/* Instructions */}
-      <p className="text-[11px] text-[#164E63]/40 text-center flex items-center justify-center gap-1">
+      <p className="text-[11px] text-[#1e2d3a]/40 text-center flex items-center justify-center gap-1">
         <MoveHorizontal className="h-3 w-3" />
         Arrastra el control para comparar antes y después
       </p>

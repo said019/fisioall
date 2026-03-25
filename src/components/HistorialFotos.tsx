@@ -111,8 +111,8 @@ export default function HistorialFotos({ pacienteId }: HistorialFotosProps) {
       {/* Header */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-bold text-[#164E63]">Historial Fotográfico</h3>
-          <p className="text-[11px] text-[#164E63]/50">
+          <h3 className="text-sm font-bold text-[#1e2d3a]">Historial Fotográfico</h3>
+          <p className="text-[11px] text-[#1e2d3a]/50">
             {MOCK_FOTOS.length} fotos en {gruposPorFecha.length} sesiones
           </p>
         </div>
@@ -120,7 +120,7 @@ export default function HistorialFotos({ pacienteId }: HistorialFotosProps) {
           <Button
             variant="outline"
             size="sm"
-            className="border-[#0891B2]/30 text-[#0891B2] hover:bg-[#ECFEFF] cursor-pointer transition-all duration-200 text-xs font-semibold"
+            className="border-[#4a7fa5]/30 text-[#4a7fa5] hover:bg-[#f0f4f7] cursor-pointer transition-all duration-200 text-xs font-semibold"
             onClick={() => setModoComparar(true)}
           >
             <GitCompareArrows className="h-3.5 w-3.5 mr-1" />
@@ -128,12 +128,12 @@ export default function HistorialFotos({ pacienteId }: HistorialFotosProps) {
           </Button>
         ) : (
           <div className="flex items-center gap-2">
-            <Badge className="bg-[#0891B2]/10 text-[#0891B2] border-[#0891B2]/20 text-[10px]">
+            <Badge className="bg-[#4a7fa5]/10 text-[#4a7fa5] border-[#4a7fa5]/20 text-[10px]">
               {seleccionadas.length}/2 seleccionadas
             </Badge>
             <Button
               size="sm"
-              className="bg-[#059669] hover:bg-[#059669]/90 text-white cursor-pointer transition-all duration-200 text-xs font-bold"
+              className="bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white cursor-pointer transition-all duration-200 text-xs font-bold"
               disabled={seleccionadas.length !== 2}
               onClick={handleCompare}
             >
@@ -143,7 +143,7 @@ export default function HistorialFotos({ pacienteId }: HistorialFotosProps) {
             <Button
               variant="ghost"
               size="sm"
-              className="text-[#164E63]/50 cursor-pointer transition-all duration-200 text-xs"
+              className="text-[#1e2d3a]/50 cursor-pointer transition-all duration-200 text-xs"
               onClick={handleCancelCompare}
             >
               <X className="h-3.5 w-3.5 mr-1" />
@@ -155,8 +155,8 @@ export default function HistorialFotos({ pacienteId }: HistorialFotosProps) {
 
       {/* Compare mode hint */}
       {modoComparar && seleccionadas.length < 2 && (
-        <div className="rounded-lg border border-[#0891B2]/20 bg-[#ECFEFF] px-4 py-2.5">
-          <p className="text-xs text-[#0891B2] font-medium">
+        <div className="rounded-lg border border-[#4a7fa5]/20 bg-[#f0f4f7] px-4 py-2.5">
+          <p className="text-xs text-[#4a7fa5] font-medium">
             Selecciona 2 fotos de diferentes fechas para comparar el progreso del paciente
           </p>
         </div>
@@ -165,20 +165,20 @@ export default function HistorialFotos({ pacienteId }: HistorialFotosProps) {
       {/* Photos grouped by date */}
       {gruposPorFecha.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="h-14 w-14 rounded-2xl bg-[#ECFEFF] flex items-center justify-center mb-4">
-            <Camera className="h-6 w-6 text-[#0891B2]/50" />
+          <div className="h-14 w-14 rounded-2xl bg-[#f0f4f7] flex items-center justify-center mb-4">
+            <Camera className="h-6 w-6 text-[#4a7fa5]/50" />
           </div>
-          <p className="text-sm font-semibold text-[#164E63]/60 mb-1">Sin fotos registradas</p>
-          <p className="text-xs text-[#164E63]/40">Las fotos se agregarán al completar sesiones</p>
+          <p className="text-sm font-semibold text-[#1e2d3a]/60 mb-1">Sin fotos registradas</p>
+          <p className="text-xs text-[#1e2d3a]/40">Las fotos se agregarán al completar sesiones</p>
         </div>
       ) : (
         gruposPorFecha.map(([fecha, fotos]) => (
           <div key={fecha}>
             {/* Date header */}
             <div className="flex items-center gap-2 mb-2">
-              <Calendar className="h-3.5 w-3.5 text-[#0891B2]/60" />
-              <p className="text-xs font-bold text-[#164E63]/60 uppercase tracking-wider">{fecha}</p>
-              <Badge variant="outline" className="text-[10px] h-5 px-1.5 border-cyan-200 text-[#164E63]/40">
+              <Calendar className="h-3.5 w-3.5 text-[#4a7fa5]/60" />
+              <p className="text-xs font-bold text-[#1e2d3a]/60 uppercase tracking-wider">{fecha}</p>
+              <Badge variant="outline" className="text-[10px] h-5 px-1.5 border-[#a8cfe0] text-[#1e2d3a]/40">
                 {fotos.length} foto{fotos.length !== 1 ? "s" : ""}
               </Badge>
             </div>
@@ -191,8 +191,8 @@ export default function HistorialFotos({ pacienteId }: HistorialFotosProps) {
                   onClick={() => handleClickFoto(foto)}
                   className={`relative group rounded-xl overflow-hidden border aspect-square cursor-pointer transition-all duration-200 ${
                     modoComparar && isSelected(foto.id)
-                      ? "border-[#0891B2] ring-2 ring-[#0891B2]/30 scale-[0.97]"
-                      : "border-cyan-100 hover:border-[#0891B2]/30 hover:shadow-md"
+                      ? "border-[#4a7fa5] ring-2 ring-[#4a7fa5]/30 scale-[0.97]"
+                      : "border-[#c8dce8] hover:border-[#4a7fa5]/30 hover:shadow-md"
                   }`}
                 >
                   <img
@@ -209,7 +209,7 @@ export default function HistorialFotos({ pacienteId }: HistorialFotosProps) {
                   </Badge>
                   {/* Selection indicator */}
                   {modoComparar && isSelected(foto.id) && (
-                    <div className="absolute top-1.5 right-1.5 h-6 w-6 rounded-full bg-[#0891B2] text-white flex items-center justify-center text-[11px] font-bold shadow-lg">
+                    <div className="absolute top-1.5 right-1.5 h-6 w-6 rounded-full bg-[#4a7fa5] text-white flex items-center justify-center text-[11px] font-bold shadow-lg">
                       {selectionOrder(foto.id)}
                     </div>
                   )}
@@ -237,10 +237,10 @@ export default function HistorialFotos({ pacienteId }: HistorialFotosProps) {
               </div>
               <div className="px-6 pb-4 pt-2">
                 <div className="flex items-center gap-2">
-                  <Badge className="bg-[#0891B2]/10 text-[#0891B2] border-[#0891B2]/20 text-[10px]">
+                  <Badge className="bg-[#4a7fa5]/10 text-[#4a7fa5] border-[#4a7fa5]/20 text-[10px]">
                     {VISTA_LABELS[previewFoto.vista] ?? previewFoto.vista}
                   </Badge>
-                  <span className="text-xs text-[#164E63]/50">
+                  <span className="text-xs text-[#1e2d3a]/50">
                     {new Date(previewFoto.fecha).toLocaleDateString("es-MX", {
                       day: "numeric",
                       month: "long",
@@ -258,7 +258,7 @@ export default function HistorialFotos({ pacienteId }: HistorialFotosProps) {
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="text-[#164E63] font-bold">Comparativa de progreso</DialogTitle>
+            <DialogTitle className="text-[#1e2d3a] font-bold">Comparativa de progreso</DialogTitle>
           </DialogHeader>
           {seleccionadas.length === 2 && (
             <ComparativaFotos

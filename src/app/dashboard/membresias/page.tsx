@@ -2,771 +2,449 @@
 
 import { useState } from "react";
 import {
-  CreditCard,
-  Package,
-  WalletCards,
-  Plus,
+  Sparkles,
   Search,
-  Download,
-  AlertCircle,
-  MoreVertical,
-  CalendarClock,
-  TrendingUp,
-  Activity,
-  X,
+  Plus,
+  Clock,
+  DollarSign,
+  CheckCircle2,
+  Star,
+  Tag,
+  Filter,
+  Package,
+  Heart,
+  Zap,
+  Scissors,
+  Eye,
+  MoreHorizontal,
 } from "lucide-react";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MOCK DATA
+// TIPOS
 // ─────────────────────────────────────────────────────────────────────────────
-const mockMembresias = [
-  {
-    id: "1",
-    paciente: "María González",
-    iniciales: "MG",
-    paquete: "Rehabilitación Post-Operatoria",
-    sesionesTotales: 10,
-    sesionesUsadas: 8,
-    estado: "activa",
-    fechaVencimiento: new Date(2026, 3, 15),
-    walletPass: true,
-    diasRestantes: 50,
-  },
-  {
-    id: "2",
-    paciente: "Carlos Rodríguez",
-    iniciales: "CR",
-    paquete: "Mantenimiento Mensual",
-    sesionesTotales: 4,
-    sesionesUsadas: 4,
-    estado: "vencida",
-    fechaVencimiento: new Date(2026, 1, 10),
-    walletPass: false,
-    diasRestantes: 0,
-  },
-  {
-    id: "3",
-    paciente: "Ana Silva",
-    iniciales: "AS",
-    paquete: "Deportivo Intensivo",
-    sesionesTotales: 5,
-    sesionesUsadas: 1,
-    estado: "activa",
-    fechaVencimiento: new Date(2026, 5, 20),
-    walletPass: true,
-    diasRestantes: 116,
-  },
-  {
-    id: "4",
-    paciente: "Patricia Morales",
-    iniciales: "PM",
-    paquete: "Rehabilitación Básica",
-    sesionesTotales: 8,
-    sesionesUsadas: 7,
-    estado: "activa",
-    fechaVencimiento: new Date(2026, 2, 5),
-    walletPass: false,
-    diasRestantes: 9,
-  },
-  {
-    id: "5",
-    paciente: "Luis Ángel Ramos",
-    iniciales: "LR",
-    paquete: "Mantenimiento Mensual",
-    sesionesTotales: 4,
-    sesionesUsadas: 4,
-    estado: "pendiente_activacion",
-    fechaVencimiento: new Date(2026, 3, 30),
-    walletPass: false,
-    diasRestantes: 65,
-  },
-];
+type CategoriaServicio = "fisioterapia" | "facial" | "masaje" | "corporal" | "epilacion";
 
-const mockPagos = [
-  { id: "P-1001", fecha: new Date(2026, 1, 23, 10, 30), paciente: "María González", concepto: "Paquete Rehab (10 sesiones)", monto: 4500, metodo: "Tarjeta", estado: "pagado" },
-  { id: "P-1002", fecha: new Date(2026, 1, 23, 14, 15), paciente: "Ana Silva", concepto: "Consulta Suelta", monto: 600, metodo: "Efectivo", estado: "pagado" },
-  { id: "P-1003", fecha: new Date(2026, 1, 22, 16, 45), paciente: "Luis Torres", concepto: "Paquete Mantenimiento", monto: 2000, metodo: "Transferencia", estado: "pendiente" },
-  { id: "P-1004", fecha: new Date(2026, 1, 21, 9, 0), paciente: "Patricia Morales", concepto: "Renovación membresía", monto: 3600, metodo: "Tarjeta", estado: "pagado" },
-];
+interface Servicio {
+  id: string;
+  nombre: string;
+  descripcion: string;
+  categoria: CategoriaServicio;
+  duracion: string;
+  precio: number;
+  precioDescuento?: number;
+  sesiones?: number;
+  popular?: boolean;
+  activo: boolean;
+}
 
-const mockPaquetes = [
-  { id: "1", nombre: "Rehabilitación Básica", sesiones: 5, precio: 2500, vigencia: "3 meses", vigenciaDias: 90, activo: true, color: "bg-cyan-500" },
-  { id: "2", nombre: "Rehabilitación Intensiva", sesiones: 10, precio: 4500, vigencia: "6 meses", vigenciaDias: 180, activo: true, color: "bg-violet-500" },
-  { id: "3", nombre: "Mantenimiento Mensual", sesiones: 4, precio: 1800, vigencia: "1 mes", vigenciaDias: 30, activo: true, color: "bg-emerald-500" },
-  { id: "4", nombre: "Promo Verano", sesiones: 8, precio: 3200, vigencia: "2 meses", vigenciaDias: 60, activo: false, color: "bg-orange-500" },
-];
+// ─────────────────────────────────────────────────────────────────────────────
+// CONSTANTES
+// ─────────────────────────────────────────────────────────────────────────────
+const CATEGORIA_CONFIG: Record<CategoriaServicio, { label: string; icon: typeof Heart; color: string; bg: string; border: string; accent: string }> = {
+  fisioterapia: { label: "Fisioterapia",           icon: Zap,      color: "text-[#4a7fa5]", bg: "bg-[#4a7fa5]/10", border: "border-[#4a7fa5]/30", accent: "#4a7fa5" },
+  facial:       { label: "Faciales",               icon: Star,     color: "text-[#9b59b6]", bg: "bg-[#9b59b6]/10", border: "border-[#9b59b6]/30", accent: "#9b59b6" },
+  masaje:       { label: "Masaje y Drenaje",       icon: Heart,    color: "text-[#3fa87c]", bg: "bg-[#3fa87c]/10", border: "border-[#3fa87c]/30", accent: "#3fa87c" },
+  corporal:     { label: "Tratamientos Corporales", icon: Sparkles, color: "text-[#e89b3f]", bg: "bg-[#e89b3f]/10", border: "border-[#e89b3f]/30", accent: "#e89b3f" },
+  epilacion:    { label: "Epilación",              icon: Scissors, color: "text-[#d9534f]", bg: "bg-[#d9534f]/10", border: "border-[#d9534f]/30", accent: "#d9534f" },
+};
 
-const mockPacientesSelect = [
-  "María González",
-  "Carlos Rodríguez",
-  "Ana Silva",
-  "Patricia Morales",
-  "Luis Ángel Ramos",
-  "Roberto Sánchez",
-  "Daniela Martínez",
-  "José Hernández",
-];
+// ─────────────────────────────────────────────────────────────────────────────
+// CATÁLOGO DE SERVICIOS (datos reales de Kaya Kalp)
+// ─────────────────────────────────────────────────────────────────────────────
+const servicios: Servicio[] = [
+  // ── FISIOTERAPIA ──
+  { id: "f1", nombre: "Valoración Fisioterapéutica", descripcion: "Evaluación integral inicial con diagnóstico funcional y plan de tratamiento", categoria: "fisioterapia", duracion: "60 min", precio: 700, activo: true },
+  { id: "f2", nombre: "Sesión de Fisioterapia", descripcion: "Terapia individualizada según diagnóstico: manual, electroterapia, ejercicio terapéutico", categoria: "fisioterapia", duracion: "45 min", precio: 500, popular: true, activo: true },
+  { id: "f3", nombre: "Fisioterapia de Suelo Pélvico", descripcion: "Especializada en disfunciones del suelo pélvico, incontinencia, fortalecimiento", categoria: "fisioterapia", duracion: "50 min", precio: 600, activo: true },
+  { id: "f4", nombre: "Rehabilitación Deportiva", descripcion: "Recuperación de lesiones deportivas con técnicas avanzadas", categoria: "fisioterapia", duracion: "50 min", precio: 550, activo: true },
+  { id: "f5", nombre: "Terapia Manual Ortopédica", descripcion: "Movilización articular, técnicas miofasciales, puntos gatillo", categoria: "fisioterapia", duracion: "45 min", precio: 550, activo: true },
+  { id: "f6", nombre: "Electroterapia", descripcion: "TENS, ultrasonido, laser terapéutico, corrientes interferenciales", categoria: "fisioterapia", duracion: "30 min", precio: 350, activo: true },
+  { id: "f7", nombre: "Vendaje Neuromuscular (Kinesiotape)", descripcion: "Aplicación de vendaje funcional para soporte y alivio de dolor", categoria: "fisioterapia", duracion: "20 min", precio: 250, activo: true },
+  // Paquetes Fisio
+  { id: "fp1", nombre: "Paquete 10 Sesiones Fisio", descripcion: "10 sesiones de fisioterapia con descuento. Vigencia 6 meses", categoria: "fisioterapia", duracion: "45 min c/u", precio: 5000, precioDescuento: 4500, sesiones: 10, activo: true },
+  { id: "fp2", nombre: "Paquete 20 Sesiones Fisio", descripcion: "20 sesiones de fisioterapia, máximo ahorro. Vigencia 6 meses", categoria: "fisioterapia", duracion: "45 min c/u", precio: 10000, precioDescuento: 8000, sesiones: 20, popular: true, activo: true },
 
-const COLORES_PAQUETE = [
-  { value: "bg-cyan-500", clase: "bg-cyan-500" },
-  { value: "bg-violet-500", clase: "bg-violet-500" },
-  { value: "bg-emerald-500", clase: "bg-emerald-500" },
-  { value: "bg-orange-500", clase: "bg-orange-500" },
-  { value: "bg-pink-500", clase: "bg-pink-500" },
+  // ── FACIALES ──
+  { id: "fc1", nombre: "Limpieza Facial Profunda", descripcion: "Extracción, vapor, mascarilla purificante y hidratación", categoria: "facial", duracion: "60 min", precio: 550, popular: true, activo: true },
+  { id: "fc2", nombre: "Facial Hidratante", descripcion: "Hidratación profunda con ácido hialurónico y colágeno", categoria: "facial", duracion: "50 min", precio: 600, activo: true },
+  { id: "fc3", nombre: "Facial Anti-Edad", descripcion: "Tratamiento rejuvenecedor con vitamina C, retinol y péptidos", categoria: "facial", duracion: "60 min", precio: 750, activo: true },
+  { id: "fc4", nombre: "Dermaplaning", descripcion: "Exfoliación física con bisturí especial para rostro luminoso", categoria: "facial", duracion: "40 min", precio: 500, activo: true },
+  { id: "fc5", nombre: "Facial con Radiofrecuencia", descripcion: "Reafirmante facial con tecnología de radiofrecuencia", categoria: "facial", duracion: "50 min", precio: 700, activo: true },
+  { id: "fc6", nombre: "Peeling Químico", descripcion: "Renovación celular con ácidos (glicólico, mandélico, salicílico)", categoria: "facial", duracion: "45 min", precio: 650, activo: true },
+
+  // ── MASAJE Y DRENAJE ──
+  { id: "m1", nombre: "Masaje Relajante", descripcion: "Masaje de cuerpo completo con aceites esenciales aromáticos", categoria: "masaje", duracion: "60 min", precio: 500, popular: true, activo: true },
+  { id: "m2", nombre: "Masaje Descontracturante", descripcion: "Enfocado en puntos de tensión, nudos musculares y contracturas", categoria: "masaje", duracion: "50 min", precio: 550, activo: true },
+  { id: "m3", nombre: "Masaje con Piedras Calientes", descripcion: "Terapia con piedras de basalto calientes para relajación profunda", categoria: "masaje", duracion: "70 min", precio: 650, activo: true },
+  { id: "m4", nombre: "Drenaje Linfático Manual", descripcion: "Técnica Vodder para reducir retención de líquidos y desintoxicar", categoria: "masaje", duracion: "60 min", precio: 600, activo: true },
+  { id: "m5", nombre: "Masaje Prenatal", descripcion: "Especial para embarazadas, alivio de molestias y relajación", categoria: "masaje", duracion: "50 min", precio: 550, activo: true },
+  { id: "m6", nombre: "Reflexología Podal", descripcion: "Masaje de puntos reflejos en los pies para bienestar general", categoria: "masaje", duracion: "40 min", precio: 400, activo: true },
+
+  // ── CORPORALES ──
+  { id: "c1", nombre: "Maderoterapia Corporal", descripcion: "Modelación corporal con rodillos de madera, reduce celulitis", categoria: "corporal", duracion: "50 min", precio: 550, popular: true, activo: true },
+  { id: "c2", nombre: "Radiofrecuencia Corporal", descripcion: "Reafirmante con calor profundo para flacidez y celulitis", categoria: "corporal", duracion: "45 min", precio: 600, activo: true },
+  { id: "c3", nombre: "Vendas Frías", descripcion: "Envolvimiento corporal reductivo con activos lipolíticos", categoria: "corporal", duracion: "60 min", precio: 500, activo: true },
+  { id: "c4", nombre: "Exfoliación Corporal", descripcion: "Renovación de piel con exfoliante de sales o café", categoria: "corporal", duracion: "40 min", precio: 400, activo: true },
+  { id: "c5", nombre: "Ultracavitación", descripcion: "Ultrasonido focalizado para reducción de grasa localizada", categoria: "corporal", duracion: "45 min", precio: 650, activo: true },
+
+  // ── EPILACIÓN ──
+  { id: "e1", nombre: "Epilación Axilas", descripcion: "Depilación con cera o luz pulsada – zona axilar", categoria: "epilacion", duracion: "15 min", precio: 150, activo: true },
+  { id: "e2", nombre: "Epilación Piernas Completas", descripcion: "Depilación piernas completas con cera caliente/tibia", categoria: "epilacion", duracion: "45 min", precio: 400, popular: true, activo: true },
+  { id: "e3", nombre: "Epilación Bikini", descripcion: "Depilación zona bikini tradicional o brasileña", categoria: "epilacion", duracion: "20 min", precio: 250, activo: true },
+  { id: "e4", nombre: "Epilación Facial (Bozo/Cejas)", descripcion: "Depilación con hilo o cera en bozo, cejas o patillas", categoria: "epilacion", duracion: "15 min", precio: 120, activo: true },
+  { id: "e5", nombre: "Epilación Brazos", descripcion: "Depilación de brazos completos con cera", categoria: "epilacion", duracion: "30 min", precio: 300, activo: true },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MODAL ASIGNAR PAQUETE
+// SERVICIO CARD
 // ─────────────────────────────────────────────────────────────────────────────
-function ModalAsignarPaquete({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const [activarManual, setActivarManual] = useState(false);
+function ServicioCard({ servicio, onView }: { servicio: Servicio; onView: () => void }) {
+  const catCfg = CATEGORIA_CONFIG[servicio.categoria];
+  const esPaquete = !!servicio.sesiones;
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-md border-cyan-100">
-        <DialogHeader>
-          <DialogTitle className="text-base font-bold text-[#164E63]">Asignar Paquete</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 py-1">
-          {/* Paciente */}
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-[#164E63]">Paciente</Label>
-            <Select>
-              <SelectTrigger className="border-cyan-200 text-sm">
-                <SelectValue placeholder="Seleccionar paciente..." />
-              </SelectTrigger>
-              <SelectContent>
-                {mockPacientesSelect.map((p) => (
-                  <SelectItem key={p} value={p}>{p}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+    <Card
+      className={`border-[#c8dce8] bg-white hover:shadow-lg transition-all duration-300 cursor-pointer group overflow-hidden ${
+        servicio.popular ? "ring-1 ring-[#e89b3f]/30" : ""
+      }`}
+      onClick={onView}
+    >
+      {/* Top accent line */}
+      <div className="h-1" style={{ backgroundColor: catCfg.accent }} />
+
+      <CardContent className="p-5">
+        {/* Top badges */}
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            {servicio.popular && (
+              <Badge className="bg-[#e89b3f]/15 text-[#e89b3f] border-[#e89b3f]/30 text-[10px]" variant="outline">
+                <Star className="h-3 w-3 mr-1 fill-current" /> Popular
+              </Badge>
+            )}
+            {esPaquete && (
+              <Badge className={`${catCfg.bg} ${catCfg.color} ${catCfg.border} text-[10px]`} variant="outline">
+                <Package className="h-3 w-3 mr-1" /> {servicio.sesiones} sesiones
+              </Badge>
+            )}
           </div>
-          {/* Paquete */}
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-[#164E63]">Paquete</Label>
-            <Select>
-              <SelectTrigger className="border-cyan-200 text-sm">
-                <SelectValue placeholder="Seleccionar paquete..." />
-              </SelectTrigger>
-              <SelectContent>
-                {mockPaquetes.filter((p) => p.activo).map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.nombre} · {p.sesiones} ses · ${p.precio.toLocaleString("es-MX")}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          {/* Método de pago */}
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-[#164E63]">Método de pago</Label>
-            <Select>
-              <SelectTrigger className="border-cyan-200 text-sm">
-                <SelectValue placeholder="Seleccionar método..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="efectivo">Efectivo</SelectItem>
-                <SelectItem value="transferencia">Transferencia</SelectItem>
-                <SelectItem value="tarjeta_debito">Tarjeta débito</SelectItem>
-                <SelectItem value="tarjeta_credito">Tarjeta crédito</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          {/* Activar manualmente */}
-          <div
-            onClick={() => setActivarManual(!activarManual)}
-            className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all duration-200 ${
-              activarManual ? "bg-amber-50 border-amber-200" : "bg-[#ECFEFF] border-cyan-100"
-            }`}
-          >
-            <div className={`h-4 w-4 mt-0.5 rounded border-2 flex items-center justify-center shrink-0 transition-all duration-200 ${
-              activarManual ? "bg-amber-500 border-amber-500" : "border-cyan-300"
-            }`}>
-              {activarManual && <div className="h-2 w-2 bg-white rounded-sm" />}
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-[#164E63]">Activar manualmente</p>
-              <p className="text-[10px] text-[#164E63]/50 mt-0.5">Pago previo en efectivo o transferencia confirmada</p>
-            </div>
-          </div>
-          {/* Notas */}
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-[#164E63]">Notas (opcional)</Label>
-            <Input
-              placeholder="Observaciones sobre el paquete o el pago..."
-              className="border-cyan-200 text-sm"
-            />
+          <div className={`h-9 w-9 rounded-xl ${catCfg.bg} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform`}>
+            <catCfg.icon className={`h-4 w-4 ${catCfg.color}`} />
           </div>
         </div>
-        <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={onClose} className="cursor-pointer border-cyan-200 text-[#164E63] hover:bg-cyan-50 text-sm">
-            Cancelar
-          </Button>
-          <Button onClick={onClose} className="cursor-pointer bg-[#059669] hover:bg-[#059669]/90 text-white text-sm">
-            Asignar y Activar
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+
+        {/* Title + description */}
+        <h3 className="text-sm font-semibold text-[#1e2d3a] mb-1 group-hover:text-[#4a7fa5] transition-colors">
+          {servicio.nombre}
+        </h3>
+        <p className="text-[11px] text-[#5a7080] leading-relaxed line-clamp-2 mb-4">
+          {servicio.descripcion}
+        </p>
+
+        {/* Duration + Price */}
+        <div className="flex items-end justify-between pt-3 border-t border-[#c8dce8]/50">
+          <div className="flex items-center gap-1.5">
+            <Clock className="h-3.5 w-3.5 text-[#8fa8ba]" />
+            <span className="text-xs text-[#8fa8ba] font-medium">{servicio.duracion}</span>
+          </div>
+          <div className="text-right">
+            {servicio.precioDescuento ? (
+              <>
+                <span className="text-[10px] text-[#8fa8ba] line-through mr-1.5">
+                  ${servicio.precio.toLocaleString("es-MX")}
+                </span>
+                <span className="text-lg font-bold text-[#3fa87c]">
+                  ${servicio.precioDescuento.toLocaleString("es-MX")}
+                </span>
+              </>
+            ) : (
+              <span className="text-lg font-bold text-[#1e2d3a]">
+                ${servicio.precio.toLocaleString("es-MX")}
+              </span>
+            )}
+            <p className="text-[10px] text-[#8fa8ba]">MXN</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MODAL COBRO RÁPIDO
+// PAGE
 // ─────────────────────────────────────────────────────────────────────────────
-function ModalCobroRapido({ open, onClose }: { open: boolean; onClose: () => void }) {
-  return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-sm border-cyan-100">
-        <DialogHeader>
-          <DialogTitle className="text-base font-bold text-[#164E63]">Cobro Rápido</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 py-1">
-          {/* Paciente */}
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-[#164E63]">Paciente</Label>
-            <Input placeholder="Nombre del paciente..." className="border-cyan-200 text-sm" />
-          </div>
-          {/* Monto */}
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-[#164E63]">Monto (MXN)</Label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-[#164E63]/50">$</span>
-              <Input
-                type="number"
-                placeholder="0.00"
-                className="pl-6 border-cyan-200 text-sm"
-              />
-            </div>
-          </div>
-          {/* Método */}
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-[#164E63]">Método de pago</Label>
-            <Select>
-              <SelectTrigger className="border-cyan-200 text-sm">
-                <SelectValue placeholder="Seleccionar..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="efectivo">Efectivo</SelectItem>
-                <SelectItem value="transferencia">Transferencia</SelectItem>
-                <SelectItem value="tarjeta_debito">Tarjeta débito</SelectItem>
-                <SelectItem value="tarjeta_credito">Tarjeta crédito</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          {/* Concepto */}
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-[#164E63]">Concepto</Label>
-            <Input placeholder="Ej: Consulta suelta, pago pendiente..." className="border-cyan-200 text-sm" />
-          </div>
-        </div>
-        <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={onClose} className="cursor-pointer border-cyan-200 text-[#164E63] hover:bg-cyan-50 text-sm">
-            Cancelar
-          </Button>
-          <Button onClick={onClose} className="cursor-pointer bg-[#059669] hover:bg-[#059669]/90 text-white text-sm">
-            Registrar Cobro
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+export default function ServiciosPage() {
+  const [busqueda, setBusqueda] = useState("");
+  const [modalDetalle, setModalDetalle] = useState<Servicio | null>(null);
+  const [tabActiva, setTabActiva] = useState<string>("fisioterapia");
+
+  const categorias = Object.entries(CATEGORIA_CONFIG);
+
+  // Filtrado por búsqueda
+  const serviciosFiltrados = servicios.filter((s) =>
+    s.activo && (
+      s.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
+      s.descripcion.toLowerCase().includes(busqueda.toLowerCase())
+    )
   );
-}
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MODAL NUEVO PAQUETE
-// ─────────────────────────────────────────────────────────────────────────────
-function ModalNuevoPaquete({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const [colorSeleccionado, setColorSeleccionado] = useState("bg-cyan-500");
-  const [activo, setActivo] = useState(true);
-  return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-md border-cyan-100">
-        <DialogHeader>
-          <DialogTitle className="text-base font-bold text-[#164E63]">Nuevo Paquete</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 py-1">
-          {/* Nombre */}
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-[#164E63]">Nombre del paquete</Label>
-            <Input placeholder="Ej: Rehabilitación Intensiva" className="border-cyan-200 text-sm" />
-          </div>
-          {/* Grid 3 cols: sesiones + precio + vigencia */}
-          <div className="grid grid-cols-3 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-[#164E63]">Sesiones</Label>
-              <Input type="number" placeholder="10" className="border-cyan-200 text-sm" />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-[#164E63]">Precio MXN</Label>
-              <Input type="number" placeholder="4500" className="border-cyan-200 text-sm" />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-[#164E63]">Vigencia días</Label>
-              <Input type="number" placeholder="180" className="border-cyan-200 text-sm" />
-            </div>
-          </div>
-          {/* Color picker */}
-          <div className="space-y-2">
-            <Label className="text-xs font-semibold text-[#164E63]">Color del paquete</Label>
-            <div className="flex items-center gap-2">
-              {COLORES_PAQUETE.map((c) => (
-                <button
-                  key={c.value}
-                  onClick={() => setColorSeleccionado(c.value)}
-                  className={`h-8 w-8 rounded-full ${c.clase} cursor-pointer transition-all duration-200 ${
-                    colorSeleccionado === c.value
-                      ? "ring-2 ring-offset-2 ring-[#164E63]/40 scale-110"
-                      : "hover:scale-105"
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
-          {/* Switch activo */}
-          <div
-            onClick={() => setActivo(!activo)}
-            className="flex items-center justify-between p-3 rounded-xl bg-[#ECFEFF] border border-cyan-100 cursor-pointer"
-          >
-            <div>
-              <p className="text-xs font-semibold text-[#164E63]">Paquete activo</p>
-              <p className="text-[10px] text-[#164E63]/50">Visible para asignación a pacientes</p>
-            </div>
-            <div className={`h-5 w-9 rounded-full transition-all duration-200 flex items-center px-0.5 ${activo ? "bg-[#059669]" : "bg-gray-300"}`}>
-              <div className={`h-4 w-4 rounded-full bg-white shadow transition-all duration-200 ${activo ? "translate-x-4" : "translate-x-0"}`} />
-            </div>
-          </div>
-        </div>
-        <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={onClose} className="cursor-pointer border-cyan-200 text-[#164E63] hover:bg-cyan-50 text-sm">
-            Cancelar
-          </Button>
-          <Button onClick={onClose} className="cursor-pointer bg-[#059669] hover:bg-[#059669]/90 text-white text-sm">
-            Crear Paquete
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+  // Servicios por categoría activa
+  const serviciosTab = busqueda
+    ? serviciosFiltrados
+    : serviciosFiltrados.filter((s) => s.categoria === tabActiva);
+
+  // KPIs
+  const totalServicios = servicios.filter((s) => s.activo).length;
+  const totalCategorias = Object.keys(CATEGORIA_CONFIG).length;
+  const precioPromedio = Math.round(
+    servicios.filter((s) => s.activo && !s.sesiones).reduce((sum, s) => sum + s.precio, 0) /
+    servicios.filter((s) => s.activo && !s.sesiones).length
   );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// PAGE PRINCIPAL
-// ─────────────────────────────────────────────────────────────────────────────
-export default function MembresiasPagosPage() {
-  const [activeTab, setActiveTab] = useState("membresias");
-  const [filtroMembresia, setFiltroMembresia] = useState("todas");
-  const [modalAsignar, setModalAsignar] = useState(false);
-  const [modalCobro, setModalCobro] = useState(false);
-  const [modalPaquete, setModalPaquete] = useState(false);
-
-  // Filtrado de membresías
-  const membresiasFiltradas = mockMembresias.filter((m) => {
-    if (filtroMembresia === "todas") return true;
-    if (filtroMembresia === "activas") return m.estado === "activa";
-    if (filtroMembresia === "por_vencer") {
-      const restantes = m.sesionesTotales - m.sesionesUsadas;
-      return m.estado === "activa" && restantes <= 2;
-    }
-    if (filtroMembresia === "vencidas") return m.estado === "vencida";
-    return true;
-  });
-
-  // Total pagados
-  const totalPagado = mockPagos.filter((p) => p.estado === "pagado").reduce((a, p) => a + p.monto, 0);
+  const paquetesDisponibles = servicios.filter((s) => s.sesiones).length;
 
   return (
-    <div className="flex flex-col gap-5 p-4 md:p-6 bg-[#ECFEFF] min-h-full">
-      {/* Modales */}
-      <ModalAsignarPaquete open={modalAsignar} onClose={() => setModalAsignar(false)} />
-      <ModalCobroRapido open={modalCobro} onClose={() => setModalCobro(false)} />
-      <ModalNuevoPaquete open={modalPaquete} onClose={() => setModalPaquete(false)} />
-
-      {/* ── HEADER ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold text-[#164E63]">Membresías y Pagos</h1>
-          <p className="text-xs text-[#164E63]/50 mt-0.5">
-            Gestiona paquetes, cobros e historial financiero
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {activeTab === "membresias" && (
-            <Button onClick={() => setModalAsignar(true)} className="cursor-pointer bg-[#059669] hover:bg-[#059669]/90 text-white transition-all duration-200 gap-1.5">
-              <Plus className="h-4 w-4" />
-              Asignar Paquete
-            </Button>
-          )}
-          {activeTab === "pagos" && (
-            <Button onClick={() => setModalCobro(true)} className="cursor-pointer bg-[#059669] hover:bg-[#059669]/90 text-white transition-all duration-200 gap-1.5">
-              <CreditCard className="h-4 w-4" />
-              Cobro Rápido
-            </Button>
-          )}
-          {activeTab === "paquetes" && (
-            <Button onClick={() => setModalPaquete(true)} className="cursor-pointer bg-[#059669] hover:bg-[#059669]/90 text-white transition-all duration-200 gap-1.5">
-              <Package className="h-4 w-4" />
-              Nuevo Paquete
-            </Button>
-          )}
-        </div>
+    <div className="space-y-6">
+      {/* ── KPI CARDS ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: "Servicios Activos", valor: totalServicios.toString(), icon: Sparkles, color: "text-[#4a7fa5]", bg: "bg-[#e4ecf2]", sub: `${totalCategorias} categorías` },
+          { label: "Precio Promedio", valor: `$${precioPromedio}`, icon: DollarSign, color: "text-[#3fa87c]", bg: "bg-emerald-50", sub: "Por sesión individual" },
+          { label: "Paquetes", valor: paquetesDisponibles.toString(), icon: Package, color: "text-[#9b59b6]", bg: "bg-purple-50", sub: "Con descuento especial" },
+          { label: "Más Popular", valor: "Fisio", icon: Star, color: "text-[#e89b3f]", bg: "bg-amber-50", sub: "Sesión de Fisioterapia" },
+        ].map((kpi) => (
+          <Card key={kpi.label} className="border-[#c8dce8] shadow-sm">
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs font-semibold text-[#1e2d3a]/50 uppercase tracking-wide">{kpi.label}</p>
+                  <p className="text-2xl font-bold text-[#1e2d3a] mt-1">{kpi.valor}</p>
+                  <p className="text-[11px] text-[#1e2d3a]/40 mt-0.5">{kpi.sub}</p>
+                </div>
+                <div className={`${kpi.bg} h-10 w-10 rounded-xl flex items-center justify-center`}>
+                  <kpi.icon className={`h-5 w-5 ${kpi.color}`} />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      {/* ── MINI KPI CARDS ── */}
-      <div className="grid grid-cols-3 gap-4">
-        <Card className="border-cyan-100 bg-white hover:shadow-md transition-all duration-200">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="h-9 w-9 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
-              <TrendingUp className="h-4.5 w-4.5 text-emerald-500" />
-            </div>
-            <div>
-              <p className="text-lg font-bold text-[#164E63]">$8,100</p>
-              <p className="text-[10px] text-[#164E63]/50">Ingresos del Mes</p>
-              <p className="text-[10px] text-emerald-600 font-medium flex items-center gap-0.5">
-                <TrendingUp className="h-2.5 w-2.5" /> +12% vs anterior
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-cyan-100 bg-white hover:shadow-md transition-all duration-200">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="h-9 w-9 rounded-xl bg-cyan-50 flex items-center justify-center shrink-0">
-              <WalletCards className="h-4.5 w-4.5 text-[#0891B2]" />
-            </div>
-            <div>
-              <p className="text-lg font-bold text-[#164E63]">12</p>
-              <p className="text-[10px] text-[#164E63]/50">Membresías Activas</p>
-              <p className="text-[10px] text-cyan-600 font-medium">3 por vencer pronto</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-cyan-100 bg-white hover:shadow-md transition-all duration-200">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="h-9 w-9 rounded-xl bg-cyan-50 flex items-center justify-center shrink-0">
-              <Activity className="h-4.5 w-4.5 text-[#0891B2]" />
-            </div>
-            <div>
-              <p className="text-lg font-bold text-[#164E63]">34</p>
-              <p className="text-[10px] text-[#164E63]/50">Sesiones Esta Semana</p>
-              <p className="text-[10px] text-cyan-600 font-medium">+5 vs semana pasada</p>
-            </div>
-          </CardContent>
-        </Card>
+      {/* ── SEARCH ── */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="relative flex-1 w-full">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#1e2d3a]/40" />
+          <Input
+            placeholder="Buscar servicio por nombre o descripción..."
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            className="pl-10 border-[#a8cfe0] focus:border-[#4a7fa5] h-10"
+          />
+        </div>
+        <Button className="cursor-pointer bg-[#4a7fa5] hover:bg-[#4a7fa5]/90 text-white text-sm shadow-sm shrink-0">
+          <Plus className="h-4 w-4 mr-1.5" /> Nuevo Servicio
+        </Button>
       </div>
 
-      {/* ── TABS ── */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3 max-w-md bg-[#ECFEFF] border border-cyan-100">
-          <TabsTrigger value="membresias" className="flex gap-2 data-[state=active]:bg-white data-[state=active]:text-[#164E63]">
-            <WalletCards className="h-4 w-4" />
-            <span className="hidden sm:inline">Membresías</span>
-          </TabsTrigger>
-          <TabsTrigger value="pagos" className="flex gap-2 data-[state=active]:bg-white data-[state=active]:text-[#164E63]">
-            <CreditCard className="h-4 w-4" />
-            <span className="hidden sm:inline">Pagos</span>
-          </TabsTrigger>
-          <TabsTrigger value="paquetes" className="flex gap-2 data-[state=active]:bg-white data-[state=active]:text-[#164E63]">
-            <Package className="h-4 w-4" />
-            <span className="hidden sm:inline">Catálogo</span>
-          </TabsTrigger>
-        </TabsList>
+      {/* ── TABS POR CATEGORÍA ── */}
+      {!busqueda ? (
+        <Tabs value={tabActiva} onValueChange={setTabActiva}>
+          <TabsList className="bg-[#e4ecf2] border border-[#c8dce8] h-11 p-1 gap-1 flex-wrap">
+            {categorias.map(([key, cfg]) => (
+              <TabsTrigger
+                key={key}
+                value={key}
+                className="cursor-pointer text-xs font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm gap-1.5 px-3"
+              >
+                <cfg.icon className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">{cfg.label}</span>
+              </TabsTrigger>
+            ))}
+          </TabsList>
 
-        {/* ── TAB MEMBRESÍAS ── */}
-        <TabsContent value="membresias" className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-            <div className="relative w-full sm:w-72">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#164E63]/40" />
-              <input
-                type="search"
-                placeholder="Buscar por paciente..."
-                className="w-full pl-9 pr-3 py-2 text-sm border border-cyan-200 rounded-lg bg-white text-[#164E63] placeholder:text-[#164E63]/40 focus:outline-none focus:border-[#0891B2] transition-colors"
-              />
-            </div>
-            <Select value={filtroMembresia} onValueChange={setFiltroMembresia}>
-              <SelectTrigger className="w-full sm:w-56 border-cyan-200 text-sm bg-white">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todas">Todas</SelectItem>
-                <SelectItem value="activas">Activas</SelectItem>
-                <SelectItem value="por_vencer">Por vencer (≤2 sesiones)</SelectItem>
-                <SelectItem value="vencidas">Vencidas</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {categorias.map(([key, cfg]) => (
+            <TabsContent key={key} value={key} className="mt-5">
+              {/* Category header */}
+              <div className="flex items-center gap-3 mb-5">
+                <div className={`h-10 w-10 rounded-xl ${cfg.bg} flex items-center justify-center`}>
+                  <cfg.icon className={`h-5 w-5 ${cfg.color}`} />
+                </div>
+                <div>
+                  <h2 className="text-base font-semibold text-[#1e2d3a]">{cfg.label}</h2>
+                  <p className="text-xs text-[#8fa8ba]">
+                    {servicios.filter((s) => s.categoria === key && s.activo).length} servicios disponibles
+                  </p>
+                </div>
+              </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {membresiasFiltradas.map((mem) => {
-              const sesionesRestantes = mem.sesionesTotales - mem.sesionesUsadas;
-              const porcentaje = (mem.sesionesUsadas / mem.sesionesTotales) * 100;
-              const isLowSessions = sesionesRestantes <= 2 && mem.estado === "activa";
-              const isPendiente = mem.estado === "pendiente_activacion";
-
-              return (
-                <Card
-                  key={mem.id}
-                  className={`flex flex-col border hover:shadow-md transition-all duration-200 ${
-                    isPendiente
-                      ? "border-amber-200 bg-amber-50/20"
-                      : isLowSessions
-                      ? "border-orange-200 bg-orange-50/30"
-                      : "border-cyan-100 bg-white"
-                  }`}
-                >
-                  <CardHeader className="pb-3 flex flex-row items-start justify-between space-y-0">
-                    <div className="flex items-center gap-2.5">
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback className="bg-[#0891B2]/10 text-[#0891B2] text-[10px] font-bold">
-                          {mem.iniciales}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <CardTitle className="text-sm font-bold text-[#164E63]">{mem.paciente}</CardTitle>
-                        <CardDescription className="text-xs mt-0.5">{mem.paquete}</CardDescription>
-                      </div>
-                    </div>
-                    {isPendiente ? (
-                      <Badge variant="outline" className="text-[10px] bg-amber-50 text-amber-700 border-amber-200 shrink-0">Pendiente</Badge>
-                    ) : mem.estado === "activa" ? (
-                      <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200 shrink-0">Activa</Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-[10px] bg-slate-100 text-slate-500 border-slate-200 shrink-0">Vencida</Badge>
-                    )}
-                  </CardHeader>
-                  <CardContent className="flex-1 pb-3 space-y-3">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-[#164E63]/50">Progreso</span>
-                      <span className={`font-semibold ${isLowSessions ? "text-orange-600" : "text-[#164E63]"}`}>
-                        {mem.sesionesUsadas} / {mem.sesionesTotales}
-                      </span>
-                    </div>
-                    <Progress
-                      value={porcentaje}
-                      className={`h-1.5 ${
-                        isLowSessions
-                          ? "[&>div]:bg-orange-400 bg-orange-100"
-                          : isPendiente
-                          ? "[&>div]:bg-amber-400 bg-amber-100"
-                          : "[&>div]:bg-[#0891B2]"
-                      }`}
+              {/* Services grid */}
+              <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
+                {servicios
+                  .filter((s) => s.categoria === key && s.activo)
+                  .map((servicio) => (
+                    <ServicioCard
+                      key={servicio.id}
+                      servicio={servicio}
+                      onView={() => setModalDetalle(servicio)}
                     />
-                    {isLowSessions && (
-                      <div className="flex items-center gap-1 text-[11px] text-orange-600 font-medium">
-                        <AlertCircle className="h-3 w-3" />
-                        ¡Quedan {sesionesRestantes} {sesionesRestantes === 1 ? "sesión" : "sesiones"}!
-                      </div>
-                    )}
-                    <div className="flex items-center justify-between text-[10px] text-[#164E63]/50">
-                      <div className="flex items-center gap-1">
-                        <CalendarClock className="h-3 w-3" />
-                        Vence: {format(mem.fechaVencimiento, "d MMM yyyy", { locale: es })}
-                      </div>
-                      {mem.diasRestantes > 0 && (
-                        <span className={`font-semibold ${mem.diasRestantes <= 10 ? "text-orange-500" : "text-[#164E63]/60"}`}>
-                          {mem.diasRestantes}d restantes
-                        </span>
-                      )}
-                    </div>
-                  </CardContent>
-                  <CardFooter className="pt-3 border-t border-current/5 flex justify-between gap-2">
-                    {isPendiente ? (
-                      <Button
-                        size="sm"
-                        className="h-7 text-xs cursor-pointer bg-amber-500 hover:bg-amber-600 text-white transition-all duration-200"
-                      >
-                        Activar Membresía
-                      </Button>
-                    ) : mem.walletPass ? (
-                      <Button variant="ghost" size="sm" className="h-7 text-xs cursor-pointer text-[#0891B2] hover:text-[#0891B2]/80 hover:bg-cyan-50">
-                        Ver Apple Wallet
-                      </Button>
-                    ) : (
-                      <Button variant="ghost" size="sm" className="h-7 text-xs cursor-pointer hover:bg-cyan-50">
-                        Generar Pass
-                      </Button>
-                    )}
-                    <Button variant="ghost" size="icon" className="h-7 w-7 cursor-pointer hover:bg-[#ECFEFF]">
-                      <MoreVertical className="h-3.5 w-3.5 text-[#164E63]/40" />
-                    </Button>
-                  </CardFooter>
-                </Card>
-              );
-            })}
+                  ))}
+              </div>
+            </TabsContent>
+          ))}
+        </Tabs>
+      ) : (
+        /* Search results (no tabs) */
+        <div>
+          <p className="text-sm text-[#5a7080] mb-4">
+            {serviciosTab.length} resultado{serviciosTab.length !== 1 ? "s" : ""} para &ldquo;{busqueda}&rdquo;
+          </p>
+          <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
+            {serviciosTab.map((servicio) => (
+              <ServicioCard
+                key={servicio.id}
+                servicio={servicio}
+                onView={() => setModalDetalle(servicio)}
+              />
+            ))}
           </div>
-        </TabsContent>
+          {serviciosTab.length === 0 && (
+            <Card className="border-[#c8dce8] shadow-sm">
+              <CardContent className="py-16 text-center">
+                <Search className="h-12 w-12 text-[#1e2d3a]/15 mx-auto mb-3" />
+                <p className="text-sm font-semibold text-[#1e2d3a]/40">No se encontraron servicios</p>
+                <p className="text-xs text-[#1e2d3a]/30 mt-1">Intenta con otro término de búsqueda</p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
 
-        {/* ── TAB PAGOS ── */}
-        <TabsContent value="pagos" className="space-y-4">
-          <Card className="border-cyan-100 bg-white">
-            <CardHeader className="flex flex-row items-center justify-between pb-3">
-              <div>
-                <CardTitle className="text-sm font-bold text-[#164E63]">Historial de Transacciones</CardTitle>
-                <CardDescription className="text-xs mt-0.5">Cobros recientes y estado de cuenta mensual.</CardDescription>
-              </div>
-              <Button variant="outline" size="sm" className="cursor-pointer border-cyan-200 text-[#164E63] hover:bg-cyan-50 transition-all duration-200 text-xs gap-1.5">
-                <Download className="h-3.5 w-3.5" />
-                Reporte
-              </Button>
-            </CardHeader>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-cyan-100 bg-[#ECFEFF]/50">
-                    <TableHead className="text-[10px] font-bold text-[#164E63]/50 uppercase">Fecha</TableHead>
-                    <TableHead className="text-[10px] font-bold text-[#164E63]/50 uppercase">Paciente</TableHead>
-                    <TableHead className="text-[10px] font-bold text-[#164E63]/50 uppercase hidden sm:table-cell">Concepto</TableHead>
-                    <TableHead className="text-[10px] font-bold text-[#164E63]/50 uppercase hidden sm:table-cell">Método</TableHead>
-                    <TableHead className="text-[10px] font-bold text-[#164E63]/50 uppercase text-right">Monto</TableHead>
-                    <TableHead className="text-[10px] font-bold text-[#164E63]/50 uppercase text-right">Estado</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {mockPagos.map((pago) => (
-                    <TableRow key={pago.id} className="border-cyan-100 hover:bg-[#ECFEFF]/30 transition-colors">
-                      <TableCell className="py-3">
-                        <p className="text-xs font-medium text-[#164E63]">{format(pago.fecha, "dd/MM/yyyy")}</p>
-                        <p className="text-[10px] text-[#164E63]/40">{format(pago.fecha, "HH:mm")}</p>
-                      </TableCell>
-                      <TableCell className="py-3">
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-6 w-6">
-                            <AvatarFallback className="text-[9px] bg-[#0891B2]/10 text-[#0891B2]">
-                              {pago.paciente.substring(0, 2).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-xs text-[#164E63]">{pago.paciente}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="py-3 hidden sm:table-cell">
-                        <p className="text-xs text-[#164E63]/60">{pago.concepto}</p>
-                      </TableCell>
-                      <TableCell className="py-3 hidden sm:table-cell">
-                        <p className="text-xs text-[#164E63]/60">{pago.metodo}</p>
-                      </TableCell>
-                      <TableCell className="py-3 text-right">
-                        <p className="text-sm font-bold text-[#164E63]">
-                          ${pago.monto.toLocaleString("es-MX", { minimumFractionDigits: 2 })}
-                        </p>
-                      </TableCell>
-                      <TableCell className="py-3 text-right">
-                        <Badge
-                          variant="outline"
-                          className={`text-[10px] ${
-                            pago.estado === "pagado"
-                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                              : "bg-amber-50 text-amber-700 border-amber-200"
-                          }`}
-                        >
-                          {pago.estado === "pagado" ? "Pagado" : "Pendiente"}
+      {/* ── MODAL: DETALLE SERVICIO ── */}
+      <Dialog open={!!modalDetalle} onOpenChange={() => setModalDetalle(null)}>
+        <DialogContent className="max-w-md">
+          {modalDetalle && (() => {
+            const catCfg = CATEGORIA_CONFIG[modalDetalle.categoria];
+            const esPaquete = !!modalDetalle.sesiones;
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="text-[#1e2d3a] flex items-center gap-2">
+                    <catCfg.icon className={`h-5 w-5 ${catCfg.color}`} />
+                    Detalle del Servicio
+                  </DialogTitle>
+                </DialogHeader>
+
+                {/* Header card */}
+                <div className="bg-gradient-to-r from-[#f0f4f7] to-white rounded-xl p-5 space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge variant="outline" className={`text-[10px] ${catCfg.color} ${catCfg.bg} ${catCfg.border}`}>
+                          {catCfg.label}
                         </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                        {modalDetalle.popular && (
+                          <Badge className="bg-[#e89b3f]/15 text-[#e89b3f] border-[#e89b3f]/30 text-[10px]" variant="outline">
+                            <Star className="h-3 w-3 mr-1 fill-current" /> Popular
+                          </Badge>
+                        )}
+                        {esPaquete && (
+                          <Badge className="bg-[#4a7fa5]/10 text-[#4a7fa5] border-[#4a7fa5]/30 text-[10px]" variant="outline">
+                            <Package className="h-3 w-3 mr-1" /> Paquete
+                          </Badge>
+                        )}
+                      </div>
+                      <h3 className="text-lg font-semibold text-[#1e2d3a]">{modalDetalle.nombre}</h3>
+                    </div>
+                  </div>
+                  <p className="text-sm text-[#5a7080] leading-relaxed">{modalDetalle.descripcion}</p>
+                </div>
 
-              {/* Fila de totales */}
-              <div className="border-t border-cyan-100 px-4 py-3 flex items-center justify-between bg-[#ECFEFF]/50">
-                <p className="text-xs font-semibold text-[#164E63]/60">Ingresos del período:</p>
-                <p className="text-base font-bold text-emerald-600">
-                  ${totalPagado.toLocaleString("es-MX", { minimumFractionDigits: 2 })} MXN
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* ── TAB PAQUETES ── */}
-        <TabsContent value="paquetes" className="space-y-4">
-          <Card className="border-cyan-100 bg-white">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-bold text-[#164E63]">Catálogo de Paquetes</CardTitle>
-              <CardDescription className="text-xs mt-0.5">Configura los planes de membresía disponibles para venta.</CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-cyan-100 bg-[#ECFEFF]/50">
-                    <TableHead className="text-[10px] font-bold text-[#164E63]/50 uppercase">Paquete</TableHead>
-                    <TableHead className="text-[10px] font-bold text-[#164E63]/50 uppercase">Sesiones</TableHead>
-                    <TableHead className="text-[10px] font-bold text-[#164E63]/50 uppercase hidden sm:table-cell">Vigencia</TableHead>
-                    <TableHead className="text-[10px] font-bold text-[#164E63]/50 uppercase text-right">Precio</TableHead>
-                    <TableHead className="text-[10px] font-bold text-[#164E63]/50 uppercase text-right">Estado</TableHead>
-                    <TableHead />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {mockPaquetes.map((paquete) => (
-                    <TableRow key={paquete.id} className="border-cyan-100 hover:bg-[#ECFEFF]/30 transition-colors">
-                      <TableCell className="py-3">
-                        <div className="flex items-center gap-2.5">
-                          <div className={`h-6 w-6 rounded-lg ${paquete.color} shrink-0`} />
-                          <p className="text-xs font-semibold text-[#164E63]">{paquete.nombre}</p>
+                {/* Details grid */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-[#f0f4f7] rounded-xl p-3">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <Clock className="h-3.5 w-3.5 text-[#8fa8ba]" />
+                      <span className="text-[10px] font-semibold text-[#8fa8ba] uppercase tracking-wide">Duración</span>
+                    </div>
+                    <p className="text-sm font-semibold text-[#1e2d3a]">{modalDetalle.duracion}</p>
+                  </div>
+                  <div className="bg-[#f0f4f7] rounded-xl p-3">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <DollarSign className="h-3.5 w-3.5 text-[#8fa8ba]" />
+                      <span className="text-[10px] font-semibold text-[#8fa8ba] uppercase tracking-wide">Precio</span>
+                    </div>
+                    {modalDetalle.precioDescuento ? (
+                      <div>
+                        <span className="text-[11px] text-[#8fa8ba] line-through mr-1">
+                          ${modalDetalle.precio.toLocaleString("es-MX")}
+                        </span>
+                        <span className="text-sm font-bold text-[#3fa87c]">
+                          ${modalDetalle.precioDescuento.toLocaleString("es-MX")}
+                        </span>
+                      </div>
+                    ) : (
+                      <p className="text-sm font-semibold text-[#1e2d3a]">
+                        ${modalDetalle.precio.toLocaleString("es-MX")} MXN
+                      </p>
+                    )}
+                  </div>
+                  {esPaquete && (
+                    <>
+                      <div className="bg-[#f0f4f7] rounded-xl p-3">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <Package className="h-3.5 w-3.5 text-[#8fa8ba]" />
+                          <span className="text-[10px] font-semibold text-[#8fa8ba] uppercase tracking-wide">Sesiones</span>
                         </div>
-                      </TableCell>
-                      <TableCell className="py-3">
-                        <p className="text-xs font-bold text-[#164E63]">{paquete.sesiones}</p>
-                      </TableCell>
-                      <TableCell className="py-3 hidden sm:table-cell">
-                        <p className="text-xs text-[#164E63]/60">{paquete.vigencia}</p>
-                      </TableCell>
-                      <TableCell className="py-3 text-right">
-                        <p className="text-sm font-bold text-[#164E63]">
-                          ${paquete.precio.toLocaleString("es-MX", { minimumFractionDigits: 2 })}
+                        <p className="text-sm font-semibold text-[#1e2d3a]">{modalDetalle.sesiones}</p>
+                      </div>
+                      <div className="bg-[#f0f4f7] rounded-xl p-3">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <Tag className="h-3.5 w-3.5 text-[#8fa8ba]" />
+                          <span className="text-[10px] font-semibold text-[#8fa8ba] uppercase tracking-wide">Por sesión</span>
+                        </div>
+                        <p className="text-sm font-semibold text-[#3fa87c]">
+                          ${Math.round((modalDetalle.precioDescuento || modalDetalle.precio) / modalDetalle.sesiones!).toLocaleString("es-MX")}
                         </p>
-                      </TableCell>
-                      <TableCell className="py-3 text-right">
-                        <Badge
-                          variant="outline"
-                          className={`text-[10px] ${
-                            paquete.activo
-                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                              : "bg-slate-100 text-slate-500 border-slate-200"
-                          }`}
-                        >
-                          {paquete.activo ? "Activo" : "Inactivo"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="py-3 text-right">
-                        <Button variant="ghost" size="sm" className="h-7 text-xs cursor-pointer hover:bg-cyan-50 text-[#0891B2]">
-                          Editar
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Savings callout for packages */}
+                {esPaquete && modalDetalle.precioDescuento && (
+                  <div className="flex items-center gap-2 bg-[#3fa87c]/10 border border-[#3fa87c]/20 rounded-xl p-3">
+                    <CheckCircle2 className="h-4 w-4 text-[#3fa87c] shrink-0" />
+                    <p className="text-xs font-medium text-[#3fa87c]">
+                      Ahorras ${(modalDetalle.precio - modalDetalle.precioDescuento).toLocaleString("es-MX")} MXN ({Math.round(((modalDetalle.precio - modalDetalle.precioDescuento) / modalDetalle.precio) * 100)}% descuento)
+                    </p>
+                  </div>
+                )}
+
+                <DialogFooter className="gap-2 mt-2">
+                  <Button variant="outline" onClick={() => setModalDetalle(null)} className="cursor-pointer">
+                    Cerrar
+                  </Button>
+                  <Button className="cursor-pointer bg-[#4a7fa5] hover:bg-[#4a7fa5]/90 text-white">
+                    <CheckCircle2 className="h-4 w-4 mr-1.5" /> Agendar Cita
+                  </Button>
+                </DialogFooter>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
