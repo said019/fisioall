@@ -11,11 +11,9 @@ import {
   Clock,
   MapPin,
   CalendarDays,
-  Star,
   Sparkles,
   Award,
   Heart,
-  Shield,
   ChevronDown,
 } from "lucide-react";
 import { useState } from "react";
@@ -278,25 +276,6 @@ export default function LandingPage() {
             </motion.div>
           </div>
 
-          {/* Trust strip */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.5 }}
-            className="mt-20 flex flex-wrap items-center gap-8 md:gap-16"
-          >
-            {[
-              { icon: Clock, text: "L-V 9am — 8pm" },
-              { icon: MapPin, text: "San Juan del Río, Qro." },
-              { icon: Shield, text: "Certificadas ante la SEP" },
-              { icon: Star, text: "10+ años de experiencia" },
-            ].map((item) => (
-              <div key={item.text} className="flex items-center gap-2">
-                <item.icon className="h-4 w-4 text-[#4a7fa5]" />
-                <span className="text-sm text-[#8fa8ba]">{item.text}</span>
-              </div>
-            ))}
-          </motion.div>
         </header>
 
         {/* ─── SERVICIOS FISIOTERAPIA ─────────────────────────────────── */}
@@ -937,3 +916,4 @@ export default function LandingPage() {
     </div>
   );
 }
+
