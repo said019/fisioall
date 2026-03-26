@@ -293,3 +293,29 @@ export async function cancelarCitaPublica(citaId: string, pacienteId: string) {
     return { error: "Error al cancelar. Intenta de nuevo." };
   }
 }
+
+// ─── OBTENER TARJETAS DE LEALTAD DEL PACIENTE ────────────────────────────
+export async function getTarjetasPaciente(pacienteId: string) {
+  const tarjetas = await prisma.tarjetaLealtad.findMany({
+    where: { pacienteId, estado: { in: ["activa", "completada"] } },
+    orderBy: { updatedAt: "desc" },
+  });
+
+  return tarjetas.map((t) => {
+    const usados = t.sellosUsados;
+    const totales = t.sellosTotal;
+    const sellos = Array.from({ length: totales }, (_, i) => i < usados);
+
+    let estado: string = t.estado;
+    if (estado === "activa" && usados >= totales) estado = "completada";
+
+    return {
+      id: t.id,
+      sellosTotal: totales,
+      sellosUsados: usados,
+      estado,
+      sellos,
+      recompensa: t.recompensa,
+    };
+  });
+}

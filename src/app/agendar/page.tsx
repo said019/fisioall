@@ -48,6 +48,7 @@ import {
   getFisioterapeutasPublic,
   agendarCitaPublica,
   cancelarCitaPublica,
+  getTarjetasPaciente,
 } from "./actions";
 
 // ── TIPOS ────────────────────────────────────────────────────────────────────
@@ -80,6 +81,15 @@ type Membresia = {
   sesionesUsadas: number;
   sesionesTotal: number;
   estado: string;
+};
+
+type TarjetaLealtad = {
+  id: string;
+  sellosTotal: number;
+  sellosUsados: number;
+  estado: string;
+  sellos: boolean[];
+  recompensa: string;
 };
 
 type Slot = { hora: string; disponible: boolean };
@@ -263,6 +273,7 @@ export default function AgendarPage() {
   const [paciente, setPaciente] = useState<Paciente | null>(null);
   const [citas, setCitas] = useState<CitaPaciente[]>([]);
   const [membresias, setMembresias] = useState<Membresia[]>([]);
+  const [tarjetas, setTarjetas] = useState<TarjetaLealtad[]>([]);
 
   // Nueva cita
   const [modalNuevaCita, setModalNuevaCita] = useState(false);
@@ -297,13 +308,15 @@ export default function AgendarPage() {
         setVista("register");
       } else if (result.paciente) {
         setPaciente(result.paciente);
-        // Load citas + membresías
-        const [citasData, memData] = await Promise.all([
+        // Load citas + membresías + tarjetas
+        const [citasData, memData, tarjetasData] = await Promise.all([
           getCitasPaciente(result.paciente.id),
           getMembresiasPaciente(result.paciente.id),
+          getTarjetasPaciente(result.paciente.id),
         ]);
         setCitas(citasData as any);
         setMembresias(memData as any);
+        setTarjetas(tarjetasData as any);
         setVista("profile");
       }
     } catch {
@@ -325,6 +338,7 @@ export default function AgendarPage() {
         setPaciente(result.paciente);
         setCitas([]);
         setMembresias([]);
+        setTarjetas([]);
         setVista("profile");
       }
     } catch {
@@ -644,6 +658,66 @@ export default function AgendarPage() {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* ── Tarjetas de lealtad ── */}
+        {tarjetas.length > 0 && (
+          <div className="space-y-3">
+            {tarjetas.map((t) => (
+              <div key={t.id} className="bg-white rounded-2xl border border-[#c8dce8] p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <Star className="h-4 w-4 text-[#e89b3f]" />
+                  <span className="text-xs font-bold text-[#1e2d3a] uppercase tracking-wider">
+                    Tarjeta de Lealtad
+                  </span>
+                  {t.estado === "completada" && (
+                    <Badge className="ml-auto text-[10px] bg-[#3fa87c]/10 text-[#3fa87c] border-none">
+                      Completada
+                    </Badge>
+                  )}
+                </div>
+
+                {/* Sellos grid */}
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {t.sellos.map((usado, i) => (
+                    <div
+                      key={i}
+                      className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                        usado
+                          ? "bg-[#4a7fa5] text-white shadow-sm shadow-[#4a7fa5]/30"
+                          : "bg-[#e4ecf2] text-[#c8dce8]"
+                      }`}
+                    >
+                      {usado ? (
+                        <CheckCircle2 className="h-4 w-4" />
+                      ) : (
+                        i + 1
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Progress */}
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="flex-1 h-1.5 bg-[#e4ecf2] rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-[#4a7fa5] rounded-full transition-all"
+                      style={{ width: `${(t.sellosUsados / t.sellosTotal) * 100}%` }}
+                    />
+                  </div>
+                  <span className="text-[10px] text-[#5a7080] font-semibold shrink-0">
+                    {t.sellosUsados}/{t.sellosTotal}
+                  </span>
+                </div>
+
+                {/* Recompensa */}
+                <div className="flex items-center gap-2 bg-[#e89b3f]/5 rounded-lg p-2.5">
+                  <span className="text-[10px] font-bold text-[#e89b3f] uppercase tracking-wider">Recompensa:</span>
+                  <span className="text-xs text-[#1e2d3a] font-medium">{t.recompensa}</span>
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
