@@ -11,8 +11,10 @@ import {
   CheckCircle2,
   Clock,
   Sparkles,
-  Filter,
   ArrowUpRight,
+  Smartphone,
+  Loader2,
+  ExternalLink,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -215,6 +217,100 @@ function TarjetaCard({ tarjeta, onView }: { tarjeta: TarjetaLealtad; onView: () 
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WALLET BUTTONS
+// ─────────────────────────────────────────────────────────────────────────────
+function WalletButtons({ tarjetaId }: { tarjetaId: string }) {
+  const [loadingApple, setLoadingApple] = useState(false);
+  const [loadingGoogle, setLoadingGoogle] = useState(false);
+
+  const handleAppleWallet = async () => {
+    setLoadingApple(true);
+    try {
+      const res = await fetch(`/api/wallet/apple/${tarjetaId}`);
+      if (res.status === 503) {
+        toast.info("Apple Wallet aún no está configurado. Se requieren certificados de Apple.");
+        return;
+      }
+      if (!res.ok) {
+        toast.error("Error al generar el pase de Apple Wallet");
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `kaya-kalp-lealtad-${tarjetaId.slice(0, 8)}.pkpass`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("Pase de Apple Wallet descargado");
+    } catch {
+      toast.error("Error al descargar el pase");
+    } finally {
+      setLoadingApple(false);
+    }
+  };
+
+  const handleGoogleWallet = async () => {
+    setLoadingGoogle(true);
+    try {
+      const res = await fetch(`/api/wallet/google/${tarjetaId}`);
+      if (res.status === 503) {
+        toast.info("Google Wallet aún no está configurado. Se requieren credenciales de Google.");
+        return;
+      }
+      const data = await res.json();
+      if (!res.ok || !data.saveUrl) {
+        toast.error("Error al generar la URL de Google Wallet");
+        return;
+      }
+      window.open(data.saveUrl, "_blank");
+    } catch {
+      toast.error("Error al abrir Google Wallet");
+    } finally {
+      setLoadingGoogle(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-[10px] font-semibold text-[#8fa8ba] uppercase tracking-wide">
+        Agregar a Wallet del paciente
+      </p>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={handleAppleWallet}
+          disabled={loadingApple}
+          className="cursor-pointer flex-1 flex items-center justify-center gap-2 rounded-lg border border-[#1e2d3a] bg-[#1e2d3a] px-3 py-2.5 text-white text-xs font-medium hover:bg-[#1e2d3a]/90 transition-colors disabled:opacity-50"
+        >
+          {loadingApple ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Smartphone className="h-4 w-4" />
+          )}
+          Apple Wallet
+        </button>
+        <button
+          type="button"
+          onClick={handleGoogleWallet}
+          disabled={loadingGoogle}
+          className="cursor-pointer flex-1 flex items-center justify-center gap-2 rounded-lg border border-[#4285f4] bg-[#4285f4] px-3 py-2.5 text-white text-xs font-medium hover:bg-[#4285f4]/90 transition-colors disabled:opacity-50"
+        >
+          {loadingGoogle ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <ExternalLink className="h-4 w-4" />
+          )}
+          Google Wallet
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -431,6 +527,9 @@ export default function TarjetasClient({
                     </div>
                   ))}
                 </div>
+
+                {/* Wallet buttons */}
+                <WalletButtons tarjetaId={modalDetalle.id} />
 
                 <DialogFooter className="gap-2 mt-2">
                   <Button variant="outline" onClick={() => setModalDetalle(null)} className="cursor-pointer">

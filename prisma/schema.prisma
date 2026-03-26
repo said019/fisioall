@@ -820,6 +820,9 @@ model TarjetaLealtad {
   fechaExpiracion DateTime?             @map("fecha_expiracion") @db.Date
   notas           String?
 
+  walletApplePassId   String?           @map("wallet_apple_pass_id") @db.VarChar(100)
+  walletGoogleSaveUrl String?           @map("wallet_google_save_url")
+
   createdAt       DateTime?             @default(now()) @map("created_at") @db.Timestamptz
   updatedAt       DateTime?             @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
