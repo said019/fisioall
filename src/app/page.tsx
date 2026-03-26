@@ -139,13 +139,13 @@ export default function LandingPage() {
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
 
   return (
-    <div className="min-h-screen bg-[#faf9f7]">
+    <div className="min-h-screen bg-[#f0f4f7]">
       {/* ─── NAVBAR ─────────────────────────────────────────────────────── */}
-      <nav className="fixed top-0 w-full z-50 bg-[#faf9f7]/80 backdrop-blur-xl border-b border-[#e8e4df]/60">
+      <nav className="fixed top-0 w-full z-50 bg-[#f0f4f7]/80 backdrop-blur-xl border-b border-[#c8dce8]/60">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <Link href="/" className="cursor-pointer">
             <span
-              className="text-2xl font-bold text-[#2c3e2d] tracking-tight"
+              className="text-2xl font-bold text-[#4a7fa5] tracking-tight"
               style={{ fontFamily: "'Cormorant Garamond', serif" }}
             >
               Kaya Kalp
@@ -161,7 +161,7 @@ export default function LandingPage() {
               <a
                 key={item.href}
                 href={item.href}
-                className="text-sm font-medium text-[#5a6b5c] hover:text-[#3fa87c] transition-colors uppercase tracking-[0.2em] cursor-pointer"
+                className="text-sm font-medium text-[#5a7080] hover:text-[#4a7fa5] transition-colors uppercase tracking-[0.2em] cursor-pointer"
               >
                 {item.label}
               </a>
@@ -170,17 +170,17 @@ export default function LandingPage() {
 
           <div className="flex items-center gap-4">
             <Link href="/login" className="hidden md:block">
-              <span className="text-sm font-medium text-[#5a6b5c] hover:text-[#3fa87c] transition-colors uppercase tracking-[0.15em] cursor-pointer">
+              <span className="text-sm font-medium text-[#5a7080] hover:text-[#4a7fa5] transition-colors uppercase tracking-[0.15em] cursor-pointer">
                 Iniciar Sesión
               </span>
             </Link>
             <Link href="/agendar" className="hidden md:block">
-              <button className="cursor-pointer bg-[#2c3e2d] text-white px-8 py-3 rounded-xl font-medium tracking-wide hover:bg-[#3fa87c] transition-all duration-300 active:scale-95 text-sm">
+              <button className="cursor-pointer bg-[#4a7fa5] text-white px-8 py-3 rounded-xl font-medium tracking-wide hover:bg-[#2d5f80] transition-all duration-300 active:scale-95 text-sm">
                 Agendar Cita
               </button>
             </Link>
             <button
-              className="md:hidden text-[#2c3e2d] cursor-pointer p-2"
+              className="md:hidden text-[#1e2d3a] cursor-pointer p-2"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label={mobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
             >
@@ -195,7 +195,7 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.2 }}
-            className="md:hidden bg-[#faf9f7] border-t border-[#e8e4df]/60 px-6 py-6 space-y-4"
+            className="md:hidden bg-[#f0f4f7] border-t border-[#c8dce8]/60 px-6 py-6 space-y-4"
           >
             {[
               { href: "#servicios", label: "Servicios" },
@@ -206,19 +206,19 @@ export default function LandingPage() {
                 key={item.href}
                 href={item.href}
                 onClick={() => setMobileMenuOpen(false)}
-                className="block text-sm font-medium text-[#5a6b5c] hover:text-[#3fa87c] uppercase tracking-[0.2em] cursor-pointer"
+                className="block text-sm font-medium text-[#5a7080] hover:text-[#4a7fa5] uppercase tracking-[0.2em] cursor-pointer"
               >
                 {item.label}
               </a>
             ))}
-            <div className="flex flex-col gap-3 pt-4 border-t border-[#e8e4df]/60">
+            <div className="flex flex-col gap-3 pt-4 border-t border-[#c8dce8]/60">
               <Link href="/login">
-                <button className="cursor-pointer w-full py-3 border border-[#e8e4df] rounded-xl text-sm font-medium text-[#5a6b5c]">
+                <button className="cursor-pointer w-full py-3 border border-[#c8dce8] rounded-xl text-sm font-medium text-[#5a7080]">
                   Iniciar Sesión
                 </button>
               </Link>
               <Link href="/agendar">
-                <button className="cursor-pointer w-full py-3 bg-[#2c3e2d] text-white rounded-xl text-sm font-medium">
+                <button className="cursor-pointer w-full py-3 bg-[#4a7fa5] text-white rounded-xl text-sm font-medium">
                   Agendar Cita
                 </button>
               </Link>
@@ -237,17 +237,17 @@ export default function LandingPage() {
               transition={{ duration: 0.8 }}
             >
               <div className="inline-flex items-center gap-2 mb-6">
-                <Award className="h-4 w-4 text-[#3fa87c]" />
-                <span className="text-[#3fa87c] text-xs tracking-[0.3em] uppercase font-semibold">
+                <Award className="h-4 w-4 text-[#4a7fa5]" />
+                <span className="text-[#4a7fa5] text-xs tracking-[0.3em] uppercase font-semibold">
                   Certificación CONOCER · SEP
                 </span>
               </div>
               <h1
-                className="text-6xl md:text-8xl text-[#2c3e2d] leading-[0.9] tracking-tighter"
+                className="text-6xl md:text-8xl text-[#1e2d3a] leading-[0.9] tracking-tighter"
                 style={{ fontFamily: "'Cormorant Garamond', serif" }}
               >
                 Dando vida <br />
-                <span className="italic font-light text-[#3fa87c]">a tu cuerpo.</span>
+                <span className="italic font-light text-[#4a7fa5]">a tu cuerpo.</span>
               </h1>
             </motion.div>
             <motion.div
@@ -256,20 +256,20 @@ export default function LandingPage() {
               transition={{ duration: 0.8, delay: 0.2 }}
               className="lg:pb-4"
             >
-              <p className="text-xl text-[#5a6b5c] font-light max-w-md leading-relaxed">
+              <p className="text-xl text-[#5a7080] font-light max-w-md leading-relaxed">
                 Centro de Fisioterapia, Masajes Terapéuticos y Tratamientos Faciales
                 en San Juan del Río, Querétaro. Tu bienestar en manos expertas.
               </p>
               <div className="mt-8 flex flex-col sm:flex-row gap-4">
                 <Link href="/agendar">
-                  <button className="cursor-pointer bg-[#2c3e2d] text-white px-10 py-4 rounded-xl font-medium tracking-widest uppercase text-sm hover:bg-[#3fa87c] transition-all duration-300 flex items-center justify-center gap-3 active:scale-95 shadow-xl shadow-[#2c3e2d]/15">
+                  <button className="cursor-pointer bg-[#4a7fa5] text-white px-10 py-4 rounded-xl font-medium tracking-widest uppercase text-sm hover:bg-[#2d5f80] transition-all duration-300 flex items-center justify-center gap-3 active:scale-95 shadow-xl shadow-[#4a7fa5]/20">
                     Agendar mi cita
                     <CalendarDays className="w-4 h-4" />
                   </button>
                 </Link>
                 <a
                   href="#servicios"
-                  className="cursor-pointer border border-[#e8e4df] px-10 py-4 rounded-xl font-medium tracking-widest uppercase text-sm text-[#5a6b5c] hover:border-[#3fa87c] hover:text-[#3fa87c] transition-all duration-300 flex items-center justify-center gap-3"
+                  className="cursor-pointer border border-[#c8dce8] px-10 py-4 rounded-xl font-medium tracking-widest uppercase text-sm text-[#5a7080] hover:border-[#4a7fa5] hover:text-[#4a7fa5] transition-all duration-300 flex items-center justify-center gap-3"
                 >
                   Ver servicios
                   <ArrowRight className="w-4 h-4" />
@@ -292,8 +292,8 @@ export default function LandingPage() {
               { icon: Star, text: "10+ años de experiencia" },
             ].map((item) => (
               <div key={item.text} className="flex items-center gap-2">
-                <item.icon className="h-4 w-4 text-[#3fa87c]" />
-                <span className="text-sm text-[#8a9a8c]">{item.text}</span>
+                <item.icon className="h-4 w-4 text-[#4a7fa5]" />
+                <span className="text-sm text-[#8fa8ba]">{item.text}</span>
               </div>
             ))}
           </motion.div>
@@ -307,16 +307,16 @@ export default function LandingPage() {
             viewport={{ once: true }}
           >
             <div className="mb-16">
-              <span className="text-[#3fa87c] text-xs tracking-[0.3em] uppercase font-semibold">
+              <span className="text-[#4a7fa5] text-xs tracking-[0.3em] uppercase font-semibold">
                 Fisioterapia y Masajes
               </span>
               <h2
-                className="text-5xl text-[#2c3e2d] tracking-tight mt-4"
+                className="text-5xl text-[#1e2d3a] tracking-tight mt-4"
                 style={{ fontFamily: "'Cormorant Garamond', serif" }}
               >
                 Tipos de Sesiones
               </h2>
-              <div className="h-1 w-20 bg-[#3fa87c] mt-6" />
+              <div className="h-1 w-20 bg-[#4a7fa5] mt-6" />
             </div>
           </motion.div>
 
@@ -328,22 +328,22 @@ export default function LandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.06 }}
-                className="group flex flex-col p-7 rounded-2xl border border-[#e8e4df]/60 bg-white hover:border-[#3fa87c]/40 hover:shadow-lg transition-all duration-300 cursor-default"
+                className="group flex flex-col p-7 rounded-2xl border border-[#c8dce8]/60 bg-white hover:border-[#4a7fa5]/40 hover:shadow-lg transition-all duration-300 cursor-default"
               >
                 <div className="flex items-center gap-2 mb-4">
-                  <Heart className="h-4 w-4 text-[#3fa87c] opacity-60 group-hover:opacity-100 transition-opacity" />
-                  <span className="text-[10px] uppercase tracking-[0.25em] text-[#8a9a8c] font-semibold">
+                  <Heart className="h-4 w-4 text-[#4a7fa5] opacity-60 group-hover:opacity-100 transition-opacity" />
+                  <span className="text-[10px] uppercase tracking-[0.25em] text-[#8fa8ba] font-semibold">
                     Fisioterapia
                   </span>
                 </div>
-                <h3 className="font-semibold text-[#2c3e2d] text-lg mb-2">{s.nombre}</h3>
-                <p className="text-sm text-[#5a6b5c] leading-relaxed mb-6 flex-1">{s.desc}</p>
-                <div className="flex items-end justify-between pt-4 border-t border-[#e8e4df]/60">
+                <h3 className="font-semibold text-[#1e2d3a] text-lg mb-2">{s.nombre}</h3>
+                <p className="text-sm text-[#5a7080] leading-relaxed mb-6 flex-1">{s.desc}</p>
+                <div className="flex items-end justify-between pt-4 border-t border-[#c8dce8]/60">
                   <div>
-                    <span className="text-2xl font-bold text-[#2c3e2d]">{s.precio}</span>
-                    <span className="text-xs text-[#8a9a8c] ml-1">/ sesión</span>
+                    <span className="text-2xl font-bold text-[#1e2d3a]">{s.precio}</span>
+                    <span className="text-xs text-[#8fa8ba] ml-1">/ sesión</span>
                   </div>
-                  <span className="text-xs text-[#8a9a8c] flex items-center gap-1">
+                  <span className="text-xs text-[#8fa8ba] flex items-center gap-1">
                     <Clock className="h-3 w-3" /> {s.duracion}
                   </span>
                 </div>
@@ -356,7 +356,7 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="mt-16 bg-[#2c3e2d] rounded-2xl p-8 md:p-12"
+            className="mt-16 bg-[#1e2d3a] rounded-2xl p-8 md:p-12"
           >
             <h3
               className="text-3xl text-white mb-8"
@@ -374,7 +374,7 @@ export default function LandingPage() {
                   key={p.sesiones}
                   className={`rounded-xl p-6 text-center transition-all duration-300 ${
                     i === 2
-                      ? "bg-[#3fa87c] text-white ring-2 ring-[#3fa87c]/40 ring-offset-2 ring-offset-[#2c3e2d]"
+                      ? "bg-[#4a7fa5] text-white ring-2 ring-[#4a7fa5]/40 ring-offset-2 ring-offset-[#1e2d3a]"
                       : "bg-white/10 text-white border border-white/10"
                   }`}
                 >
@@ -400,7 +400,7 @@ export default function LandingPage() {
                 Tratamientos Faciales
               </span>
               <h2
-                className="text-5xl text-[#2c3e2d] tracking-tight mt-4"
+                className="text-5xl text-[#1e2d3a] tracking-tight mt-4"
                 style={{ fontFamily: "'Cormorant Garamond', serif" }}
               >
                 Cosmiatra: <span className="italic font-light">Gaby Aguilar</span>
@@ -417,22 +417,22 @@ export default function LandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.06 }}
-                className="group flex flex-col p-7 rounded-2xl border border-[#e8e4df]/60 bg-white hover:border-[#9b59b6]/40 hover:shadow-lg transition-all duration-300 cursor-default"
+                className="group flex flex-col p-7 rounded-2xl border border-[#c8dce8]/60 bg-white hover:border-[#9b59b6]/40 hover:shadow-lg transition-all duration-300 cursor-default"
               >
                 <div className="flex items-center gap-2 mb-4">
                   <Sparkles className="h-4 w-4 text-[#9b59b6] opacity-60 group-hover:opacity-100 transition-opacity" />
-                  <span className="text-[10px] uppercase tracking-[0.25em] text-[#8a9a8c] font-semibold">
+                  <span className="text-[10px] uppercase tracking-[0.25em] text-[#8fa8ba] font-semibold">
                     Facial
                   </span>
                 </div>
-                <h3 className="font-semibold text-[#2c3e2d] text-lg mb-2">{s.nombre}</h3>
-                <p className="text-sm text-[#5a6b5c] leading-relaxed mb-6 flex-1">{s.desc}</p>
-                <div className="flex items-end justify-between pt-4 border-t border-[#e8e4df]/60">
+                <h3 className="font-semibold text-[#1e2d3a] text-lg mb-2">{s.nombre}</h3>
+                <p className="text-sm text-[#5a7080] leading-relaxed mb-6 flex-1">{s.desc}</p>
+                <div className="flex items-end justify-between pt-4 border-t border-[#c8dce8]/60">
                   <div>
-                    <span className="text-2xl font-bold text-[#2c3e2d]">{s.precio}</span>
-                    <span className="text-xs text-[#8a9a8c] ml-1">/ sesión</span>
+                    <span className="text-2xl font-bold text-[#1e2d3a]">{s.precio}</span>
+                    <span className="text-xs text-[#8fa8ba] ml-1">/ sesión</span>
                   </div>
-                  <span className="text-xs text-[#8a9a8c] flex items-center gap-1">
+                  <span className="text-xs text-[#8fa8ba] flex items-center gap-1">
                     <Clock className="h-3 w-3" /> {s.duracion}
                   </span>
                 </div>
@@ -446,22 +446,22 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="p-7 rounded-2xl border border-[#e8e4df]/60 bg-white"
+              className="p-7 rounded-2xl border border-[#c8dce8]/60 bg-white"
             >
               <div className="flex items-center gap-2 mb-4">
-                <div className="h-2 w-2 rounded-full bg-[#3fa87c]" />
-                <span className="text-[10px] uppercase tracking-[0.25em] text-[#8a9a8c] font-semibold">Corporal</span>
+                <div className="h-2 w-2 rounded-full bg-[#4a7fa5]" />
+                <span className="text-[10px] uppercase tracking-[0.25em] text-[#8fa8ba] font-semibold">Corporal</span>
               </div>
-              <h3 className="font-semibold text-[#2c3e2d] text-lg mb-2">Tratamientos Corporales</h3>
-              <p className="text-sm text-[#5a6b5c] leading-relaxed mb-4">
+              <h3 className="font-semibold text-[#1e2d3a] text-lg mb-2">Tratamientos Corporales</h3>
+              <p className="text-sm text-[#5a7080] leading-relaxed mb-4">
                 Celulitis, estrías, piel de naranja y grasa localizada. Cavitador, radiofrecuencia, lipoláser y vacum terapia.
               </p>
-              <div className="flex items-end justify-between pt-4 border-t border-[#e8e4df]/60">
+              <div className="flex items-end justify-between pt-4 border-t border-[#c8dce8]/60">
                 <div>
-                  <span className="text-2xl font-bold text-[#2c3e2d]">$600</span>
-                  <span className="text-xs text-[#8a9a8c] ml-1">/ sesión</span>
+                  <span className="text-2xl font-bold text-[#1e2d3a]">$600</span>
+                  <span className="text-xs text-[#8fa8ba] ml-1">/ sesión</span>
                 </div>
-                <span className="text-xs text-[#8a9a8c]">60 min</span>
+                <span className="text-xs text-[#8fa8ba]">60 min</span>
               </div>
             </motion.div>
 
@@ -470,14 +470,14 @@ export default function LandingPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
-              className="p-7 rounded-2xl border border-[#e8e4df]/60 bg-white"
+              className="p-7 rounded-2xl border border-[#c8dce8]/60 bg-white"
             >
               <div className="flex items-center gap-2 mb-4">
                 <div className="h-2 w-2 rounded-full bg-[#e89b3f]" />
-                <span className="text-[10px] uppercase tracking-[0.25em] text-[#8a9a8c] font-semibold">Epilación Roll-On</span>
+                <span className="text-[10px] uppercase tracking-[0.25em] text-[#8fa8ba] font-semibold">Epilación Roll-On</span>
               </div>
-              <h3 className="font-semibold text-[#2c3e2d] text-lg mb-2">Depilación</h3>
-              <p className="text-sm text-[#5a6b5c] leading-relaxed mb-4">
+              <h3 className="font-semibold text-[#1e2d3a] text-lg mb-2">Depilación</h3>
+              <p className="text-sm text-[#5a7080] leading-relaxed mb-4">
                 Aplicación suave y precisa, resultados duraderos. Ideal para todo tipo de piel.
               </p>
               <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
@@ -490,8 +490,8 @@ export default function LandingPage() {
                   ["Barba", "$200"],
                 ].map(([zona, precio]) => (
                   <div key={zona} className="flex justify-between">
-                    <span className="text-[#5a6b5c]">{zona}</span>
-                    <span className="font-semibold text-[#2c3e2d]">{precio}</span>
+                    <span className="text-[#5a7080]">{zona}</span>
+                    <span className="font-semibold text-[#1e2d3a]">{precio}</span>
                   </div>
                 ))}
               </div>
@@ -507,16 +507,16 @@ export default function LandingPage() {
             viewport={{ once: true }}
           >
             <div className="mb-16">
-              <span className="text-[#3fa87c] text-xs tracking-[0.3em] uppercase font-semibold">
+              <span className="text-[#4a7fa5] text-xs tracking-[0.3em] uppercase font-semibold">
                 Nuestro Equipo
               </span>
               <h2
-                className="text-5xl text-[#2c3e2d] tracking-tight mt-4"
+                className="text-5xl text-[#1e2d3a] tracking-tight mt-4"
                 style={{ fontFamily: "'Cormorant Garamond', serif" }}
               >
                 Profesionales <span className="italic font-light">certificadas.</span>
               </h2>
-              <div className="h-1 w-20 bg-[#3fa87c] mt-6" />
+              <div className="h-1 w-20 bg-[#4a7fa5] mt-6" />
             </div>
           </motion.div>
 
@@ -530,16 +530,16 @@ export default function LandingPage() {
                 transition={{ delay: i * 0.1 }}
                 className={`group relative overflow-hidden rounded-2xl flex flex-col justify-end p-8 ${
                   i === 0
-                    ? "bg-[#2c3e2d] text-white h-[420px]"
+                    ? "bg-[#1e3a4f] text-white h-[420px]"
                     : i === 1
-                    ? "bg-[#f0ede8] text-[#2c3e2d] h-[420px] md:mt-16"
-                    : "bg-[#9b59b6]/10 text-[#2c3e2d] h-[420px]"
+                    ? "bg-[#e4ecf2] text-[#1e2d3a] h-[420px] md:mt-16"
+                    : "bg-[#9b59b6]/10 text-[#1e2d3a] h-[420px]"
                 }`}
               >
                 {/* Decorative initials */}
                 <div
                   className={`absolute top-8 right-8 text-[120px] font-bold leading-none opacity-[0.06] pointer-events-none ${
-                    i === 0 ? "text-white" : "text-[#2c3e2d]"
+                    i === 0 ? "text-white" : "text-[#1e2d3a]"
                   }`}
                   style={{ fontFamily: "'Cormorant Garamond', serif" }}
                   aria-hidden="true"
@@ -550,7 +550,7 @@ export default function LandingPage() {
                 <div className="relative z-10">
                   <span
                     className={`text-[10px] uppercase tracking-[0.3em] mb-2 block font-bold ${
-                      i === 0 ? "text-[#3fa87c]" : i === 2 ? "text-[#9b59b6]" : "text-[#3fa87c]"
+                      i === 0 ? "text-[#7ab5d4]" : i === 2 ? "text-[#9b59b6]" : "text-[#4a7fa5]"
                     }`}
                   >
                     {e.rol}
@@ -563,7 +563,7 @@ export default function LandingPage() {
                   </h3>
                   <p
                     className={`text-sm leading-relaxed font-light ${
-                      i === 0 ? "text-white/70" : "text-[#5a6b5c]"
+                      i === 0 ? "text-white/70" : "text-[#5a7080]"
                     }`}
                   >
                     {e.especialidad}
@@ -575,7 +575,7 @@ export default function LandingPage() {
         </section>
 
         {/* ─── CÓMO FUNCIONA ──────────────────────────────────────────── */}
-        <section className="bg-[#2c3e2d] py-24 mb-32">
+        <section className="bg-[#1e2d3a] py-24 mb-32">
           <div className="max-w-7xl mx-auto px-6">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -583,7 +583,7 @@ export default function LandingPage() {
               viewport={{ once: true }}
               className="mb-16"
             >
-              <span className="text-[#3fa87c] text-xs tracking-[0.3em] uppercase font-semibold">
+              <span className="text-[#4a7fa5] text-xs tracking-[0.3em] uppercase font-semibold">
                 Pasos para agendar
               </span>
               <h2
@@ -592,7 +592,7 @@ export default function LandingPage() {
               >
                 Agenda en <span className="italic font-light">minutos.</span>
               </h2>
-              <div className="h-1 w-20 bg-[#3fa87c] mt-6" />
+              <div className="h-1 w-20 bg-[#4a7fa5] mt-6" />
             </motion.div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -610,7 +610,7 @@ export default function LandingPage() {
                   transition={{ delay: i * 0.1 }}
                   className="bg-white/5 border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-all duration-300"
                 >
-                  <span className="text-[#3fa87c] text-3xl font-bold block mb-4">{paso.num}</span>
+                  <span className="text-[#4a7fa5] text-3xl font-bold block mb-4">{paso.num}</span>
                   <h3 className="text-white font-semibold mb-2">{paso.titulo}</h3>
                   <p className="text-white/50 text-sm leading-relaxed">{paso.desc}</p>
                 </motion.div>
@@ -627,11 +627,11 @@ export default function LandingPage() {
             viewport={{ once: true }}
           >
             <div className="mb-12 text-center">
-              <span className="text-[#3fa87c] text-xs tracking-[0.3em] uppercase font-semibold">
+              <span className="text-[#4a7fa5] text-xs tracking-[0.3em] uppercase font-semibold">
                 Información importante
               </span>
               <h2
-                className="text-4xl text-[#2c3e2d] tracking-tight mt-4"
+                className="text-4xl text-[#1e2d3a] tracking-tight mt-4"
                 style={{ fontFamily: "'Cormorant Garamond', serif" }}
               >
                 Políticas del servicio
@@ -656,11 +656,11 @@ export default function LandingPage() {
               >
                 <button
                   onClick={() => setExpandedFaq(expandedFaq === i ? null : i)}
-                  className="cursor-pointer w-full flex items-center justify-between p-5 rounded-xl bg-white border border-[#e8e4df]/60 text-left hover:border-[#3fa87c]/40 transition-all duration-200"
+                  className="cursor-pointer w-full flex items-center justify-between p-5 rounded-xl bg-white border border-[#c8dce8]/60 text-left hover:border-[#4a7fa5]/40 transition-all duration-200"
                 >
-                  <span className="font-medium text-[#2c3e2d] text-sm">{faq.q}</span>
+                  <span className="font-medium text-[#1e2d3a] text-sm">{faq.q}</span>
                   <ChevronDown
-                    className={`h-4 w-4 text-[#8a9a8c] shrink-0 transition-transform duration-200 ${
+                    className={`h-4 w-4 text-[#8fa8ba] shrink-0 transition-transform duration-200 ${
                       expandedFaq === i ? "rotate-180" : ""
                     }`}
                   />
@@ -670,7 +670,7 @@ export default function LandingPage() {
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
                     transition={{ duration: 0.2 }}
-                    className="px-5 pb-5 pt-2 text-sm text-[#5a6b5c] leading-relaxed"
+                    className="px-5 pb-5 pt-2 text-sm text-[#5a7080] leading-relaxed"
                   >
                     {faq.a}
                   </motion.div>
@@ -688,16 +688,16 @@ export default function LandingPage() {
             viewport={{ once: true }}
           >
             <div className="mb-16">
-              <span className="text-[#3fa87c] text-xs tracking-[0.3em] uppercase font-semibold">
+              <span className="text-[#4a7fa5] text-xs tracking-[0.3em] uppercase font-semibold">
                 Encuéntranos
               </span>
               <h2
-                className="text-5xl text-[#2c3e2d] tracking-tight mt-4"
+                className="text-5xl text-[#1e2d3a] tracking-tight mt-4"
                 style={{ fontFamily: "'Cormorant Garamond', serif" }}
               >
                 Nuestra clínica
               </h2>
-              <div className="h-1 w-20 bg-[#3fa87c] mt-6" />
+              <div className="h-1 w-20 bg-[#4a7fa5] mt-6" />
             </div>
           </motion.div>
 
@@ -707,25 +707,25 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="relative h-[450px] rounded-2xl bg-[#f0ede8] overflow-hidden"
+              className="relative h-[450px] rounded-2xl bg-[#e4ecf2] overflow-hidden"
             >
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-[#3fa87c]/15 via-transparent to-transparent" />
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-                <div className="w-5 h-5 bg-[#3fa87c] rounded-full animate-ping absolute" />
-                <div className="w-5 h-5 bg-[#3fa87c] rounded-full relative" />
+                <div className="w-5 h-5 bg-[#4a7fa5] rounded-full animate-ping absolute" />
+                <div className="w-5 h-5 bg-[#4a7fa5] rounded-full relative" />
               </div>
 
               <div className="absolute bottom-0 left-0 right-0 bg-white p-8 rounded-t-2xl shadow-lg">
-                <span className="text-[#3fa87c] text-[10px] uppercase tracking-[0.3em] mb-2 block font-bold">
+                <span className="text-[#4a7fa5] text-[10px] uppercase tracking-[0.3em] mb-2 block font-bold">
                   San Juan del Río
                 </span>
                 <h3
-                  className="text-2xl text-[#2c3e2d] mb-3"
+                  className="text-2xl text-[#1e2d3a] mb-3"
                   style={{ fontFamily: "'Cormorant Garamond', serif" }}
                 >
                   Kaya Kalp
                 </h3>
-                <p className="text-sm text-[#5a6b5c] leading-relaxed mb-4">
+                <p className="text-sm text-[#5a7080] leading-relaxed mb-4">
                   Ave María No. 25, Fracc. Las Huertas<br />
                   San Juan del Río, Qro.
                 </p>
@@ -733,7 +733,7 @@ export default function LandingPage() {
                   href="https://maps.google.com/?q=Ave+Maria+25+Las+Huertas+San+Juan+del+Rio+Queretaro"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="cursor-pointer border-b border-[#2c3e2d]/30 pb-1 text-sm tracking-widest uppercase text-[#2c3e2d] hover:border-[#3fa87c] hover:text-[#3fa87c] transition-all flex items-center gap-2 w-fit font-medium"
+                  className="cursor-pointer border-b border-[#1e2d3a]/30 pb-1 text-sm tracking-widest uppercase text-[#1e2d3a] hover:border-[#4a7fa5] hover:text-[#4a7fa5] transition-all flex items-center gap-2 w-fit font-medium"
                 >
                   Cómo llegar <ArrowUpRight className="w-3 h-3" />
                 </a>
@@ -755,14 +755,14 @@ export default function LandingPage() {
                     label: "Dirección",
                     value: "Ave María No. 25, Fracc. Las Huertas",
                     sub: "Centro, San Juan del Río, Qro.",
-                    color: "text-[#3fa87c] bg-[#3fa87c]/10",
+                    color: "text-[#4a7fa5] bg-[#4a7fa5]/10",
                   },
                   {
                     icon: Phone,
                     label: "WhatsApp",
                     value: "427 165 92 04",
                     sub: "Escríbenos para cualquier duda",
-                    color: "text-[#3fa87c] bg-[#3fa87c]/10",
+                    color: "text-[#4a7fa5] bg-[#4a7fa5]/10",
                   },
                   {
                     icon: Clock,
@@ -777,9 +777,9 @@ export default function LandingPage() {
                       <item.icon className="h-5 w-5" />
                     </div>
                     <div>
-                      <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#8a9a8c] mb-1">{item.label}</p>
-                      <p className="font-semibold text-[#2c3e2d]">{item.value}</p>
-                      <p className="text-sm text-[#5a6b5c]">{item.sub}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#8fa8ba] mb-1">{item.label}</p>
+                      <p className="font-semibold text-[#1e2d3a]">{item.value}</p>
+                      <p className="text-sm text-[#5a7080]">{item.sub}</p>
                     </div>
                   </div>
                 ))}
@@ -790,7 +790,7 @@ export default function LandingPage() {
                   href="https://www.instagram.com/kaya_kalp21/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="cursor-pointer flex-1 border border-[#e8e4df] rounded-xl px-5 py-4 text-center text-sm font-medium text-[#5a6b5c] hover:border-[#3fa87c] hover:text-[#3fa87c] transition-all"
+                  className="cursor-pointer flex-1 border border-[#c8dce8] rounded-xl px-5 py-4 text-center text-sm font-medium text-[#5a7080] hover:border-[#4a7fa5] hover:text-[#4a7fa5] transition-all"
                 >
                   Instagram
                 </a>
@@ -798,7 +798,7 @@ export default function LandingPage() {
                   href="https://wa.me/524271659204"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="cursor-pointer flex-1 bg-[#3fa87c] rounded-xl px-5 py-4 text-center text-sm font-medium text-white hover:bg-[#2c3e2d] transition-all"
+                  className="cursor-pointer flex-1 bg-[#25d366] rounded-xl px-5 py-4 text-center text-sm font-medium text-white hover:bg-[#1da851] transition-all"
                 >
                   WhatsApp
                 </a>
@@ -808,7 +808,7 @@ export default function LandingPage() {
         </section>
 
         {/* ─── CTA FINAL ──────────────────────────────────────────────── */}
-        <section className="bg-[#2c3e2d] py-28">
+        <section className="bg-[#1e2d3a] py-28">
           <div className="max-w-4xl mx-auto px-6 text-center">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -820,14 +820,14 @@ export default function LandingPage() {
                 style={{ fontFamily: "'Cormorant Garamond', serif" }}
               >
                 Tu bienestar <br />
-                <span className="italic font-light text-[#3fa87c]">comienza hoy.</span>
+                <span className="italic font-light text-[#7ab5d4]">comienza hoy.</span>
               </h2>
               <p className="mt-8 text-white/50 text-lg max-w-lg mx-auto font-light leading-relaxed">
                 Agenda tu primera cita y experimenta la diferencia de un cuidado profesional y personalizado.
               </p>
               <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Link href="/agendar">
-                  <button className="cursor-pointer bg-[#3fa87c] text-white px-12 py-5 rounded-xl font-medium tracking-widest uppercase text-sm hover:bg-white hover:text-[#2c3e2d] transition-all duration-300 flex items-center gap-3 active:scale-95 shadow-xl">
+                  <button className="cursor-pointer bg-[#4a7fa5] text-white px-12 py-5 rounded-xl font-medium tracking-widest uppercase text-sm hover:bg-white hover:text-[#1e2d3a] transition-all duration-300 flex items-center gap-3 active:scale-95 shadow-xl">
                     Agendar mi cita
                     <CalendarDays className="w-4 h-4" />
                   </button>
@@ -843,7 +843,7 @@ export default function LandingPage() {
       </main>
 
       {/* ─── FOOTER ─────────────────────────────────────────────────── */}
-      <footer className="bg-[#1e2d1f] pt-24 pb-12" role="contentinfo">
+      <footer className="bg-[#1e3a4f] pt-24 pb-12" role="contentinfo">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-16 mb-24">
             <div className="md:col-span-1">
@@ -893,7 +893,7 @@ export default function LandingPage() {
                       href={link.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[#3fa87c] hover:text-white text-sm tracking-wide uppercase transition-all cursor-pointer"
+                      className="text-[#7ab5d4] hover:text-white text-sm tracking-wide uppercase transition-all cursor-pointer"
                     >
                       {link.label}
                     </a>
