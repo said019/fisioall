@@ -1,65 +1,76 @@
+"use client";
+
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { motion } from "motion/react";
 import {
-  CalendarDays,
-  Phone,
-  MapPin,
-  Clock,
+  Menu,
+  X,
   ArrowRight,
-  CheckCircle2,
+  ArrowUpRight,
+  Phone,
+  Clock,
+  MapPin,
+  CalendarDays,
   Star,
-  Shield,
-  Heart,
   Sparkles,
-  Users,
   Award,
+  Heart,
+  Shield,
+  ChevronDown,
 } from "lucide-react";
+import { useState } from "react";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// DATA — Extracted from Kaya Kalp PDFs
+// DATA — Kaya Kalp real services
 // ─────────────────────────────────────────────────────────────────────────────
 
 const serviciosFisio = [
   {
+    id: "normal",
     nombre: "Normal / Antiestrés",
-    desc: "Terapia manual en tren superior (espalda, hombros, cuello y brazos) complementada con electroterapia, percusión y presoterapia.",
+    desc: "Terapia manual en tren superior complementada con electroterapia, percusión y presoterapia.",
     precio: "$400",
     duracion: "50 min",
   },
   {
+    id: "descarga",
     nombre: "Descarga de Esfuerzo",
-    desc: "Enfoque manual en cuerpo completo combinada con aparatología. Elimina fatiga, cansancio y previene lesiones.",
+    desc: "Enfoque manual en cuerpo completo combinada con aparatología. Elimina fatiga y previene lesiones.",
     precio: "$470",
     duracion: "50 min",
   },
   {
+    id: "drenaje",
     nombre: "Drenaje Linfático",
-    desc: "Manipulaciones suaves para mejorar la circulación y el funcionamiento del sistema linfático. Cuerpo completo.",
+    desc: "Manipulaciones suaves para mejorar circulación y funcionamiento del sistema linfático.",
     precio: "$520",
     duracion: "50 min",
   },
   {
+    id: "presoterapia",
     nombre: "Presoterapia",
-    desc: "Aparato para retorno venoso, drenaje linfático y drenar ácido láctico. Extremidades y zona abdomino-lumbar.",
+    desc: "Retorno venoso, drenaje linfático y drenar ácido láctico con aparatología especializada.",
     precio: "$420",
     duracion: "50 min",
   },
   {
+    id: "ejercicio",
     nombre: "Ejercicio Terapéutico",
-    desc: "Rehabilitación de lesiones deportivas, laborales y post-quirúrgicas con rutina personalizada.",
+    desc: "Rehabilitación de lesiones deportivas, laborales y post-quirúrgicas personalizada.",
     precio: "$350",
     duracion: "50 min",
   },
   {
+    id: "valoracion",
     nombre: "Valoración",
-    desc: "Evaluación de lesión, diagnóstico acertado y propuesta de tratamiento. Incluye tu primera terapia.",
+    desc: "Evaluación de lesión, diagnóstico y propuesta de tratamiento. Incluye primera terapia.",
     precio: "$450",
     duracion: "50 min",
   },
   {
+    id: "pelvico",
     nombre: "Suelo Pélvico",
-    desc: "Tratamiento especializado para incontinencia urinaria, prolapsos, embarazo, previo y post-parto.",
+    desc: "Tratamiento para incontinencia urinaria, prolapsos, embarazo, previo y post-parto.",
     precio: "$550",
     duracion: "50 min",
   },
@@ -68,57 +79,34 @@ const serviciosFisio = [
 const serviciosFaciales = [
   {
     nombre: "Masaje Revitalizante",
-    desc: "Reduce estrés, levanta y tonifica la piel, promueve colágeno, mejora líneas de expresión.",
+    desc: "Levanta y tonifica la piel, promueve colágeno, mejora líneas de expresión.",
     precio: "$450",
     duracion: "60 min",
-    incluye: ["Limpieza básica", "Masaje"],
-    regalo: null,
-  },
-  {
-    nombre: "Limpieza Básica",
-    desc: "Elimina células muertas, quita exceso de grasa, oxigena tu piel, reduce poros.",
-    precio: "$350",
-    duracion: "60 min",
-    incluye: ["Limpieza", "Exfoliación", "Tonificación", "Mascarilla", "Protección"],
-    regalo: "Exfoliación de manos",
   },
   {
     nombre: "Limpieza Profunda",
-    desc: "Elimina impurezas, previene acné, mejora la absorción de productos, disminuye arrugas.",
+    desc: "Elimina impurezas, previene acné, disminuye arrugas. Incluye alta frecuencia.",
     precio: "$450",
     duracion: "60 min",
-    incluye: ["Limpieza", "Exfoliación", "Vaporización", "Extracción", "Alta frecuencia", "Protección"],
-    regalo: "Masaje facial relajante",
   },
   {
     nombre: "Hidratación Profunda",
-    desc: "Limpia poros, mejor oxigenación, tonifica músculos faciales, piel luminosa y suave.",
+    desc: "Hidrofacial, nutrición, mascarilla, máscara LED. Piel luminosa y suave.",
     precio: "$500",
     duracion: "60 min",
-    incluye: ["Hidrofacial", "Nutrición", "Mascarilla", "Máscara LED", "Protección"],
-    regalo: "Masaje facial + 20% desc",
   },
   {
-    nombre: "Rejuvenecimiento Facial",
-    desc: "Reducción de arrugas y manchas, reactivación de colágeno, efecto lifting, piel más firme.",
+    nombre: "Rejuvenecimiento",
+    desc: "Microdermoabrasión, tonificación, efecto lifting, piel más firme.",
     precio: "$550",
     duracion: "60 min",
-    incluye: ["Microdermoabrasión", "Nutrición", "Tonificación", "Hidroplástica", "Protección"],
-    regalo: "Exfoliación de manos",
   },
   {
     nombre: "Gold Threads",
     desc: "Hilos de colágeno que eliminan arrugas, mejoran flacidez, retrasan el envejecimiento.",
     precio: "$800",
     duracion: "60 min",
-    incluye: ["Aplicación de hilos", "Mascarilla Hidroplástica", "Tónico Gold", "Drenaje linfático"],
-    regalo: "Exfoliación de manos",
   },
-];
-
-const paquetes = [
-  { sesiones: "10", frecuencia: "2 terapias/semana", precio: "$3,800" },
-  { sesiones: "20", frecuencia: "2 terapias/semana", precio: "$7,200" },
 ];
 
 const equipo = [
@@ -127,673 +115,821 @@ const equipo = [
     rol: "CEO · Fisioterapeuta",
     especialidad: "Medios físicos, terapia manual, suelo pélvico y obstetricia",
     initials: "PA",
-    color: "bg-[#4a7fa5]",
   },
   {
     nombre: "L.F.T. Jenni Álvarez Álvarez",
     rol: "Fisioterapeuta",
     especialidad: "Ejercicio terapéutico, rehabilitación, coordinación de citas",
     initials: "JA",
-    color: "bg-[#3fa87c]",
   },
   {
     nombre: "Gaby Aguilar",
     rol: "Cosmiatra",
-    especialidad: "Tratamientos faciales y corporales",
+    especialidad: "Tratamientos faciales, corporales y epilación",
     initials: "GA",
-    color: "bg-[#9b59b6]",
   },
-];
-
-const politicas = [
-  "Anticipo de $100 MXN para confirmar tu cita",
-  "Cancelación mínimo 24 horas antes",
-  "Puntualidad — no se recuperan minutos perdidos",
-  "Ropa cómoda para tu sesión",
-  "Aviso de privacidad conforme a la Ley Federal",
-];
-
-const pasos = [
-  { num: "1", titulo: "Regístrate", desc: "Crea tu cuenta con tu número de teléfono" },
-  { num: "2", titulo: "Elige tu servicio", desc: "Explora nuestro catálogo y selecciona" },
-  { num: "3", titulo: "Agenda tu cita", desc: "Escoge fecha, hora y terapeuta" },
-  { num: "4", titulo: "Confirma", desc: "Realiza tu anticipo de $100 y listo" },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PAGE
 // ─────────────────────────────────────────────────────────────────────────────
+
 export default function LandingPage() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
+
   return (
-    <div className="flex flex-col min-h-[100dvh] bg-[#f0f4f7] font-sans">
+    <div className="min-h-screen bg-[#faf9f7]">
       {/* ─── NAVBAR ─────────────────────────────────────────────────────── */}
-      <header
-        className="sticky top-0 z-50 w-full border-b border-[#c8dce8] bg-white/80 backdrop-blur-md"
-        role="banner"
-      >
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-6">
-          <Link href="/" className="flex items-center gap-2 cursor-pointer shrink-0">
+      <nav className="fixed top-0 w-full z-50 bg-[#faf9f7]/80 backdrop-blur-xl border-b border-[#e8e4df]/60">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+          <Link href="/" className="cursor-pointer">
             <span
-              className="text-2xl font-semibold text-[#4a7fa5]"
+              className="text-2xl font-bold text-[#2c3e2d] tracking-tight"
               style={{ fontFamily: "'Cormorant Garamond', serif" }}
             >
               Kaya Kalp
             </span>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-1 ml-4" aria-label="Navegación principal">
+          <div className="hidden md:flex items-center space-x-12">
             {[
               { href: "#servicios", label: "Servicios" },
-              { href: "#faciales", label: "Faciales" },
               { href: "#equipo", label: "Equipo" },
-              { href: "#como-agendar", label: "Cómo agendar" },
               { href: "#ubicacion", label: "Ubicación" },
-            ].map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="px-3 py-1.5 text-sm font-medium text-[#5a7080] hover:text-[#2d5f80] hover:bg-[#e4ecf2] rounded-lg transition-all duration-200 cursor-pointer"
+            ].map((item) => (
+              <a
+                key={item.href}
+                href={item.href}
+                className="text-sm font-medium text-[#5a6b5c] hover:text-[#3fa87c] transition-colors uppercase tracking-[0.2em] cursor-pointer"
               >
-                {link.label}
-              </Link>
+                {item.label}
+              </a>
             ))}
-          </nav>
+          </div>
 
-          <div className="ml-auto flex items-center gap-2">
-            <Link href="/login">
-              <Button
-                variant="ghost"
-                className="hidden sm:flex cursor-pointer text-[#5a7080] hover:bg-[#e4ecf2] hover:text-[#2d5f80] transition-all duration-200 text-sm"
-              >
+          <div className="flex items-center gap-4">
+            <Link href="/login" className="hidden md:block">
+              <span className="text-sm font-medium text-[#5a6b5c] hover:text-[#3fa87c] transition-colors uppercase tracking-[0.15em] cursor-pointer">
                 Iniciar Sesión
-              </Button>
+              </span>
             </Link>
-            <Link href="/agendar">
-              <Button className="cursor-pointer bg-[#4a7fa5] hover:bg-[#2d5f80] text-white transition-all duration-200 text-sm shadow-sm">
+            <Link href="/agendar" className="hidden md:block">
+              <button className="cursor-pointer bg-[#2c3e2d] text-white px-8 py-3 rounded-xl font-medium tracking-wide hover:bg-[#3fa87c] transition-all duration-300 active:scale-95 text-sm">
                 Agendar Cita
-                <CalendarDays className="ml-1.5 h-3.5 w-3.5" />
-              </Button>
+              </button>
             </Link>
+            <button
+              className="md:hidden text-[#2c3e2d] cursor-pointer p-2"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label={mobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
+            >
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
           </div>
         </div>
-      </header>
 
-      <main id="main-content" className="flex-1">
-        {/* ─── HERO ───────────────────────────────────────────────────────── */}
-        <section className="relative w-full overflow-hidden pt-20 pb-24 md:pt-28 md:pb-32">
-          {/* Background blobs */}
-          <div
-            className="absolute -top-24 -left-24 h-[480px] w-[480px] rounded-full bg-[#4a7fa5]/12 blur-3xl pointer-events-none"
-            aria-hidden="true"
-          />
-          <div
-            className="absolute -bottom-16 -right-16 h-[400px] w-[400px] rounded-full bg-[#7ab5d4]/10 blur-3xl pointer-events-none"
-            aria-hidden="true"
-          />
-          <div
-            className="absolute top-1/3 right-1/4 h-[200px] w-[200px] rounded-full bg-[#a8cfe0]/15 blur-3xl pointer-events-none"
-            aria-hidden="true"
-          />
-
-          <div className="relative max-w-5xl mx-auto px-4 sm:px-6 text-center">
-            {/* Pill */}
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#c8dce8] bg-white px-4 py-1.5 mb-8 shadow-sm">
-              <Award className="h-3.5 w-3.5 text-[#4a7fa5]" />
-              <span className="text-xs font-semibold text-[#2d5f80]">
-                Certificación CONOCER ante la SEP
-              </span>
-            </div>
-
-            {/* Brand name */}
-            <h1 className="text-5xl sm:text-6xl md:text-7xl font-semibold text-[#4a7fa5] leading-tight tracking-tight" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
-              Kaya Kalp
-            </h1>
-
-            {/* Tagline */}
-            <p className="mt-3 text-lg sm:text-xl text-[#8fa8ba] italic" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
-              Dando vida a tu cuerpo
-            </p>
-
-            {/* Description */}
-            <p className="mt-8 max-w-2xl mx-auto text-lg leading-relaxed text-[#5a7080]">
-              Centro de Fisioterapia, Masajes Terapéuticos y Tratamientos Faciales
-              en San Juan del Río, Querétaro. Agenda tu cita en línea y accede a tu expediente clínico, historial de sesiones y tarjeta de lealtad.
-            </p>
-
-            {/* CTA */}
-            <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link href="/agendar">
-                <Button
-                  size="lg"
-                  className="cursor-pointer h-12 px-8 bg-[#4a7fa5] hover:bg-[#2d5f80] hover:-translate-y-0.5 text-white font-semibold text-base shadow-lg shadow-[#4a7fa5]/25 transition-all duration-200"
-                >
-                  Agendar mi cita
-                  <CalendarDays className="ml-2 h-4 w-4" />
-                </Button>
+        {/* Mobile menu */}
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+            className="md:hidden bg-[#faf9f7] border-t border-[#e8e4df]/60 px-6 py-6 space-y-4"
+          >
+            {[
+              { href: "#servicios", label: "Servicios" },
+              { href: "#equipo", label: "Equipo" },
+              { href: "#ubicacion", label: "Ubicación" },
+            ].map((item) => (
+              <a
+                key={item.href}
+                href={item.href}
+                onClick={() => setMobileMenuOpen(false)}
+                className="block text-sm font-medium text-[#5a6b5c] hover:text-[#3fa87c] uppercase tracking-[0.2em] cursor-pointer"
+              >
+                {item.label}
+              </a>
+            ))}
+            <div className="flex flex-col gap-3 pt-4 border-t border-[#e8e4df]/60">
+              <Link href="/login">
+                <button className="cursor-pointer w-full py-3 border border-[#e8e4df] rounded-xl text-sm font-medium text-[#5a6b5c]">
+                  Iniciar Sesión
+                </button>
               </Link>
-              <Link href="#servicios">
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="cursor-pointer h-12 px-8 border-[#c8dce8] text-[#4a7fa5] hover:bg-[#e4ecf2] hover:-translate-y-0.5 font-semibold text-base transition-all duration-200"
+              <Link href="/agendar">
+                <button className="cursor-pointer w-full py-3 bg-[#2c3e2d] text-white rounded-xl text-sm font-medium">
+                  Agendar Cita
+                </button>
+              </Link>
+            </div>
+          </motion.div>
+        )}
+      </nav>
+
+      <main id="main-content" className="pt-32 pb-0">
+        {/* ─── HERO ─────────────────────────────────────────────────────── */}
+        <header className="max-w-7xl mx-auto px-6 mb-32">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-end">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+            >
+              <div className="inline-flex items-center gap-2 mb-6">
+                <Award className="h-4 w-4 text-[#3fa87c]" />
+                <span className="text-[#3fa87c] text-xs tracking-[0.3em] uppercase font-semibold">
+                  Certificación CONOCER · SEP
+                </span>
+              </div>
+              <h1
+                className="text-6xl md:text-8xl text-[#2c3e2d] leading-[0.9] tracking-tighter"
+                style={{ fontFamily: "'Cormorant Garamond', serif" }}
+              >
+                Dando vida <br />
+                <span className="italic font-light text-[#3fa87c]">a tu cuerpo.</span>
+              </h1>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="lg:pb-4"
+            >
+              <p className="text-xl text-[#5a6b5c] font-light max-w-md leading-relaxed">
+                Centro de Fisioterapia, Masajes Terapéuticos y Tratamientos Faciales
+                en San Juan del Río, Querétaro. Tu bienestar en manos expertas.
+              </p>
+              <div className="mt-8 flex flex-col sm:flex-row gap-4">
+                <Link href="/agendar">
+                  <button className="cursor-pointer bg-[#2c3e2d] text-white px-10 py-4 rounded-xl font-medium tracking-widest uppercase text-sm hover:bg-[#3fa87c] transition-all duration-300 flex items-center justify-center gap-3 active:scale-95 shadow-xl shadow-[#2c3e2d]/15">
+                    Agendar mi cita
+                    <CalendarDays className="w-4 h-4" />
+                  </button>
+                </Link>
+                <a
+                  href="#servicios"
+                  className="cursor-pointer border border-[#e8e4df] px-10 py-4 rounded-xl font-medium tracking-widest uppercase text-sm text-[#5a6b5c] hover:border-[#3fa87c] hover:text-[#3fa87c] transition-all duration-300 flex items-center justify-center gap-3"
                 >
                   Ver servicios
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
-
-            {/* Trust */}
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-5">
-              {[
-                "L-V 9:00am — 8:00pm",
-                "Certificadas ante la SEP",
-                "San Juan del Río, Qro.",
-              ].map((txt) => (
-                <div key={txt} className="flex items-center gap-1.5 text-sm text-[#8fa8ba]">
-                  <CheckCircle2 className="h-4 w-4 text-[#3fa87c] shrink-0" />
-                  <span>{txt}</span>
-                </div>
-              ))}
-            </div>
+                  <ArrowRight className="w-4 h-4" />
+                </a>
+              </div>
+            </motion.div>
           </div>
-        </section>
 
-        {/* ─── STATS ──────────────────────────────────────────────────────── */}
-        <div className="border-t border-b border-[#c8dce8] bg-white">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 divide-x-0 sm:divide-x divide-[#e4ecf2]">
-              {[
-                { icon: Users, valor: "3", label: "Especialistas" },
-                { icon: Heart, valor: "7+", label: "Tipos de sesión" },
-                { icon: Sparkles, valor: "6", label: "Tratamientos faciales" },
-                { icon: Star, valor: "10+", label: "Años de experiencia" },
-              ].map((s) => (
-                <div key={s.label} className="flex flex-col items-center text-center gap-1">
-                  <s.icon className="h-5 w-5 text-[#4a7fa5] mb-1" />
-                  <span className="text-3xl font-bold text-[#2d5f80]">{s.valor}</span>
-                  <span className="text-sm text-[#8fa8ba]">{s.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+          {/* Trust strip */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.5 }}
+            className="mt-20 flex flex-wrap items-center gap-8 md:gap-16"
+          >
+            {[
+              { icon: Clock, text: "L-V 9am — 8pm" },
+              { icon: MapPin, text: "San Juan del Río, Qro." },
+              { icon: Shield, text: "Certificadas ante la SEP" },
+              { icon: Star, text: "10+ años de experiencia" },
+            ].map((item) => (
+              <div key={item.text} className="flex items-center gap-2">
+                <item.icon className="h-4 w-4 text-[#3fa87c]" />
+                <span className="text-sm text-[#8a9a8c]">{item.text}</span>
+              </div>
+            ))}
+          </motion.div>
+        </header>
 
-        {/* ─── CÓMO AGENDAR ───────────────────────────────────────────────── */}
-        <section id="como-agendar" className="py-20 bg-[#f0f4f7]">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6">
-            <div className="text-center mb-14">
-              <p className="text-xs font-bold uppercase tracking-widest text-[#4a7fa5] mb-3">
-                Pasos para agendar
-              </p>
-              <h2 className="text-3xl sm:text-4xl font-bold text-[#1e2d3a]">
-                Agenda tu cita en minutos
-              </h2>
-              <p className="mt-4 text-[#5a7080] max-w-xl mx-auto text-base">
-                Sin llamadas, sin esperas. Regístrate y agenda directamente desde tu celular.
-              </p>
-            </div>
-
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {pasos.map((p) => (
-                <div
-                  key={p.num}
-                  className="relative bg-white rounded-2xl p-6 border border-[#c8dce8] shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-200"
-                >
-                  <div className="h-10 w-10 rounded-full bg-[#4a7fa5] text-white flex items-center justify-center font-bold text-lg mb-4">
-                    {p.num}
-                  </div>
-                  <h3 className="font-bold text-[#1e2d3a] text-base mb-2">{p.titulo}</h3>
-                  <p className="text-sm text-[#5a7080] leading-relaxed">{p.desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ─── SERVICIOS FISIOTERAPIA ─────────────────────────────────────── */}
-        <section id="servicios" className="py-20 bg-white border-t border-[#c8dce8]">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6">
-            <div className="text-center mb-14">
-              <p className="text-xs font-bold uppercase tracking-widest text-[#4a7fa5] mb-3">
+        {/* ─── SERVICIOS FISIOTERAPIA ─────────────────────────────────── */}
+        <section id="servicios" className="max-w-7xl mx-auto px-6 mb-32">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <div className="mb-16">
+              <span className="text-[#3fa87c] text-xs tracking-[0.3em] uppercase font-semibold">
                 Fisioterapia y Masajes
-              </p>
-              <h2 className="text-3xl sm:text-4xl font-bold text-[#1e2d3a]">
+              </span>
+              <h2
+                className="text-5xl text-[#2c3e2d] tracking-tight mt-4"
+                style={{ fontFamily: "'Cormorant Garamond', serif" }}
+              >
                 Tipos de Sesiones
               </h2>
-              <p className="mt-4 text-[#5a7080] max-w-xl mx-auto text-base">
-                Todas nuestras sesiones tienen una duración de ~50 minutos. Precios con IVA incluido.
-              </p>
+              <div className="h-1 w-20 bg-[#3fa87c] mt-6" />
             </div>
+          </motion.div>
 
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {serviciosFisio.map((s) => (
-                <Card
-                  key={s.nombre}
-                  className="border-[#c8dce8] bg-[#f0f4f7]/40 hover:bg-white hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-default group"
-                >
-                  <CardContent className="p-6">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="h-2 w-2 rounded-full bg-[#4a7fa5]" />
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-[#4a7fa5]">
-                        Fisioterapia
-                      </span>
-                    </div>
-                    <h3 className="text-base font-bold text-[#1e2d3a] mb-2">{s.nombre}</h3>
-                    <p className="text-sm text-[#5a7080] leading-relaxed mb-4">{s.desc}</p>
-                    <div className="flex items-end justify-between">
-                      <div>
-                        <span className="text-2xl font-bold text-[#2d5f80]">{s.precio}</span>
-                        <span className="text-xs text-[#8fa8ba] ml-1">/ sesión</span>
-                      </div>
-                      <span className="text-xs text-[#8fa8ba] flex items-center gap-1">
-                        <Clock className="h-3 w-3" /> {s.duracion}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-
-            {/* Paquetes */}
-            <div className="mt-12">
-              <h3 className="text-center text-lg font-bold text-[#1e2d3a] mb-6">
-                Paquetes de Tratamiento de Lesiones
-              </h3>
-              <div className="grid gap-5 sm:grid-cols-3 max-w-3xl mx-auto">
-                {paquetes.map((p) => (
-                  <div
-                    key={p.sesiones}
-                    className="bg-gradient-to-br from-[#2d5f80] to-[#4a7fa5] rounded-2xl p-6 text-white text-center shadow-lg"
-                  >
-                    <div className="text-4xl font-bold mb-1">{p.sesiones}</div>
-                    <div className="text-sm opacity-80 mb-3">sesiones · {p.frecuencia}</div>
-                    <div className="text-2xl font-bold">{p.precio}</div>
-                    <div className="text-xs opacity-60 mt-1">IVA incluido · 1 solo pago</div>
-                  </div>
-                ))}
-                <div className="bg-white rounded-2xl p-6 text-center border-2 border-[#4a7fa5] shadow-sm">
-                  <div className="text-4xl font-bold text-[#4a7fa5] mb-1">1</div>
-                  <div className="text-sm text-[#5a7080] mb-3">sesión individual</div>
-                  <div className="text-2xl font-bold text-[#2d5f80]">$400</div>
-                  <div className="text-xs text-[#8fa8ba] mt-1">IVA incluido</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {serviciosFisio.map((s, i) => (
+              <motion.div
+                key={s.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.06 }}
+                className="group flex flex-col p-7 rounded-2xl border border-[#e8e4df]/60 bg-white hover:border-[#3fa87c]/40 hover:shadow-lg transition-all duration-300 cursor-default"
+              >
+                <div className="flex items-center gap-2 mb-4">
+                  <Heart className="h-4 w-4 text-[#3fa87c] opacity-60 group-hover:opacity-100 transition-opacity" />
+                  <span className="text-[10px] uppercase tracking-[0.25em] text-[#8a9a8c] font-semibold">
+                    Fisioterapia
+                  </span>
                 </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ─── FACIALES ───────────────────────────────────────────────────── */}
-        <section id="faciales" className="py-20 bg-[#f0f4f7] border-t border-[#c8dce8]">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6">
-            <div className="text-center mb-14">
-              <p className="text-xs font-bold uppercase tracking-widest text-[#9b59b6] mb-3">
-                Tratamientos Faciales
-              </p>
-              <h2 className="text-3xl sm:text-4xl font-bold text-[#1e2d3a]">
-                Cosmiatra: Gaby Aguilar
-              </h2>
-              <p className="mt-4 text-[#5a7080] max-w-xl mx-auto text-base">
-                Sesiones de 60 minutos con productos profesionales. Cada tratamiento incluye un regalo especial.
-              </p>
-            </div>
-
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {serviciosFaciales.map((s) => (
-                <Card
-                  key={s.nombre}
-                  className="border-[#c8dce8] bg-white hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-default group"
-                >
-                  <CardContent className="p-6">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="h-2 w-2 rounded-full bg-[#9b59b6]" />
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-[#9b59b6]">
-                        Facial
-                      </span>
-                    </div>
-                    <h3 className="text-base font-bold text-[#1e2d3a] mb-2">{s.nombre}</h3>
-                    <p className="text-sm text-[#5a7080] leading-relaxed mb-3">{s.desc}</p>
-
-                    {/* Incluye */}
-                    <div className="flex flex-wrap gap-1 mb-4">
-                      {s.incluye.map((item) => (
-                        <span
-                          key={item}
-                          className="bg-[#e4ecf2] border border-[#c8dce8] rounded px-2 py-0.5 text-[10px] text-[#5a7080]"
-                        >
-                          {item}
-                        </span>
-                      ))}
-                    </div>
-
-                    <div className="flex items-end justify-between">
-                      <div>
-                        <span className="text-2xl font-bold text-[#2d5f80]">{s.precio}</span>
-                        <span className="text-xs text-[#8fa8ba] ml-1">/ sesión</span>
-                      </div>
-                      <span className="text-xs text-[#8fa8ba] flex items-center gap-1">
-                        <Clock className="h-3 w-3" /> {s.duracion}
-                      </span>
-                    </div>
-
-                    {s.regalo && (
-                      <div className="mt-3 flex items-center gap-1.5 text-xs text-[#3fa87c] font-medium bg-[#3fa87c]/10 rounded-lg px-3 py-1.5">
-                        <Sparkles className="h-3 w-3" />
-                        Regalo: {s.regalo}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-
-            {/* Corporales y Epilación */}
-            <div className="mt-12 grid gap-5 sm:grid-cols-2 max-w-3xl mx-auto">
-              <Card className="border-[#c8dce8] bg-white">
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="h-2 w-2 rounded-full bg-[#3fa87c]" />
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-[#3fa87c]">
-                      Corporal
-                    </span>
+                <h3 className="font-semibold text-[#2c3e2d] text-lg mb-2">{s.nombre}</h3>
+                <p className="text-sm text-[#5a6b5c] leading-relaxed mb-6 flex-1">{s.desc}</p>
+                <div className="flex items-end justify-between pt-4 border-t border-[#e8e4df]/60">
+                  <div>
+                    <span className="text-2xl font-bold text-[#2c3e2d]">{s.precio}</span>
+                    <span className="text-xs text-[#8a9a8c] ml-1">/ sesión</span>
                   </div>
-                  <h3 className="text-base font-bold text-[#1e2d3a] mb-2">Tratamientos Corporales</h3>
-                  <p className="text-sm text-[#5a7080] leading-relaxed mb-3">
-                    Tratamiento no invasivo para celulitis, estrías, piel de naranja y grasa localizada.
-                    Cavitador, radiofrecuencia, lipoláser y vacum terapia.
-                  </p>
-                  <div className="flex flex-wrap gap-1 mb-4">
-                    {["Piernas", "Abdomen", "Brazos", "Espalda"].map((z) => (
-                      <span key={z} className="bg-[#e4ecf2] border border-[#c8dce8] rounded px-2 py-0.5 text-[10px] text-[#5a7080]">
-                        {z}
-                      </span>
-                    ))}
-                  </div>
-                  <span className="text-2xl font-bold text-[#2d5f80]">$600</span>
-                  <span className="text-xs text-[#8fa8ba] ml-1">/ sesión</span>
-                </CardContent>
-              </Card>
-
-              <Card className="border-[#c8dce8] bg-white">
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="h-2 w-2 rounded-full bg-[#e89b3f]" />
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-[#e89b3f]">
-                      Epilación
-                    </span>
-                  </div>
-                  <h3 className="text-base font-bold text-[#1e2d3a] mb-2">Epilación Roll-On</h3>
-                  <p className="text-sm text-[#5a7080] leading-relaxed mb-3">
-                    Aplicación suave y precisa, cero dolorosa, resultados duraderos. Ideal para todo tipo de piel.
-                  </p>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-[#5a7080]">
-                    {[
-                      ["Media pierna inf.", "$250"],
-                      ["Media pierna sup.", "$300"],
-                      ["Piernas completas", "$400"],
-                      ["Axila", "$200"],
-                      ["Bigote", "$150"],
-                      ["Barbilla", "$150"],
-                      ["Barba completa", "$200"],
-                      ["Área de bikini", "$250"],
-                    ].map(([zona, precio]) => (
-                      <div key={zona} className="flex justify-between">
-                        <span>{zona}</span>
-                        <span className="font-semibold text-[#2d5f80]">{precio}</span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </section>
-
-        {/* ─── EQUIPO ─────────────────────────────────────────────────────── */}
-        <section id="equipo" className="py-20 bg-white border-t border-[#c8dce8]">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6">
-            <div className="text-center mb-14">
-              <p className="text-xs font-bold uppercase tracking-widest text-[#4a7fa5] mb-3">
-                Nuestro equipo
-              </p>
-              <h2 className="text-3xl sm:text-4xl font-bold text-[#1e2d3a]">
-                Profesionales certificadas
-              </h2>
-              <p className="mt-4 text-[#5a7080] max-w-xl mx-auto text-base">
-                El equipo crece, nos alegra poderte brindar un mejor servicio con las más profesionales.
-              </p>
-            </div>
-
-            <div className="grid gap-6 sm:grid-cols-3 max-w-4xl mx-auto">
-              {equipo.map((e) => (
-                <div
-                  key={e.nombre}
-                  className="text-center bg-[#f0f4f7] rounded-2xl p-6 border border-[#c8dce8] hover:shadow-md transition-all duration-200"
-                >
-                  <div
-                    className={`h-16 w-16 rounded-full ${e.color} flex items-center justify-center text-white text-xl font-bold mx-auto mb-4`}
-                  >
-                    {e.initials}
-                  </div>
-                  <h3 className="font-bold text-[#1e2d3a] text-base">{e.nombre}</h3>
-                  <p className="text-sm text-[#4a7fa5] font-medium mt-1">{e.rol}</p>
-                  <p className="text-xs text-[#8fa8ba] mt-2 leading-relaxed">{e.especialidad}</p>
+                  <span className="text-xs text-[#8a9a8c] flex items-center gap-1">
+                    <Clock className="h-3 w-3" /> {s.duracion}
+                  </span>
                 </div>
-              ))}
-            </div>
+              </motion.div>
+            ))}
           </div>
-        </section>
 
-        {/* ─── POLÍTICAS ──────────────────────────────────────────────────── */}
-        <section className="py-16 bg-[#f0f4f7] border-t border-[#c8dce8]">
-          <div className="max-w-3xl mx-auto px-4 sm:px-6">
-            <h3 className="text-center text-lg font-bold text-[#1e2d3a] mb-8">
-              Políticas de Nuestros Servicios
+          {/* Paquetes */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mt-16 bg-[#2c3e2d] rounded-2xl p-8 md:p-12"
+          >
+            <h3
+              className="text-3xl text-white mb-8"
+              style={{ fontFamily: "'Cormorant Garamond', serif" }}
+            >
+              Paquetes de Tratamiento
             </h3>
-            <div className="space-y-3">
-              {politicas.map((p, i) => (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              {[
+                { sesiones: "1", freq: "Sesión individual", precio: "$400" },
+                { sesiones: "10", freq: "2 terapias/semana", precio: "$3,800" },
+                { sesiones: "20", freq: "2 terapias/semana", precio: "$7,200" },
+              ].map((p, i) => (
                 <div
-                  key={i}
-                  className="flex items-start gap-3 bg-white rounded-xl p-4 border border-[#c8dce8]"
+                  key={p.sesiones}
+                  className={`rounded-xl p-6 text-center transition-all duration-300 ${
+                    i === 2
+                      ? "bg-[#3fa87c] text-white ring-2 ring-[#3fa87c]/40 ring-offset-2 ring-offset-[#2c3e2d]"
+                      : "bg-white/10 text-white border border-white/10"
+                  }`}
                 >
-                  <div className="h-6 w-6 rounded-full bg-[#4a7fa5]/10 flex items-center justify-center shrink-0 mt-0.5">
-                    <span className="text-xs font-bold text-[#4a7fa5]">{i + 1}</span>
-                  </div>
-                  <p className="text-sm text-[#5a7080]">{p}</p>
+                  <div className="text-4xl font-bold mb-1">{p.sesiones}</div>
+                  <div className="text-sm opacity-70 mb-3">sesiones · {p.freq}</div>
+                  <div className="text-2xl font-bold">{p.precio}</div>
+                  <div className="text-[10px] opacity-50 mt-1 uppercase tracking-wider">IVA incluido</div>
                 </div>
               ))}
             </div>
+          </motion.div>
+        </section>
 
-            {/* Payment methods */}
-            <div className="mt-8 text-center">
-              <p className="text-xs font-bold uppercase tracking-widest text-[#8fa8ba] mb-4">
-                Métodos de pago aceptados
-              </p>
-              <div className="flex flex-wrap justify-center gap-3">
-                {["Depósito", "Transferencia", "Efectivo", "Tarjeta de crédito"].map((m) => (
-                  <span
-                    key={m}
-                    className="bg-white border border-[#c8dce8] rounded-lg px-4 py-2 text-sm text-[#5a7080] font-medium"
-                  >
-                    {m}
+        {/* ─── FACIALES ───────────────────────────────────────────────── */}
+        <section className="max-w-7xl mx-auto px-6 mb-32">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <div className="mb-16">
+              <span className="text-[#9b59b6] text-xs tracking-[0.3em] uppercase font-semibold">
+                Tratamientos Faciales
+              </span>
+              <h2
+                className="text-5xl text-[#2c3e2d] tracking-tight mt-4"
+                style={{ fontFamily: "'Cormorant Garamond', serif" }}
+              >
+                Cosmiatra: <span className="italic font-light">Gaby Aguilar</span>
+              </h2>
+              <div className="h-1 w-20 bg-[#9b59b6] mt-6" />
+            </div>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {serviciosFaciales.map((s, i) => (
+              <motion.div
+                key={s.nombre}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.06 }}
+                className="group flex flex-col p-7 rounded-2xl border border-[#e8e4df]/60 bg-white hover:border-[#9b59b6]/40 hover:shadow-lg transition-all duration-300 cursor-default"
+              >
+                <div className="flex items-center gap-2 mb-4">
+                  <Sparkles className="h-4 w-4 text-[#9b59b6] opacity-60 group-hover:opacity-100 transition-opacity" />
+                  <span className="text-[10px] uppercase tracking-[0.25em] text-[#8a9a8c] font-semibold">
+                    Facial
                   </span>
+                </div>
+                <h3 className="font-semibold text-[#2c3e2d] text-lg mb-2">{s.nombre}</h3>
+                <p className="text-sm text-[#5a6b5c] leading-relaxed mb-6 flex-1">{s.desc}</p>
+                <div className="flex items-end justify-between pt-4 border-t border-[#e8e4df]/60">
+                  <div>
+                    <span className="text-2xl font-bold text-[#2c3e2d]">{s.precio}</span>
+                    <span className="text-xs text-[#8a9a8c] ml-1">/ sesión</span>
+                  </div>
+                  <span className="text-xs text-[#8a9a8c] flex items-center gap-1">
+                    <Clock className="h-3 w-3" /> {s.duracion}
+                  </span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Corporal + Epilación side by side */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-8">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="p-7 rounded-2xl border border-[#e8e4df]/60 bg-white"
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <div className="h-2 w-2 rounded-full bg-[#3fa87c]" />
+                <span className="text-[10px] uppercase tracking-[0.25em] text-[#8a9a8c] font-semibold">Corporal</span>
+              </div>
+              <h3 className="font-semibold text-[#2c3e2d] text-lg mb-2">Tratamientos Corporales</h3>
+              <p className="text-sm text-[#5a6b5c] leading-relaxed mb-4">
+                Celulitis, estrías, piel de naranja y grasa localizada. Cavitador, radiofrecuencia, lipoláser y vacum terapia.
+              </p>
+              <div className="flex items-end justify-between pt-4 border-t border-[#e8e4df]/60">
+                <div>
+                  <span className="text-2xl font-bold text-[#2c3e2d]">$600</span>
+                  <span className="text-xs text-[#8a9a8c] ml-1">/ sesión</span>
+                </div>
+                <span className="text-xs text-[#8a9a8c]">60 min</span>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              className="p-7 rounded-2xl border border-[#e8e4df]/60 bg-white"
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <div className="h-2 w-2 rounded-full bg-[#e89b3f]" />
+                <span className="text-[10px] uppercase tracking-[0.25em] text-[#8a9a8c] font-semibold">Epilación Roll-On</span>
+              </div>
+              <h3 className="font-semibold text-[#2c3e2d] text-lg mb-2">Depilación</h3>
+              <p className="text-sm text-[#5a6b5c] leading-relaxed mb-4">
+                Aplicación suave y precisa, resultados duraderos. Ideal para todo tipo de piel.
+              </p>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
+                {[
+                  ["Piernas completas", "$400"],
+                  ["Media pierna", "$250"],
+                  ["Axila", "$200"],
+                  ["Bikini", "$250"],
+                  ["Bigote", "$150"],
+                  ["Barba", "$200"],
+                ].map(([zona, precio]) => (
+                  <div key={zona} className="flex justify-between">
+                    <span className="text-[#5a6b5c]">{zona}</span>
+                    <span className="font-semibold text-[#2c3e2d]">{precio}</span>
+                  </div>
                 ))}
               </div>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* ─── EQUIPO ─────────────────────────────────────────────────── */}
+        <section id="equipo" className="max-w-7xl mx-auto px-6 mb-32">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <div className="mb-16">
+              <span className="text-[#3fa87c] text-xs tracking-[0.3em] uppercase font-semibold">
+                Nuestro Equipo
+              </span>
+              <h2
+                className="text-5xl text-[#2c3e2d] tracking-tight mt-4"
+                style={{ fontFamily: "'Cormorant Garamond', serif" }}
+              >
+                Profesionales <span className="italic font-light">certificadas.</span>
+              </h2>
+              <div className="h-1 w-20 bg-[#3fa87c] mt-6" />
+            </div>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {equipo.map((e, i) => (
+              <motion.div
+                key={e.nombre}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className={`group relative overflow-hidden rounded-2xl flex flex-col justify-end p-8 ${
+                  i === 0
+                    ? "bg-[#2c3e2d] text-white h-[420px]"
+                    : i === 1
+                    ? "bg-[#f0ede8] text-[#2c3e2d] h-[420px] md:mt-16"
+                    : "bg-[#9b59b6]/10 text-[#2c3e2d] h-[420px]"
+                }`}
+              >
+                {/* Decorative initials */}
+                <div
+                  className={`absolute top-8 right-8 text-[120px] font-bold leading-none opacity-[0.06] pointer-events-none ${
+                    i === 0 ? "text-white" : "text-[#2c3e2d]"
+                  }`}
+                  style={{ fontFamily: "'Cormorant Garamond', serif" }}
+                  aria-hidden="true"
+                >
+                  {e.initials}
+                </div>
+
+                <div className="relative z-10">
+                  <span
+                    className={`text-[10px] uppercase tracking-[0.3em] mb-2 block font-bold ${
+                      i === 0 ? "text-[#3fa87c]" : i === 2 ? "text-[#9b59b6]" : "text-[#3fa87c]"
+                    }`}
+                  >
+                    {e.rol}
+                  </span>
+                  <h3
+                    className="text-2xl mb-4"
+                    style={{ fontFamily: "'Cormorant Garamond', serif" }}
+                  >
+                    {e.nombre}
+                  </h3>
+                  <p
+                    className={`text-sm leading-relaxed font-light ${
+                      i === 0 ? "text-white/70" : "text-[#5a6b5c]"
+                    }`}
+                  >
+                    {e.especialidad}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        {/* ─── CÓMO FUNCIONA ──────────────────────────────────────────── */}
+        <section className="bg-[#2c3e2d] py-24 mb-32">
+          <div className="max-w-7xl mx-auto px-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="mb-16"
+            >
+              <span className="text-[#3fa87c] text-xs tracking-[0.3em] uppercase font-semibold">
+                Pasos para agendar
+              </span>
+              <h2
+                className="text-5xl text-white tracking-tight mt-4"
+                style={{ fontFamily: "'Cormorant Garamond', serif" }}
+              >
+                Agenda en <span className="italic font-light">minutos.</span>
+              </h2>
+              <div className="h-1 w-20 bg-[#3fa87c] mt-6" />
+            </motion.div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[
+                { num: "01", titulo: "Regístrate", desc: "Crea tu cuenta con tu número de teléfono" },
+                { num: "02", titulo: "Elige tu servicio", desc: "Explora nuestro catálogo de terapias y faciales" },
+                { num: "03", titulo: "Agenda tu cita", desc: "Escoge fecha, hora y terapeuta" },
+                { num: "04", titulo: "Confirma", desc: "Anticipo de $100 y listo — te esperamos" },
+              ].map((paso, i) => (
+                <motion.div
+                  key={paso.num}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  className="bg-white/5 border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-all duration-300"
+                >
+                  <span className="text-[#3fa87c] text-3xl font-bold block mb-4">{paso.num}</span>
+                  <h3 className="text-white font-semibold mb-2">{paso.titulo}</h3>
+                  <p className="text-white/50 text-sm leading-relaxed">{paso.desc}</p>
+                </motion.div>
+              ))}
             </div>
           </div>
         </section>
 
-        {/* ─── UBICACIÓN ──────────────────────────────────────────────────── */}
-        <section id="ubicacion" className="py-20 bg-white border-t border-[#c8dce8]">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6">
-            <div className="text-center mb-14">
-              <p className="text-xs font-bold uppercase tracking-widest text-[#4a7fa5] mb-3">
-                Encuéntranos
-              </p>
-              <h2 className="text-3xl sm:text-4xl font-bold text-[#1e2d3a]">Ubicación</h2>
+        {/* ─── POLÍTICAS (FAQ-style) ──────────────────────────────────── */}
+        <section className="max-w-3xl mx-auto px-6 mb-32">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <div className="mb-12 text-center">
+              <span className="text-[#3fa87c] text-xs tracking-[0.3em] uppercase font-semibold">
+                Información importante
+              </span>
+              <h2
+                className="text-4xl text-[#2c3e2d] tracking-tight mt-4"
+                style={{ fontFamily: "'Cormorant Garamond', serif" }}
+              >
+                Políticas del servicio
+              </h2>
             </div>
+          </motion.div>
 
-            <div className="grid gap-8 sm:grid-cols-2 items-center">
-              {/* Map placeholder */}
-              <div className="bg-[#e4ecf2] rounded-2xl h-[300px] flex items-center justify-center border border-[#c8dce8]">
-                <div className="text-center">
-                  <MapPin className="h-10 w-10 text-[#4a7fa5] mx-auto mb-3" />
-                  <p className="text-sm font-medium text-[#2d5f80]">Ave María No. 25</p>
-                  <p className="text-xs text-[#8fa8ba]">Fracc. Las Huertas, Centro</p>
-                  <p className="text-xs text-[#8fa8ba]">San Juan del Río, Qro.</p>
-                </div>
+          <div className="space-y-3">
+            {[
+              { q: "¿Se requiere anticipo?", a: "Sí, un anticipo de $100 MXN para confirmar tu cita. Se descuenta del costo total de la sesión." },
+              { q: "¿Puedo cancelar mi cita?", a: "Sí, con un mínimo de 24 horas de anticipación. De lo contrario se pierde el anticipo." },
+              { q: "¿Qué pasa si llego tarde?", a: "No se recuperan minutos perdidos. Te recomendamos llegar puntual para aprovechar tu sesión completa." },
+              { q: "¿Qué métodos de pago aceptan?", a: "Aceptamos depósito, transferencia, efectivo y tarjeta de crédito." },
+              { q: "¿Qué debo llevar a mi sesión?", a: "Ropa cómoda para tu sesión de fisioterapia. Para faciales no es necesario nada especial." },
+            ].map((faq, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.05 }}
+              >
+                <button
+                  onClick={() => setExpandedFaq(expandedFaq === i ? null : i)}
+                  className="cursor-pointer w-full flex items-center justify-between p-5 rounded-xl bg-white border border-[#e8e4df]/60 text-left hover:border-[#3fa87c]/40 transition-all duration-200"
+                >
+                  <span className="font-medium text-[#2c3e2d] text-sm">{faq.q}</span>
+                  <ChevronDown
+                    className={`h-4 w-4 text-[#8a9a8c] shrink-0 transition-transform duration-200 ${
+                      expandedFaq === i ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+                {expandedFaq === i && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    transition={{ duration: 0.2 }}
+                    className="px-5 pb-5 pt-2 text-sm text-[#5a6b5c] leading-relaxed"
+                  >
+                    {faq.a}
+                  </motion.div>
+                )}
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        {/* ─── UBICACIÓN ──────────────────────────────────────────────── */}
+        <section id="ubicacion" className="max-w-7xl mx-auto px-6 mb-32">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <div className="mb-16">
+              <span className="text-[#3fa87c] text-xs tracking-[0.3em] uppercase font-semibold">
+                Encuéntranos
+              </span>
+              <h2
+                className="text-5xl text-[#2c3e2d] tracking-tight mt-4"
+                style={{ fontFamily: "'Cormorant Garamond', serif" }}
+              >
+                Nuestra clínica
+              </h2>
+              <div className="h-1 w-20 bg-[#3fa87c] mt-6" />
+            </div>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Map card */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="relative h-[450px] rounded-2xl bg-[#f0ede8] overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-[#3fa87c]/15 via-transparent to-transparent" />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                <div className="w-5 h-5 bg-[#3fa87c] rounded-full animate-ping absolute" />
+                <div className="w-5 h-5 bg-[#3fa87c] rounded-full relative" />
               </div>
 
-              {/* Contact info */}
-              <div className="space-y-6">
-                <div>
-                  <h3 className="font-bold text-[#1e2d3a] text-lg mb-4">Datos de contacto</h3>
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-[#4a7fa5]/10 flex items-center justify-center">
-                        <MapPin className="h-4 w-4 text-[#4a7fa5]" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-[#1e2d3a]">
-                          Ave María No. 25, Fracc. Las Huertas
-                        </p>
-                        <p className="text-xs text-[#8fa8ba]">
-                          San Juan del Río, Qro. · Entrada sobre calle Ayuntamiento
-                        </p>
-                      </div>
+              <div className="absolute bottom-0 left-0 right-0 bg-white p-8 rounded-t-2xl shadow-lg">
+                <span className="text-[#3fa87c] text-[10px] uppercase tracking-[0.3em] mb-2 block font-bold">
+                  San Juan del Río
+                </span>
+                <h3
+                  className="text-2xl text-[#2c3e2d] mb-3"
+                  style={{ fontFamily: "'Cormorant Garamond', serif" }}
+                >
+                  Kaya Kalp
+                </h3>
+                <p className="text-sm text-[#5a6b5c] leading-relaxed mb-4">
+                  Ave María No. 25, Fracc. Las Huertas<br />
+                  San Juan del Río, Qro.
+                </p>
+                <a
+                  href="https://maps.google.com/?q=Ave+Maria+25+Las+Huertas+San+Juan+del+Rio+Queretaro"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="cursor-pointer border-b border-[#2c3e2d]/30 pb-1 text-sm tracking-widest uppercase text-[#2c3e2d] hover:border-[#3fa87c] hover:text-[#3fa87c] transition-all flex items-center gap-2 w-fit font-medium"
+                >
+                  Cómo llegar <ArrowUpRight className="w-3 h-3" />
+                </a>
+              </div>
+            </motion.div>
+
+            {/* Contact info */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              className="flex flex-col justify-between"
+            >
+              <div className="space-y-8">
+                {[
+                  {
+                    icon: MapPin,
+                    label: "Dirección",
+                    value: "Ave María No. 25, Fracc. Las Huertas",
+                    sub: "Centro, San Juan del Río, Qro.",
+                    color: "text-[#3fa87c] bg-[#3fa87c]/10",
+                  },
+                  {
+                    icon: Phone,
+                    label: "WhatsApp",
+                    value: "427 165 92 04",
+                    sub: "Escríbenos para cualquier duda",
+                    color: "text-[#3fa87c] bg-[#3fa87c]/10",
+                  },
+                  {
+                    icon: Clock,
+                    label: "Horario",
+                    value: "Lunes a Viernes",
+                    sub: "9:00 a.m. — 8:00 p.m.",
+                    color: "text-[#e89b3f] bg-[#e89b3f]/10",
+                  },
+                ].map((item) => (
+                  <div key={item.label} className="flex items-start gap-4">
+                    <div className={`h-12 w-12 rounded-xl ${item.color} flex items-center justify-center shrink-0`}>
+                      <item.icon className="h-5 w-5" />
                     </div>
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-[#3fa87c]/10 flex items-center justify-center">
-                        <Phone className="h-4 w-4 text-[#3fa87c]" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-[#1e2d3a]">427 165 92 04</p>
-                        <p className="text-xs text-[#8fa8ba]">WhatsApp</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-[#e89b3f]/10 flex items-center justify-center">
-                        <Clock className="h-4 w-4 text-[#e89b3f]" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-[#1e2d3a]">Lunes a Viernes</p>
-                        <p className="text-xs text-[#8fa8ba]">9:00 a.m. a 8:00 p.m.</p>
-                      </div>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#8a9a8c] mb-1">{item.label}</p>
+                      <p className="font-semibold text-[#2c3e2d]">{item.value}</p>
+                      <p className="text-sm text-[#5a6b5c]">{item.sub}</p>
                     </div>
                   </div>
-                </div>
-
-                {/* Social */}
-                <div className="flex gap-3">
-                  <span className="bg-[#e4ecf2] border border-[#c8dce8] rounded-lg px-4 py-2 text-sm text-[#5a7080]">
-                    Facebook: Kaya Kalp
-                  </span>
-                  <span className="bg-[#e4ecf2] border border-[#c8dce8] rounded-lg px-4 py-2 text-sm text-[#5a7080]">
-                    Instagram: @kaya_kalp21
-                  </span>
-                </div>
+                ))}
               </div>
-            </div>
+
+              <div className="flex gap-4 mt-10">
+                <a
+                  href="https://www.instagram.com/kaya_kalp21/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="cursor-pointer flex-1 border border-[#e8e4df] rounded-xl px-5 py-4 text-center text-sm font-medium text-[#5a6b5c] hover:border-[#3fa87c] hover:text-[#3fa87c] transition-all"
+                >
+                  Instagram
+                </a>
+                <a
+                  href="https://wa.me/524271659204"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="cursor-pointer flex-1 bg-[#3fa87c] rounded-xl px-5 py-4 text-center text-sm font-medium text-white hover:bg-[#2c3e2d] transition-all"
+                >
+                  WhatsApp
+                </a>
+              </div>
+            </motion.div>
           </div>
         </section>
 
-        {/* ─── CTA FINAL ──────────────────────────────────────────────────── */}
-        <section className="relative overflow-hidden bg-[#1e3a4f] py-20">
-          <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-            <div className="absolute top-0 left-1/4 h-72 w-72 rounded-full bg-[#4a7fa5]/15 blur-3xl" />
-            <div className="absolute bottom-0 right-1/4 h-72 w-72 rounded-full bg-[#7ab5d4]/10 blur-3xl" />
-          </div>
-
-          <div className="relative max-w-3xl mx-auto px-4 sm:px-6 text-center">
-            <h2
-              className="text-4xl sm:text-5xl font-semibold text-[#a8cfe0] leading-tight"
-              style={{ fontFamily: "'Cormorant Garamond', serif" }}
+        {/* ─── CTA FINAL ──────────────────────────────────────────────── */}
+        <section className="bg-[#2c3e2d] py-28">
+          <div className="max-w-4xl mx-auto px-6 text-center">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
             >
-              Kaya Kalp
-            </h2>
-            <p
-              className="mt-2 text-lg text-[#7ab5d4] italic"
-              style={{ fontFamily: "'Cormorant Garamond', serif" }}
-            >
-              Dando vida a tu cuerpo
-            </p>
-            <p className="mt-6 text-white/60 text-base max-w-xl mx-auto">
-              Agenda tu primera cita hoy. Tu bienestar es nuestra prioridad.
-            </p>
-            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link href="/agendar">
-                <Button
-                  size="lg"
-                  className="cursor-pointer h-12 px-8 bg-[#4a7fa5] text-white hover:bg-[#6b9dbf] hover:-translate-y-0.5 font-bold text-base transition-all duration-200 shadow-lg"
-                >
-                  Agendar mi cita
-                  <CalendarDays className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
-              <div className="flex items-center gap-1.5 text-sm text-white/40">
-                <Shield className="h-4 w-4" />
-                Aviso de privacidad · Art. 15 y 16 LFPDPPP
+              <h2
+                className="text-5xl md:text-7xl text-white leading-[0.95] tracking-tight"
+                style={{ fontFamily: "'Cormorant Garamond', serif" }}
+              >
+                Tu bienestar <br />
+                <span className="italic font-light text-[#3fa87c]">comienza hoy.</span>
+              </h2>
+              <p className="mt-8 text-white/50 text-lg max-w-lg mx-auto font-light leading-relaxed">
+                Agenda tu primera cita y experimenta la diferencia de un cuidado profesional y personalizado.
+              </p>
+              <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+                <Link href="/agendar">
+                  <button className="cursor-pointer bg-[#3fa87c] text-white px-12 py-5 rounded-xl font-medium tracking-widest uppercase text-sm hover:bg-white hover:text-[#2c3e2d] transition-all duration-300 flex items-center gap-3 active:scale-95 shadow-xl">
+                    Agendar mi cita
+                    <CalendarDays className="w-4 h-4" />
+                  </button>
+                </Link>
               </div>
-            </div>
+              <p className="mt-8 text-[10px] text-white/30 uppercase tracking-[0.2em] leading-relaxed font-medium">
+                Anticipo de $100 MXN · Cancelación 24h antes<br />
+                Aviso de privacidad · Art. 15 y 16 LFPDPPP
+              </p>
+            </motion.div>
           </div>
         </section>
       </main>
 
-      {/* ─── FOOTER ─────────────────────────────────────────────────────── */}
-      <footer className="bg-[#1e3a4f] py-12 border-t border-white/5" role="contentinfo">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <div className="grid gap-8 sm:grid-cols-3 mb-10">
-            <div>
+      {/* ─── FOOTER ─────────────────────────────────────────────────── */}
+      <footer className="bg-[#1e2d1f] pt-24 pb-12" role="contentinfo">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-16 mb-24">
+            <div className="md:col-span-1">
               <span
-                className="text-2xl font-semibold text-[#a8cfe0]"
+                className="text-2xl text-white block mb-4 font-bold"
                 style={{ fontFamily: "'Cormorant Garamond', serif" }}
               >
                 Kaya Kalp
               </span>
-              <p className="text-xs text-white/30 mt-1 italic" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
-                Dando vida a tu cuerpo
-              </p>
-              <p className="text-sm text-white/40 mt-3 leading-relaxed">
-                Centro de Fisioterapia, Masajes y Tratamientos Faciales.
-                Certificación CONOCER ante la SEP.
+              <p
+                className="text-2xl text-white/60 leading-tight"
+                style={{ fontFamily: "'Cormorant Garamond', serif" }}
+              >
+                Dando vida <br /> a tu cuerpo.
               </p>
             </div>
 
-            <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-white/30 mb-4">
-                Servicios
-              </p>
-              <ul className="space-y-2">
-                {["Fisioterapia", "Masajes Terapéuticos", "Tratamientos Faciales", "Corporales", "Epilación Roll-On"].map(
-                  (l) => (
-                    <li key={l}>
-                      <span className="text-sm text-white/50">{l}</span>
-                    </li>
-                  )
-                )}
-              </ul>
+            <div className="grid grid-cols-2 gap-8 md:col-span-2">
+              <div className="space-y-6">
+                <span className="text-[10px] tracking-widest uppercase text-white/30 font-bold">
+                  Servicios
+                </span>
+                <div className="flex flex-col gap-3">
+                  {["Fisioterapia", "Masajes", "Faciales", "Corporales", "Epilación"].map(
+                    (link) => (
+                      <span
+                        key={link}
+                        className="text-white/50 text-sm tracking-wide"
+                      >
+                        {link}
+                      </span>
+                    )
+                  )}
+                </div>
+              </div>
+              <div className="space-y-6">
+                <span className="text-[10px] tracking-widest uppercase text-white/30 font-bold">
+                  Redes
+                </span>
+                <div className="flex flex-col gap-3">
+                  {[
+                    { label: "Instagram", href: "https://www.instagram.com/kaya_kalp21/" },
+                    { label: "WhatsApp", href: "https://wa.me/524271659204" },
+                  ].map((link) => (
+                    <a
+                      key={link.label}
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#3fa87c] hover:text-white text-sm tracking-wide uppercase transition-all cursor-pointer"
+                    >
+                      {link.label}
+                    </a>
+                  ))}
+                </div>
+              </div>
             </div>
 
-            <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-white/30 mb-4">
+            <div className="md:text-right space-y-6">
+              <span className="text-[10px] tracking-widest uppercase text-white/30 font-bold block">
                 Contacto
-              </p>
-              <ul className="space-y-2">
-                <li className="text-sm text-white/50">WhatsApp: 427 165 92 04</li>
-                <li className="text-sm text-white/50">Ave María No. 25, Fracc. Las Huertas</li>
-                <li className="text-sm text-white/50">San Juan del Río, Qro.</li>
-                <li className="text-sm text-white/50">L-V 9:00am — 8:00pm</li>
-              </ul>
+              </span>
+              <div>
+                <p className="text-lg text-white mb-1" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+                  427 165 92 04
+                </p>
+                <p className="text-[10px] uppercase tracking-[0.2em] text-white/30 font-bold">
+                  Disponible L-V 9:00 — 20:00
+                </p>
+              </div>
             </div>
           </div>
 
-          <div className="border-t border-white/10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <p className="text-xs text-white/30">
+          <div className="pt-12 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-6">
+            <p className="text-[10px] tracking-widest uppercase text-white/30 font-bold">
               © 2026 Kaya Kalp. Todos los derechos reservados.
             </p>
-            <div className="flex gap-4">
-              <span className="text-xs text-white/30">Facebook: Kaya Kalp</span>
-              <span className="text-xs text-white/30">Instagram: @kaya_kalp21</span>
+            <div className="flex gap-8">
+              {["Aviso de privacidad", "Términos"].map((item) => (
+                <span
+                  key={item}
+                  className="text-[10px] tracking-widest uppercase text-white/30 font-bold"
+                >
+                  {item}
+                </span>
+              ))}
             </div>
           </div>
         </div>
