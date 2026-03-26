@@ -34,6 +34,8 @@ import {
   Loader2,
   Star,
   CreditCard,
+  Smartphone,
+  Download,
   ChevronLeft,
   ChevronRight,
   User,
@@ -168,6 +170,102 @@ const ESTADO_CONFIG: Record<string, { label: string; color: string; bg: string }
   cancelada:   { label: "Cancelada",  color: "text-[#d9534f]", bg: "bg-[#d9534f]/10" },
   no_show:     { label: "No asistió", color: "text-[#d9534f]", bg: "bg-[#d9534f]/10" },
 };
+
+// ── WALLET BUTTONS (público) ─────────────────────────────────────────────────
+function WalletButtonsPublic({ tarjetaId }: { tarjetaId: string }) {
+  const [loading, setLoading] = useState<"apple" | "google" | null>(null);
+  const [msg, setMsg] = useState<{ type: "info" | "error"; text: string } | null>(null);
+
+  const handleApple = async () => {
+    setLoading("apple");
+    setMsg(null);
+    try {
+      const res = await fetch(`/api/wallet/apple/${tarjetaId}`);
+      if (res.status === 503) {
+        setMsg({ type: "info", text: "Apple Wallet aún no está disponible." });
+        return;
+      }
+      if (!res.ok) {
+        setMsg({ type: "error", text: "Error al generar el pase." });
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `kaya-kalp-lealtad-${tarjetaId.slice(0, 8)}.pkpass`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      setMsg({ type: "error", text: "Error de conexión." });
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const handleGoogle = async () => {
+    setLoading("google");
+    setMsg(null);
+    try {
+      const res = await fetch(`/api/wallet/google/${tarjetaId}`);
+      if (res.status === 503) {
+        setMsg({ type: "info", text: "Google Wallet aún no está disponible." });
+        return;
+      }
+      const data = await res.json();
+      if (!res.ok || !data.saveUrl) {
+        setMsg({ type: "error", text: "Error al generar la URL." });
+        return;
+      }
+      window.open(data.saveUrl, "_blank");
+    } catch {
+      setMsg({ type: "error", text: "Error de conexión." });
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  return (
+    <div className="mt-3 pt-3 border-t border-[#e4ecf2]">
+      <p className="text-[10px] font-bold text-[#8fa8ba] uppercase tracking-wider mb-2">
+        Agregar a tu Wallet
+      </p>
+      <div className="flex gap-2">
+        <button
+          onClick={handleApple}
+          disabled={loading !== null}
+          className="cursor-pointer flex-1 flex items-center justify-center gap-1.5 h-9 rounded-lg bg-[#1e2d3a] text-white text-xs font-medium hover:bg-[#1e2d3a]/80 disabled:opacity-50 transition-all"
+        >
+          {loading === "apple" ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Download className="h-3.5 w-3.5" />
+          )}
+          Apple Wallet
+        </button>
+        <button
+          onClick={handleGoogle}
+          disabled={loading !== null}
+          className="cursor-pointer flex-1 flex items-center justify-center gap-1.5 h-9 rounded-lg bg-[#4285f4] text-white text-xs font-medium hover:bg-[#4285f4]/80 disabled:opacity-50 transition-all"
+        >
+          {loading === "google" ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Smartphone className="h-3.5 w-3.5" />
+          )}
+          Google Wallet
+        </button>
+      </div>
+      {msg && (
+        <p className={`text-[10px] mt-1.5 ${msg.type === "error" ? "text-[#d9534f]" : "text-[#5a7080]"}`}>
+          {msg.text}
+        </p>
+      )}
+    </div>
+  );
+}
 
 // ── MINI CALENDARIO ──────────────────────────────────────────────────────────
 function MiniCalendario({
@@ -716,6 +814,9 @@ export default function AgendarPage() {
                   <span className="text-[10px] font-bold text-[#e89b3f] uppercase tracking-wider">Recompensa:</span>
                   <span className="text-xs text-[#1e2d3a] font-medium">{t.recompensa}</span>
                 </div>
+
+                {/* Wallet buttons */}
+                <WalletButtonsPublic tarjetaId={t.id} />
               </div>
             ))}
           </div>
