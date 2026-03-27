@@ -173,6 +173,11 @@ export async function getHorariosDisponibles(fecha: string) {
   // Si el día no está activo, retornar vacío
   if (horarioDia && !horarioDia.activo) return [];
 
+  // Verificar si es un día bloqueado
+  const diasBloqueados = (cfg.diasBloqueados as { fecha: string; motivo: string }[]) ?? [];
+  const fechaISO = `${dia.getFullYear()}-${String(dia.getMonth() + 1).padStart(2, "0")}-${String(dia.getDate()).padStart(2, "0")}`;
+  if (diasBloqueados.some((d) => d.fecha === fechaISO)) return [];
+
   // Rango de atención del día (default 09:00-19:00)
   const atencionInicio = horarioDia ? parseInt(horarioDia.inicio.split(":")[0]) * 60 + parseInt(horarioDia.inicio.split(":")[1]) : 9 * 60;
   const atencionFin = horarioDia ? parseInt(horarioDia.fin.split(":")[0]) * 60 + parseInt(horarioDia.fin.split(":")[1]) : 19 * 60;

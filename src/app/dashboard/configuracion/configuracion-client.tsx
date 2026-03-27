@@ -16,6 +16,9 @@ import {
   Facebook,
   Instagram,
   AlertCircle,
+  CalendarOff,
+  Plus,
+  Trash2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -35,6 +38,7 @@ import {
   type ConfigClinicaData,
   type HorarioDiaData,
   type ConfigComidaData,
+  type DiaBloqueadoData,
   type ConfigCompleta,
 } from "./actions";
 
@@ -70,6 +74,8 @@ export default function ConfiguracionClient({ initial }: { initial: ConfigComple
     initial.horarios.map((h) => ({ ...h, dia: DIA_LABELS[h.diaKey] ?? h.diaKey }))
   );
   const [comida, setComida] = useState<ConfigComida>(initial.comida);
+  const [diasBloqueados, setDiasBloqueados] = useState<DiaBloqueadoData[]>(initial.diasBloqueados);
+  const [nuevoBloqueo, setNuevoBloqueo] = useState({ fecha: "", motivo: "" });
   const [guardado, setGuardado] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -108,6 +114,7 @@ export default function ConfiguracionClient({ initial }: { initial: ConfigComple
         clinica: config,
         horarios: horarios.map(({ diaKey, activo, inicio, fin }) => ({ diaKey, activo, inicio, fin })),
         comida,
+        diasBloqueados,
       });
       if ("error" in result) {
         setError(result.error ?? "Error al guardar");
@@ -495,6 +502,96 @@ export default function ConfiguracionClient({ initial }: { initial: ConfigComple
                 </div>
               </CardContent>
             )}
+          </Card>
+
+          {/* ── Días Bloqueados ── */}
+          <Card className="border-[#c8dce8] bg-white">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-bold text-[#1e2d3a] flex items-center gap-2">
+                <CalendarOff className="h-4 w-4 text-[#d9534f]" />
+                Días Bloqueados
+              </CardTitle>
+              <CardDescription className="text-[11px] text-[#1e2d3a]/50">
+                Vacaciones, días festivos o cierres especiales — no se podrán agendar citas
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {/* Agregar nuevo */}
+              <div className="flex items-end gap-2">
+                <div className="flex-1">
+                  <Label className="text-xs font-semibold text-[#1e2d3a]">Fecha</Label>
+                  <Input
+                    type="date"
+                    value={nuevoBloqueo.fecha}
+                    onChange={(e) => setNuevoBloqueo((p) => ({ ...p, fecha: e.target.value }))}
+                    className="border-[#c8dce8] text-sm h-9 mt-1"
+                  />
+                </div>
+                <div className="flex-1">
+                  <Label className="text-xs font-semibold text-[#1e2d3a]">Motivo</Label>
+                  <Input
+                    value={nuevoBloqueo.motivo}
+                    onChange={(e) => setNuevoBloqueo((p) => ({ ...p, motivo: e.target.value }))}
+                    placeholder="Ej. Vacaciones, día festivo"
+                    className="border-[#c8dce8] text-sm h-9 mt-1"
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="cursor-pointer h-9 px-3 border-[#c8dce8] text-[#4a7fa5] hover:bg-[#4a7fa5]/10"
+                  disabled={!nuevoBloqueo.fecha}
+                  onClick={() => {
+                    if (!nuevoBloqueo.fecha) return;
+                    if (diasBloqueados.some((d) => d.fecha === nuevoBloqueo.fecha)) return;
+                    setDiasBloqueados((prev) => [...prev, { fecha: nuevoBloqueo.fecha, motivo: nuevoBloqueo.motivo || "Bloqueado" }]);
+                    setNuevoBloqueo({ fecha: "", motivo: "" });
+                  }}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {/* Lista de días bloqueados */}
+              {diasBloqueados.length === 0 ? (
+                <p className="text-[11px] text-[#1e2d3a]/30 text-center py-3">
+                  No hay días bloqueados
+                </p>
+              ) : (
+                <div className="space-y-1.5 max-h-[200px] overflow-y-auto">
+                  {diasBloqueados
+                    .sort((a, b) => a.fecha.localeCompare(b.fecha))
+                    .map((d) => {
+                      const dateObj = new Date(d.fecha + "T12:00:00");
+                      const label = dateObj.toLocaleDateString("es-MX", {
+                        weekday: "short",
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      });
+                      return (
+                        <div
+                          key={d.fecha}
+                          className="flex items-center gap-3 bg-[#d9534f]/5 border border-[#d9534f]/10 rounded-lg px-3 py-2"
+                        >
+                          <CalendarOff className="h-3.5 w-3.5 text-[#d9534f] shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <span className="text-xs font-semibold text-[#1e2d3a] capitalize">{label}</span>
+                            <span className="text-[10px] text-[#1e2d3a]/40 ml-2">{d.motivo}</span>
+                          </div>
+                          <button
+                            onClick={() => setDiasBloqueados((prev) => prev.filter((x) => x.fecha !== d.fecha))}
+                            className="cursor-pointer text-[#1e2d3a]/25 hover:text-[#d9534f] transition-colors shrink-0"
+                            aria-label={`Eliminar bloqueo ${label}`}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+            </CardContent>
           </Card>
 
           {/* ── Citas ── */}

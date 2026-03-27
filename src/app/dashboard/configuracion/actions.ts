@@ -39,10 +39,16 @@ export interface ConfigClinicaData {
   intervaloSlots: number;
 }
 
+export interface DiaBloqueadoData {
+  fecha: string; // YYYY-MM-DD
+  motivo: string;
+}
+
 export interface ConfigCompleta {
   clinica: ConfigClinicaData;
   horarios: HorarioDiaData[];
   comida: ConfigComidaData;
+  diasBloqueados: DiaBloqueadoData[];
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -92,7 +98,9 @@ export async function getConfiguracion(): Promise<ConfigCompleta> {
     fin: "15:00",
   };
 
-  return { clinica, horarios, comida };
+  const diasBloqueados: DiaBloqueadoData[] = (cfg.diasBloqueados as DiaBloqueadoData[]) ?? [];
+
+  return { clinica, horarios, comida, diasBloqueados };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -128,6 +136,7 @@ export async function guardarConfiguracion(data: ConfigCompleta) {
         intervaloSlots: data.clinica.intervaloSlots,
         horarios: data.horarios,
         comida: data.comida,
+        diasBloqueados: data.diasBloqueados,
       })),
     },
   });
@@ -171,5 +180,6 @@ export async function getConfigPublica() {
     intervaloSlots: (cfg.intervaloSlots as number) ?? 30,
     horarios: (cfg.horarios as HorarioDiaData[]) ?? [],
     comida: (cfg.comida as ConfigComidaData) ?? { activo: false, inicio: "14:00", fin: "15:00" },
+    diasBloqueados: (cfg.diasBloqueados as DiaBloqueadoData[]) ?? [],
   };
 }
