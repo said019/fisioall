@@ -12,7 +12,6 @@ import {
   CalendarDays,
   ClipboardList,
   User,
-  Dumbbell,
   CreditCard,
   Phone,
   Mail,
@@ -112,14 +111,13 @@ function EmptyTabState({ icono: Icono, mensaje, submensaje }: { icono: React.Ele
 // COMPONENTE: PerfilPaciente (panel derecho)
 // ─────────────────────────────────────────────────────────────────────────────
 function PerfilPaciente({ paciente, onClose }: { paciente: Paciente; onClose: () => void }) {
-  const [tab, setTab] = useState<"expediente" | "soap" | "ejercicios" | "pagos" | "progreso">("expediente");
+  const [tab, setTab] = useState<"expediente" | "soap" | "pagos" | "progreso">("expediente");
   const alerta = paciente.sesionesRestantes <= 2;
 
   const tabs = [
     { key: "expediente", label: "Expediente", icono: User },
     { key: "soap", label: "Notas SOAP", icono: ClipboardList },
     { key: "progreso", label: "Progreso", icono: TrendingUp },
-    { key: "ejercicios", label: "Ejercicios", icono: Dumbbell },
     { key: "pagos", label: "Pagos", icono: CreditCard },
   ] as const;
 
@@ -318,11 +316,6 @@ function PerfilPaciente({ paciente, onClose }: { paciente: Paciente; onClose: ()
           {/* ── TAB SOAP ── */}
           {tab === "soap" && (
             <EmptyTabState icono={ClipboardList} mensaje="Sin notas SOAP" submensaje="Las notas clínicas aparecerán aquí después de cada sesión" />
-          )}
-
-          {/* ── TAB EJERCICIOS ── */}
-          {tab === "ejercicios" && (
-            <EmptyTabState icono={Dumbbell} mensaje="Sin ejercicios asignados" submensaje="Los ejercicios del plan terapéutico aparecerán aquí" />
           )}
 
           {/* ── TAB PAGOS ── */}

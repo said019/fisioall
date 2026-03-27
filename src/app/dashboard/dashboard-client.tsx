@@ -96,8 +96,6 @@ const sesionesData = [
   { mes: "Mar", valor: 87 },
 ];
 
-const dolorData = [7, 6, 5, 5, 4, 3, 2]; // escala 0-10, sesiones 1-7
-
 const accesosRapidos = [
   { label: "Nueva Cita", href: "/dashboard/agenda", icono: CalendarDays },
   { label: "Nuevo Paciente", href: "/dashboard/pacientes", icono: UserPlus },
@@ -144,31 +142,6 @@ function MiniBarChart({ data }: { data: { mes: string; valor: number }[] }) {
         );
       })}
     </div>
-  );
-}
-
-function DolorSVG({ data }: { data: number[] }) {
-  const W = 200;
-  const H = 48;
-  const maxVal = 10;
-  const stepX = W / (data.length - 1);
-
-  const points = data.map((v, i) => ({
-    x: Math.round(i * stepX),
-    y: Math.round(H - (v / maxVal) * H),
-  }));
-
-  const pathD = points
-    .map((p, i) => (i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`))
-    .join(" ");
-
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" aria-label="Evolución del dolor" role="img">
-      <path d={pathD} stroke="#3fa87c" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-      {points.map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r="3" fill="#3fa87c" />
-      ))}
-    </svg>
   );
 }
 
@@ -487,31 +460,8 @@ export default function DashboardClient({ data }: { data?: DashboardData }) {
           </CardContent>
         </Card>
 
-        {/* Evolución del Dolor — col-span-3 */}
-        <Card className="lg:col-span-3 border-[#c8dce8] bg-white">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-bold text-[#1e2d3a]">Evolución del Dolor</CardTitle>
-            <p className="text-[11px] text-[#1e2d3a]/50">Ana Flores Torres · Fisio deportiva rodilla</p>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] text-[#1e2d3a]/40">EVA 10</span>
-              <span className="text-[10px] text-emerald-600 font-bold">↓ Mejora: 71%</span>
-            </div>
-            <DolorSVG data={dolorData} />
-            <div className="flex justify-between mt-2">
-              <span className="text-[10px] text-[#1e2d3a]/40">Sesión 1</span>
-              <span className="text-[10px] text-[#1e2d3a]/40">Sesión 7</span>
-            </div>
-            <div className="mt-3 flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-lg p-2.5">
-              <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-              <p className="text-[10px] text-emerald-700 font-medium">Dolor reducido de 7/10 a 2/10 en 7 sesiones</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Accesos Rápidos — col-span-3 */}
-        <Card className="lg:col-span-3 border-[#c8dce8] bg-white">
+        {/* Accesos Rápidos — col-span-6 */}
+        <Card className="lg:col-span-6 border-[#c8dce8] bg-white">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-bold text-[#1e2d3a]">Accesos Rápidos</CardTitle>
           </CardHeader>

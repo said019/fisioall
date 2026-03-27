@@ -16,6 +16,7 @@ import {
   Loader2,
   ExternalLink,
 } from "lucide-react";
+import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -95,12 +96,18 @@ function SelloGrid({ sellos }: { sellos: boolean[] }) {
           key={i}
           className={`relative h-9 w-9 rounded-full flex items-center justify-center transition-all duration-200 ${
             activo
-              ? "bg-[#3fa87c]/15 border-2 border-[#3fa87c]/40 shadow-sm"
+              ? "bg-[#4a7fa5]/10 border-2 border-[#4a7fa5]/30 shadow-sm"
               : "bg-slate-100 border-2 border-dashed border-slate-200"
           }`}
         >
           {activo ? (
-            <Star className="h-4 w-4 text-[#3fa87c] fill-current" />
+            <Image
+              src="/images/logo-kaya-kalp.png"
+              alt="Sello"
+              width={32}
+              height={32}
+              className="h-5 w-5 object-contain opacity-70"
+            />
           ) : (
             <span className="text-[10px] font-bold text-slate-300">{i + 1}</span>
           )}

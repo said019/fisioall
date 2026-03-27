@@ -160,6 +160,31 @@ export async function getHorariosDisponibles(fecha: string) {
   const inicio = new Date(dia.getFullYear(), dia.getMonth(), dia.getDate());
   const fin = new Date(inicio.getTime() + 24 * 60 * 60 * 1000);
 
+  // Leer configuración del tenant
+  const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
+  const cfg = (tenant?.configuracion ?? {}) as Record<string, unknown>;
+
+  // Horarios por día desde config
+  const diasSemana = ["domingo", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado"];
+  const diaKey = diasSemana[dia.getDay()];
+  const horariosConfig = (cfg.horarios as { diaKey: string; activo: boolean; inicio: string; fin: string }[]) ?? [];
+  const horarioDia = horariosConfig.find((h) => h.diaKey === diaKey);
+
+  // Si el día no está activo, retornar vacío
+  if (horarioDia && !horarioDia.activo) return [];
+
+  // Rango de atención del día (default 09:00-19:00)
+  const atencionInicio = horarioDia ? parseInt(horarioDia.inicio.split(":")[0]) * 60 + parseInt(horarioDia.inicio.split(":")[1]) : 9 * 60;
+  const atencionFin = horarioDia ? parseInt(horarioDia.fin.split(":")[0]) * 60 + parseInt(horarioDia.fin.split(":")[1]) : 19 * 60;
+
+  // Hora de comida
+  const comida = (cfg.comida as { activo: boolean; inicio: string; fin: string }) ?? { activo: false, inicio: "14:00", fin: "15:00" };
+  const comidaInicio = comida.activo ? parseInt(comida.inicio.split(":")[0]) * 60 + parseInt(comida.inicio.split(":")[1]) : -1;
+  const comidaFin = comida.activo ? parseInt(comida.fin.split(":")[0]) * 60 + parseInt(comida.fin.split(":")[1]) : -1;
+
+  // Intervalo de slots (default 30 min)
+  const intervalo = (cfg.intervaloSlots as number) ?? 30;
+
   // Citas ya ocupadas ese día
   const citasOcupadas = await prisma.cita.findMany({
     where: {
@@ -175,9 +200,12 @@ export async function getHorariosDisponibles(fecha: string) {
     fin: c.fechaHoraFin.getHours() * 60 + c.fechaHoraFin.getMinutes(),
   }));
 
-  // Generar slots de 30 min de 09:00 a 19:00
+  // Generar slots según config
   const slots: { hora: string; disponible: boolean }[] = [];
-  for (let m = 9 * 60; m < 19 * 60; m += 30) {
+  for (let m = atencionInicio; m < atencionFin; m += intervalo) {
+    // Saltar hora de comida
+    if (comida.activo && m >= comidaInicio && m < comidaFin) continue;
+
     const h = String(Math.floor(m / 60)).padStart(2, "0");
     const min = String(m % 60).padStart(2, "0");
     const ocupado = horasOcupadas.some(

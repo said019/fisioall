@@ -197,7 +197,7 @@ export default function BodyMapModal({
         </div>
 
         {/* ── BODY — fills remaining space, NO scroll ── */}
-        <div className="flex-1 min-h-0 px-4 py-2">
+        <div className="flex-1 min-h-0 px-4 py-2 overflow-hidden">
           {cargando ? (
             <div className="flex gap-4 h-full items-center justify-center">
               <Skeleton className="h-[300px] w-[200px] rounded-xl" />
@@ -212,7 +212,7 @@ export default function BodyMapModal({
         </div>
 
         {/* ── FOOTER ── */}
-        <div className="shrink-0 border-t border-[#c8dce8] bg-white px-4 py-2.5 flex items-center justify-between gap-3">
+        <div className="shrink-0 border-t border-[#c8dce8] bg-white px-4 py-2.5 flex items-center justify-between gap-3 relative z-20">
           {/* Stats */}
           <div className="flex items-center gap-3 min-w-0">
             <p className="text-xs text-[#1e2d3a]/50 shrink-0">

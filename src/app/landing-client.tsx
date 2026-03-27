@@ -1,0 +1,1173 @@
+"use client";
+
+import Link from "next/link";
+import Image from "next/image";
+import { motion } from "motion/react";
+import {
+  Menu,
+  X,
+  ArrowRight,
+  ArrowUpRight,
+  Phone,
+  Clock,
+  MapPin,
+  CalendarDays,
+  Sparkles,
+  Award,
+  Heart,
+  ChevronDown,
+} from "lucide-react";
+import { useState } from "react";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TYPES
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface ConfigPublica {
+  nombre: string | null;
+  slogan: string;
+  telefono: string;
+  whatsapp: string;
+  email: string;
+  direccion: string;
+  ciudad: string;
+  estado: string;
+  facebook: string;
+  instagram: string;
+  sitioWeb: string;
+  googleMapsUrl: string;
+  duracionDefault: number;
+  intervaloSlots: number;
+  horarios: { diaKey: string; activo: boolean; inicio: string; fin: string }[];
+  comida: { activo: boolean; inicio: string; fin: string };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DATA — Kaya Kalp real services
+// ─────────────────────────────────────────────────────────────────────────────
+
+const serviciosFisio = [
+  {
+    id: "normal",
+    nombre: "Normal / Antiestrés",
+    desc: "Terapia manual en tren superior complementada con electroterapia, percusión y presoterapia.",
+    precio: "$400",
+    duracion: "50 min",
+  },
+  {
+    id: "descarga",
+    nombre: "Descarga de Esfuerzo",
+    desc: "Enfoque manual en cuerpo completo combinada con aparatología. Elimina fatiga y previene lesiones.",
+    precio: "$470",
+    duracion: "50 min",
+  },
+  {
+    id: "drenaje",
+    nombre: "Drenaje Linfático",
+    desc: "Manipulaciones suaves para mejorar circulación y funcionamiento del sistema linfático.",
+    precio: "$520",
+    duracion: "50 min",
+  },
+  {
+    id: "presoterapia",
+    nombre: "Presoterapia",
+    desc: "Retorno venoso, drenaje linfático y drenar ácido láctico con aparatología especializada.",
+    precio: "$420",
+    duracion: "50 min",
+  },
+  {
+    id: "ejercicio",
+    nombre: "Ejercicio Terapéutico",
+    desc: "Rehabilitación de lesiones deportivas, laborales y post-quirúrgicas personalizada.",
+    precio: "$350",
+    duracion: "50 min",
+  },
+  {
+    id: "valoracion",
+    nombre: "Valoración",
+    desc: "Evaluación de lesión, diagnóstico y propuesta de tratamiento. Incluye primera terapia.",
+    precio: "$450",
+    duracion: "50 min",
+  },
+  {
+    id: "pelvico",
+    nombre: "Suelo Pélvico",
+    desc: "Tratamiento para incontinencia urinaria, prolapsos, embarazo, previo y post-parto.",
+    precio: "$550",
+    duracion: "50 min",
+  },
+];
+
+const serviciosFaciales = [
+  {
+    nombre: "Masaje Revitalizante",
+    desc: "Levanta y tonifica la piel, promueve colágeno, mejora líneas de expresión.",
+    precio: "$450",
+    duracion: "60 min",
+  },
+  {
+    nombre: "Limpieza Profunda",
+    desc: "Elimina impurezas, previene acné, disminuye arrugas. Incluye alta frecuencia.",
+    precio: "$450",
+    duracion: "60 min",
+  },
+  {
+    nombre: "Hidratación Profunda",
+    desc: "Hidrofacial, nutrición, mascarilla, máscara LED. Piel luminosa y suave.",
+    precio: "$500",
+    duracion: "60 min",
+  },
+  {
+    nombre: "Rejuvenecimiento",
+    desc: "Microdermoabrasión, tonificación, efecto lifting, piel más firme.",
+    precio: "$550",
+    duracion: "60 min",
+  },
+  {
+    nombre: "Gold Threads",
+    desc: "Hilos de colágeno que eliminan arrugas, mejoran flacidez, retrasan el envejecimiento.",
+    precio: "$800",
+    duracion: "60 min",
+  },
+];
+
+const equipo = [
+  {
+    nombre: "L.F.T. Paola Ríos Aguilar",
+    rol: "CEO · Fisioterapeuta",
+    especialidad: "Medios físicos, terapia manual, suelo pélvico y obstetricia",
+    initials: "PA",
+    foto: "equipo-paola.jpg",
+  },
+  {
+    nombre: "L.F.T. Jenni Álvarez Álvarez",
+    rol: "Fisioterapeuta",
+    especialidad: "Ejercicio terapéutico, rehabilitación, coordinación de citas",
+    initials: "JA",
+    foto: "equipo-jenni.jpg",
+  },
+  {
+    nombre: "Gaby Aguilar",
+    rol: "Cosmiatra",
+    especialidad: "Tratamientos faciales, corporales y epilación",
+    initials: "GA",
+    foto: "equipo-gaby.jpg",
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+
+function formatPhoneDisplay(phone: string) {
+  const clean = phone.replace(/\D/g, "");
+  if (clean.length === 10) {
+    return `${clean.slice(0, 3)} ${clean.slice(3, 6)} ${clean.slice(6, 8)} ${clean.slice(8)}`;
+  }
+  return phone;
+}
+
+function getWhatsAppLink(whatsapp: string) {
+  const clean = whatsapp.replace(/\D/g, "");
+  // If already has country code (52 for Mexico)
+  if (clean.length > 10) return `https://wa.me/${clean}`;
+  return `https://wa.me/52${clean}`;
+}
+
+function getHorarioResumen(horarios: ConfigPublica["horarios"]) {
+  if (!horarios.length) return { dias: "Lunes a Viernes", horas: "9:00 — 19:00" };
+
+  const activos = horarios.filter((h) => h.activo);
+  if (!activos.length) return { dias: "Cerrado", horas: "" };
+
+  const diasNombres: Record<string, string> = {
+    lunes: "Lunes",
+    martes: "Martes",
+    miercoles: "Miércoles",
+    jueves: "Jueves",
+    viernes: "Viernes",
+    sabado: "Sábado",
+    domingo: "Domingo",
+  };
+
+  // Find consecutive day ranges
+  const diasOrden = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"];
+  const activosKeys = activos.map((h) => h.diaKey);
+
+  // Simple: first and last active day
+  const firstIdx = diasOrden.findIndex((d) => activosKeys.includes(d));
+  const lastIdx = diasOrden.length - 1 - [...diasOrden].reverse().findIndex((d) => activosKeys.includes(d));
+
+  const dias =
+    firstIdx === lastIdx
+      ? diasNombres[diasOrden[firstIdx]]
+      : `${diasNombres[diasOrden[firstIdx]]} a ${diasNombres[diasOrden[lastIdx]]}`;
+
+  // Most common hours
+  const primeraHora = activos[0]?.inicio ?? "09:00";
+  const ultimaHora = activos[0]?.fin ?? "19:00";
+
+  return { dias, horas: `${primeraHora} — ${ultimaHora}` };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PAGE
+// ─────────────────────────────────────────────────────────────────────────────
+
+export default function LandingClient({ config }: { config: ConfigPublica | null }) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
+
+  // Fallback values if config is null
+  const clinicName = config?.nombre ?? "Kaya Kalp";
+  const slogan = config?.slogan ?? "Dando vida a tu cuerpo";
+  const phoneDisplay = config?.telefono ? formatPhoneDisplay(config.telefono) : "427 165 92 04";
+  const whatsappLink = config?.whatsapp
+    ? getWhatsAppLink(config.whatsapp)
+    : config?.telefono
+    ? getWhatsAppLink(config.telefono)
+    : "https://wa.me/524271659204";
+  const direccion = config?.direccion || "Ave María No. 25, Fracc. Las Huertas";
+  const ciudadEstado = [config?.ciudad, config?.estado].filter(Boolean).join(", ") || "San Juan del Río, Qro.";
+  const instagramUrl = config?.instagram || "https://www.instagram.com/kaya_kalp21/";
+  const googleMapsUrl =
+    config?.googleMapsUrl || "https://maps.google.com/?q=Ave+Maria+25+Las+Huertas+San+Juan+del+Rio+Queretaro";
+  const horarioResumen = getHorarioResumen(config?.horarios ?? []);
+
+  return (
+    <div className="min-h-screen bg-[#f0f4f7]">
+      {/* ─── NAVBAR ─────────────────────────────────────────────────────── */}
+      <nav className="fixed top-0 w-full z-50 bg-[#f0f4f7]/80 backdrop-blur-xl border-b border-[#c8dce8]/60">
+        <div className="max-w-7xl mx-auto px-6 h-52 flex items-center justify-between">
+          <Link href="/" className="cursor-pointer">
+            <Image
+              src="/images/logo-kaya-kalp.png"
+              alt={clinicName}
+              width={600}
+              height={214}
+              className="h-44 w-auto"
+              priority
+            />
+          </Link>
+
+          <div className="hidden md:flex items-center space-x-12">
+            {[
+              { href: "#servicios", label: "Servicios" },
+              { href: "#equipo", label: "Equipo" },
+              { href: "#ubicacion", label: "Ubicación" },
+            ].map((item) => (
+              <a
+                key={item.href}
+                href={item.href}
+                className="text-sm font-medium text-[#5a7080] hover:text-[#4a7fa5] transition-colors uppercase tracking-[0.2em] cursor-pointer"
+              >
+                {item.label}
+              </a>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-4">
+            <Link href="/login" className="hidden md:block">
+              <span className="text-sm font-medium text-[#5a7080] hover:text-[#4a7fa5] transition-colors uppercase tracking-[0.15em] cursor-pointer">
+                Iniciar Sesión
+              </span>
+            </Link>
+            <Link href="/agendar" className="hidden md:block">
+              <button className="cursor-pointer bg-[#4a7fa5] text-white px-8 py-3 rounded-xl font-medium tracking-wide hover:bg-[#2d5f80] transition-all duration-300 active:scale-95 text-sm">
+                Agendar Cita
+              </button>
+            </Link>
+            <button
+              className="md:hidden text-[#1e2d3a] cursor-pointer p-2"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label={mobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
+            >
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile menu */}
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+            className="md:hidden bg-[#f0f4f7] border-t border-[#c8dce8]/60 px-6 py-6 space-y-4"
+          >
+            {[
+              { href: "#servicios", label: "Servicios" },
+              { href: "#equipo", label: "Equipo" },
+              { href: "#ubicacion", label: "Ubicación" },
+            ].map((item) => (
+              <a
+                key={item.href}
+                href={item.href}
+                onClick={() => setMobileMenuOpen(false)}
+                className="block text-sm font-medium text-[#5a7080] hover:text-[#4a7fa5] uppercase tracking-[0.2em] cursor-pointer"
+              >
+                {item.label}
+              </a>
+            ))}
+            <div className="flex flex-col gap-3 pt-4 border-t border-[#c8dce8]/60">
+              <Link href="/login">
+                <button className="cursor-pointer w-full py-3 border border-[#c8dce8] rounded-xl text-sm font-medium text-[#5a7080]">
+                  Iniciar Sesión
+                </button>
+              </Link>
+              <Link href="/agendar">
+                <button className="cursor-pointer w-full py-3 bg-[#4a7fa5] text-white rounded-xl text-sm font-medium">
+                  Agendar Cita
+                </button>
+              </Link>
+            </div>
+          </motion.div>
+        )}
+      </nav>
+
+      <main id="main-content" className="pt-56 pb-0">
+        {/* ─── HERO ─────────────────────────────────────────────────────── */}
+        <header className="max-w-7xl mx-auto px-6 mb-32">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-end">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+            >
+              <div className="inline-flex items-center gap-2 mb-6">
+                <Award className="h-4 w-4 text-[#4a7fa5]" />
+                <span className="text-[#4a7fa5] text-xs tracking-[0.3em] uppercase font-semibold">
+                  Certificación CONOCER · SEP
+                </span>
+              </div>
+              <h1
+                className="text-6xl md:text-8xl text-[#1e2d3a] leading-[0.9] tracking-tighter"
+                style={{ fontFamily: "'Cormorant Garamond', serif" }}
+              >
+                {slogan.split(" ").slice(0, 2).join(" ")} <br />
+                <span className="italic font-light text-[#4a7fa5]">
+                  {slogan.split(" ").slice(2).join(" ") || "a tu cuerpo."}
+                </span>
+              </h1>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="lg:pb-4"
+            >
+              <p className="text-xl text-[#5a7080] font-light max-w-md leading-relaxed">
+                Centro de Fisioterapia, Masajes Terapéuticos y Tratamientos Faciales
+                en {ciudadEstado}. Tu bienestar en manos expertas.
+              </p>
+              <div className="mt-8 flex flex-col sm:flex-row gap-4">
+                <Link href="/agendar">
+                  <button className="cursor-pointer bg-[#4a7fa5] text-white px-10 py-4 rounded-xl font-medium tracking-widest uppercase text-sm hover:bg-[#2d5f80] transition-all duration-300 flex items-center justify-center gap-3 active:scale-95 shadow-xl shadow-[#4a7fa5]/20">
+                    Agendar mi cita
+                    <CalendarDays className="w-4 h-4" />
+                  </button>
+                </Link>
+                <a
+                  href="#servicios"
+                  className="cursor-pointer border border-[#c8dce8] px-10 py-4 rounded-xl font-medium tracking-widest uppercase text-sm text-[#5a7080] hover:border-[#4a7fa5] hover:text-[#4a7fa5] transition-all duration-300 flex items-center justify-center gap-3"
+                >
+                  Ver servicios
+                  <ArrowRight className="w-4 h-4" />
+                </a>
+              </div>
+            </motion.div>
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+            className="mt-16 relative rounded-2xl overflow-hidden aspect-[16/9] md:aspect-[21/9]"
+          >
+            <Image
+              src="/images/equipo-grupal.jpg"
+              alt={`Equipo ${clinicName} — Fisioterapeutas certificadas`}
+              fill
+              className="object-cover object-[center_20%]"
+              priority
+              sizes="(max-width: 1280px) 100vw, 1280px"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#1e2d3a]/30 to-transparent" />
+          </motion.div>
+        </header>
+
+        {/* ─── SERVICIOS FISIOTERAPIA ─────────────────────────────────── */}
+        <section id="servicios" className="max-w-7xl mx-auto px-6 mb-32">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <div className="mb-16">
+              <span className="text-[#4a7fa5] text-xs tracking-[0.3em] uppercase font-semibold">
+                Fisioterapia y Masajes
+              </span>
+              <h2
+                className="text-5xl text-[#1e2d3a] tracking-tight mt-4"
+                style={{ fontFamily: "'Cormorant Garamond', serif" }}
+              >
+                Tipos de Sesiones
+              </h2>
+              <div className="h-1 w-20 bg-[#4a7fa5] mt-6" />
+            </div>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {serviciosFisio.map((s, i) => (
+              <motion.div
+                key={s.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.06 }}
+                className="group flex flex-col p-7 rounded-2xl border border-[#c8dce8]/60 bg-white hover:border-[#4a7fa5]/40 hover:shadow-lg transition-all duration-300 cursor-default"
+              >
+                <div className="flex items-center gap-2 mb-4">
+                  <Heart className="h-4 w-4 text-[#4a7fa5] opacity-60 group-hover:opacity-100 transition-opacity" />
+                  <span className="text-[10px] uppercase tracking-[0.25em] text-[#8fa8ba] font-semibold">
+                    Fisioterapia
+                  </span>
+                </div>
+                <h3 className="font-semibold text-[#1e2d3a] text-lg mb-2">{s.nombre}</h3>
+                <p className="text-sm text-[#5a7080] leading-relaxed mb-6 flex-1">{s.desc}</p>
+                <div className="flex items-end justify-between pt-4 border-t border-[#c8dce8]/60">
+                  <div>
+                    <span className="text-2xl font-bold text-[#1e2d3a]">{s.precio}</span>
+                    <span className="text-xs text-[#8fa8ba] ml-1">/ sesión</span>
+                  </div>
+                  <span className="text-xs text-[#8fa8ba] flex items-center gap-1">
+                    <Clock className="h-3 w-3" /> {s.duracion}
+                  </span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Paquetes */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mt-16 bg-[#1e2d3a] rounded-2xl p-8 md:p-12"
+          >
+            <h3
+              className="text-3xl text-white mb-8"
+              style={{ fontFamily: "'Cormorant Garamond', serif" }}
+            >
+              Paquetes de Tratamiento
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              {[
+                { sesiones: "1", freq: "Sesión individual", precio: "$400" },
+                { sesiones: "10", freq: "2 terapias/semana", precio: "$3,800" },
+                { sesiones: "20", freq: "2 terapias/semana", precio: "$7,200" },
+              ].map((p, i) => (
+                <div
+                  key={p.sesiones}
+                  className={`rounded-xl p-6 text-center transition-all duration-300 ${
+                    i === 2
+                      ? "bg-[#4a7fa5] text-white ring-2 ring-[#4a7fa5]/40 ring-offset-2 ring-offset-[#1e2d3a]"
+                      : "bg-white/10 text-white border border-white/10"
+                  }`}
+                >
+                  <div className="text-4xl font-bold mb-1">{p.sesiones}</div>
+                  <div className="text-sm opacity-70 mb-3">sesiones · {p.freq}</div>
+                  <div className="text-2xl font-bold">{p.precio}</div>
+                  <div className="text-[10px] opacity-50 mt-1 uppercase tracking-wider">IVA incluido</div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
+            {[
+              { src: "/images/fisio-percusion.jpg", alt: "Terapia con pistola de percusión" },
+              { src: "/images/fisio-ejercicio.jpg", alt: "Ejercicio terapéutico guiado" },
+              { src: "/images/equipo-paola-pelvico.jpg", alt: "Especialista en suelo pélvico" },
+            ].map((img) => (
+              <div key={img.src} className="relative rounded-2xl overflow-hidden aspect-[3/4]">
+                <Image
+                  src={img.src}
+                  alt={img.alt}
+                  fill
+                  className="object-cover object-top"
+                  sizes="(max-width: 768px) 100vw, 33vw"
+                />
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ─── FACIALES ───────────────────────────────────────────────── */}
+        <section className="max-w-7xl mx-auto px-6 mb-32">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <div className="mb-16">
+              <span className="text-[#9b59b6] text-xs tracking-[0.3em] uppercase font-semibold">
+                Tratamientos Faciales
+              </span>
+              <h2
+                className="text-5xl text-[#1e2d3a] tracking-tight mt-4"
+                style={{ fontFamily: "'Cormorant Garamond', serif" }}
+              >
+                Cosmiatra: <span className="italic font-light">Gaby Aguilar</span>
+              </h2>
+              <div className="h-1 w-20 bg-[#9b59b6] mt-6" />
+            </div>
+          </motion.div>
+
+          <div className="relative rounded-2xl overflow-hidden aspect-[2/1] mb-8">
+            <Image
+              src="/images/facial-tratamiento.jpg"
+              alt={`Tratamiento facial profesional en ${clinicName}`}
+              fill
+              className="object-cover object-[center_30%]"
+              sizes="(max-width: 1280px) 100vw, 1280px"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#1e2d3a]/40 via-transparent to-transparent" />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {serviciosFaciales.map((s, i) => (
+              <motion.div
+                key={s.nombre}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.06 }}
+                className="group flex flex-col p-7 rounded-2xl border border-[#c8dce8]/60 bg-white hover:border-[#9b59b6]/40 hover:shadow-lg transition-all duration-300 cursor-default"
+              >
+                <div className="flex items-center gap-2 mb-4">
+                  <Sparkles className="h-4 w-4 text-[#9b59b6] opacity-60 group-hover:opacity-100 transition-opacity" />
+                  <span className="text-[10px] uppercase tracking-[0.25em] text-[#8fa8ba] font-semibold">
+                    Facial
+                  </span>
+                </div>
+                <h3 className="font-semibold text-[#1e2d3a] text-lg mb-2">{s.nombre}</h3>
+                <p className="text-sm text-[#5a7080] leading-relaxed mb-6 flex-1">{s.desc}</p>
+                <div className="flex items-end justify-between pt-4 border-t border-[#c8dce8]/60">
+                  <div>
+                    <span className="text-2xl font-bold text-[#1e2d3a]">{s.precio}</span>
+                    <span className="text-xs text-[#8fa8ba] ml-1">/ sesión</span>
+                  </div>
+                  <span className="text-xs text-[#8fa8ba] flex items-center gap-1">
+                    <Clock className="h-3 w-3" /> {s.duracion}
+                  </span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Corporal + Epilación side by side */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-8">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="p-7 rounded-2xl border border-[#c8dce8]/60 bg-white"
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <div className="h-2 w-2 rounded-full bg-[#4a7fa5]" />
+                <span className="text-[10px] uppercase tracking-[0.25em] text-[#8fa8ba] font-semibold">Corporal</span>
+              </div>
+              <h3 className="font-semibold text-[#1e2d3a] text-lg mb-2">Tratamientos Corporales</h3>
+              <p className="text-sm text-[#5a7080] leading-relaxed mb-4">
+                Celulitis, estrías, piel de naranja y grasa localizada. Cavitador, radiofrecuencia, lipoláser y vacum terapia.
+              </p>
+              <div className="flex items-end justify-between pt-4 border-t border-[#c8dce8]/60">
+                <div>
+                  <span className="text-2xl font-bold text-[#1e2d3a]">$600</span>
+                  <span className="text-xs text-[#8fa8ba] ml-1">/ sesión</span>
+                </div>
+                <span className="text-xs text-[#8fa8ba]">60 min</span>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              className="p-7 rounded-2xl border border-[#c8dce8]/60 bg-white"
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <div className="h-2 w-2 rounded-full bg-[#e89b3f]" />
+                <span className="text-[10px] uppercase tracking-[0.25em] text-[#8fa8ba] font-semibold">Epilación Roll-On</span>
+              </div>
+              <h3 className="font-semibold text-[#1e2d3a] text-lg mb-2">Depilación</h3>
+              <p className="text-sm text-[#5a7080] leading-relaxed mb-4">
+                Aplicación suave y precisa, resultados duraderos. Ideal para todo tipo de piel.
+              </p>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
+                {[
+                  ["Piernas completas", "$400"],
+                  ["Media pierna", "$250"],
+                  ["Axila", "$200"],
+                  ["Bikini", "$250"],
+                  ["Bigote", "$150"],
+                  ["Barba", "$200"],
+                ].map(([zona, precio]) => (
+                  <div key={zona} className="flex justify-between">
+                    <span className="text-[#5a7080]">{zona}</span>
+                    <span className="font-semibold text-[#1e2d3a]">{precio}</span>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* ─── SUELO PÉLVICO ────────────────────────────────────────── */}
+        <section className="bg-[#1e2d3a] py-24 mb-32">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              {/* Foto */}
+              <motion.div
+                initial={{ opacity: 0, x: -30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                className="relative rounded-2xl overflow-hidden aspect-[3/4] max-h-[560px]"
+              >
+                <Image
+                  src="/images/suelo-pelvico-paola.jpg"
+                  alt="L.F.T. Paola Ríos — Especialista en Suelo Pélvico"
+                  fill
+                  className="object-cover object-top"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                />
+                <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-[#1e2d3a] to-transparent">
+                  <p className="text-white/60 text-xs uppercase tracking-[0.2em] font-bold">Especialista</p>
+                  <p className="text-white text-lg font-semibold" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+                    L.F.T. Paola Ríos Aguilar
+                  </p>
+                </div>
+              </motion.div>
+
+              {/* Contenido */}
+              <motion.div
+                initial={{ opacity: 0, x: 30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+              >
+                <span className="text-[#7ab5d4] text-xs tracking-[0.3em] uppercase font-semibold">
+                  Fisioterapia Especializada
+                </span>
+                <h2
+                  className="text-4xl md:text-5xl text-white tracking-tight mt-4 leading-[1.1]"
+                  style={{ fontFamily: "'Cormorant Garamond', serif" }}
+                >
+                  Suelo <span className="italic font-light">Pélvico</span>
+                </h2>
+                <div className="h-1 w-20 bg-[#4a7fa5] mt-6 mb-8" />
+
+                <p className="text-white/70 leading-relaxed mb-4">
+                  El suelo pélvico es un conjunto de tejidos blandos y músculos que pueden ser
+                  valorados, fortalecidos y concientizados, así como cualquier músculo del cuerpo.
+                </p>
+                <p className="text-white/70 leading-relaxed mb-8">
+                  Estas sesiones son ideales para ti si tienes alguna disfunción en esta zona,
+                  si te encuentras en etapa de <span className="text-white font-medium">embarazo</span>,{" "}
+                  <span className="text-white font-medium">postparto</span>, o si quieres ser más consciente
+                  de esta zona y prevenir cualquier disfunción.
+                </p>
+
+                {/* Abordajes */}
+                <div className="grid grid-cols-2 gap-3 mb-8">
+                  {[
+                    { icon: Heart, label: "Embarazo", desc: "Preparación y acompañamiento" },
+                    { icon: Heart, label: "Post parto", desc: "Recuperación y fortalecimiento" },
+                    { icon: Heart, label: "Incontinencia", desc: "Tratamiento urinario" },
+                    { icon: Heart, label: "Dolor pélvico", desc: "Evaluación y rehabilitación" },
+                  ].map((item) => (
+                    <div key={item.label} className="bg-white/5 border border-white/10 rounded-xl p-4">
+                      <item.icon className="h-4 w-4 text-[#7ab5d4] mb-2" />
+                      <p className="text-white text-sm font-semibold">{item.label}</p>
+                      <p className="text-white/40 text-xs mt-0.5">{item.desc}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Primera sesión */}
+                <div className="bg-[#4a7fa5]/15 border border-[#4a7fa5]/30 rounded-xl p-5">
+                  <div className="flex items-start gap-3">
+                    <Sparkles className="h-5 w-5 text-[#7ab5d4] shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-white font-semibold text-sm mb-1">Tu primera sesión</p>
+                      <p className="text-white/60 text-sm leading-relaxed">
+                        Se realiza una valoración completa para entender desde qué punto partimos
+                        y explicarte hacia dónde vamos. Ya entendido esto, iniciamos con el abordaje inicial.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-8 flex flex-col sm:flex-row gap-3">
+                  <Link href="/agendar">
+                    <button className="cursor-pointer bg-[#4a7fa5] text-white px-8 py-4 rounded-xl font-medium tracking-widest uppercase text-sm hover:bg-[#2d5f80] transition-all duration-300 flex items-center justify-center gap-3 active:scale-95">
+                      Agendar valoración
+                      <CalendarDays className="w-4 h-4" />
+                    </button>
+                  </Link>
+                  <a
+                    href={`${whatsappLink}?text=${encodeURIComponent("Hola, me interesa una sesión de suelo pélvico")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="cursor-pointer border border-white/20 text-white/70 px-8 py-4 rounded-xl font-medium tracking-widest uppercase text-sm hover:border-white/40 hover:text-white transition-all duration-300 flex items-center justify-center gap-3"
+                  >
+                    Más información
+                    <Phone className="w-4 h-4" />
+                  </a>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        </section>
+
+        {/* ─── EQUIPO ─────────────────────────────────────────────────── */}
+        <section id="equipo" className="max-w-7xl mx-auto px-6 mb-32">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <div className="mb-16">
+              <span className="text-[#4a7fa5] text-xs tracking-[0.3em] uppercase font-semibold">
+                Nuestro Equipo
+              </span>
+              <h2
+                className="text-5xl text-[#1e2d3a] tracking-tight mt-4"
+                style={{ fontFamily: "'Cormorant Garamond', serif" }}
+              >
+                Profesionales <span className="italic font-light">certificadas.</span>
+              </h2>
+              <div className="h-1 w-20 bg-[#4a7fa5] mt-6" />
+            </div>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {equipo.map((e, i) => (
+              <motion.div
+                key={e.nombre}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className={`group relative overflow-hidden rounded-2xl flex flex-col justify-end p-8 h-[480px] ${
+                  i === 0
+                    ? "bg-[#1e3a4f] text-white"
+                    : i === 1
+                    ? "bg-[#1e2d3a] text-white md:mt-16"
+                    : "bg-[#1e2d3a] text-white"
+                }`}
+              >
+                {/* Photo */}
+                <div className="absolute inset-0">
+                  <Image
+                    src={`/images/${e.foto}`}
+                    alt={e.nombre}
+                    fill
+                    className="object-cover object-top"
+                    sizes="(max-width: 768px) 100vw, 33vw"
+                  />
+                  <div className={`absolute inset-0 ${
+                    i === 0
+                      ? "bg-gradient-to-t from-[#1e3a4f] via-[#1e3a4f]/60 to-[#1e3a4f]/10"
+                      : i === 1
+                      ? "bg-gradient-to-t from-[#1e2d3a]/90 via-[#1e2d3a]/40 to-transparent"
+                      : "bg-gradient-to-t from-[#1e2d3a]/90 via-[#1e2d3a]/40 to-transparent"
+                  }`} />
+                </div>
+
+                <div className="relative z-10">
+                  <span
+                    className={`text-[10px] uppercase tracking-[0.3em] mb-2 block font-bold ${
+                      i === 0 ? "text-[#7ab5d4]" : i === 2 ? "text-[#c49bd4]" : "text-[#7ab5d4]"
+                    }`}
+                  >
+                    {e.rol}
+                  </span>
+                  <h3
+                    className="text-2xl mb-4"
+                    style={{ fontFamily: "'Cormorant Garamond', serif" }}
+                  >
+                    {e.nombre}
+                  </h3>
+                  <p
+                    className="text-sm leading-relaxed font-light text-white/70"
+                  >
+                    {e.especialidad}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        {/* ─── CÓMO FUNCIONA ──────────────────────────────────────────── */}
+        <section className="bg-[#1e2d3a] py-24 mb-32">
+          <div className="max-w-7xl mx-auto px-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="mb-16"
+            >
+              <span className="text-[#4a7fa5] text-xs tracking-[0.3em] uppercase font-semibold">
+                Pasos para agendar
+              </span>
+              <h2
+                className="text-5xl text-white tracking-tight mt-4"
+                style={{ fontFamily: "'Cormorant Garamond', serif" }}
+              >
+                Agenda en <span className="italic font-light">minutos.</span>
+              </h2>
+              <div className="h-1 w-20 bg-[#4a7fa5] mt-6" />
+            </motion.div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[
+                { num: "01", titulo: "Regístrate", desc: "Crea tu cuenta con tu número de teléfono" },
+                { num: "02", titulo: "Elige tu servicio", desc: "Explora nuestro catálogo de terapias y faciales" },
+                { num: "03", titulo: "Agenda tu cita", desc: "Escoge fecha, hora y terapeuta" },
+                { num: "04", titulo: "Confirma", desc: "Anticipo de $100 y listo — te esperamos" },
+              ].map((paso, i) => (
+                <motion.div
+                  key={paso.num}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  className="bg-white/5 border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-all duration-300"
+                >
+                  <span className="text-[#4a7fa5] text-3xl font-bold block mb-4">{paso.num}</span>
+                  <h3 className="text-white font-semibold mb-2">{paso.titulo}</h3>
+                  <p className="text-white/50 text-sm leading-relaxed">{paso.desc}</p>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ─── POLÍTICAS (FAQ-style) ──────────────────────────────────── */}
+        <section className="max-w-3xl mx-auto px-6 mb-32">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <div className="mb-12 text-center">
+              <span className="text-[#4a7fa5] text-xs tracking-[0.3em] uppercase font-semibold">
+                Información importante
+              </span>
+              <h2
+                className="text-4xl text-[#1e2d3a] tracking-tight mt-4"
+                style={{ fontFamily: "'Cormorant Garamond', serif" }}
+              >
+                Políticas del servicio
+              </h2>
+            </div>
+          </motion.div>
+
+          <div className="space-y-3">
+            {[
+              { q: "¿Se requiere anticipo?", a: "Sí, un anticipo de $100 MXN para confirmar tu cita. Se descuenta del costo total de la sesión." },
+              { q: "¿Puedo cancelar mi cita?", a: "Sí, con un mínimo de 24 horas de anticipación. De lo contrario se pierde el anticipo." },
+              { q: "¿Qué pasa si llego tarde?", a: "No se recuperan minutos perdidos. Te recomendamos llegar puntual para aprovechar tu sesión completa." },
+              { q: "¿Qué métodos de pago aceptan?", a: "Aceptamos depósito, transferencia, efectivo y tarjeta de crédito." },
+              { q: "¿Qué debo llevar a mi sesión?", a: "Ropa cómoda para tu sesión de fisioterapia. Para faciales no es necesario nada especial." },
+            ].map((faq, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.05 }}
+              >
+                <button
+                  onClick={() => setExpandedFaq(expandedFaq === i ? null : i)}
+                  className="cursor-pointer w-full flex items-center justify-between p-5 rounded-xl bg-white border border-[#c8dce8]/60 text-left hover:border-[#4a7fa5]/40 transition-all duration-200"
+                >
+                  <span className="font-medium text-[#1e2d3a] text-sm">{faq.q}</span>
+                  <ChevronDown
+                    className={`h-4 w-4 text-[#8fa8ba] shrink-0 transition-transform duration-200 ${
+                      expandedFaq === i ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+                {expandedFaq === i && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    transition={{ duration: 0.2 }}
+                    className="px-5 pb-5 pt-2 text-sm text-[#5a7080] leading-relaxed"
+                  >
+                    {faq.a}
+                  </motion.div>
+                )}
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        {/* ─── UBICACIÓN ──────────────────────────────────────────────── */}
+        <section id="ubicacion" className="max-w-7xl mx-auto px-6 mb-32">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <div className="mb-16">
+              <span className="text-[#4a7fa5] text-xs tracking-[0.3em] uppercase font-semibold">
+                Encuéntranos
+              </span>
+              <h2
+                className="text-5xl text-[#1e2d3a] tracking-tight mt-4"
+                style={{ fontFamily: "'Cormorant Garamond', serif" }}
+              >
+                Nuestra clínica
+              </h2>
+              <div className="h-1 w-20 bg-[#4a7fa5] mt-6" />
+            </div>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Map card */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="relative h-[450px] rounded-2xl bg-[#e4ecf2] overflow-hidden"
+            >
+              <Image
+                src="/images/clinica-espejo.jpg"
+                alt={`Interior clínica ${clinicName}`}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 50vw"
+              />
+
+              <div className="absolute bottom-0 left-0 right-0 bg-white p-8 rounded-t-2xl shadow-lg">
+                <span className="text-[#4a7fa5] text-[10px] uppercase tracking-[0.3em] mb-2 block font-bold">
+                  {ciudadEstado}
+                </span>
+                <h3
+                  className="text-2xl text-[#1e2d3a] mb-3"
+                  style={{ fontFamily: "'Cormorant Garamond', serif" }}
+                >
+                  {clinicName}
+                </h3>
+                <p className="text-sm text-[#5a7080] leading-relaxed mb-4">
+                  {direccion}<br />
+                  {ciudadEstado}
+                </p>
+                <a
+                  href={googleMapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="cursor-pointer border-b border-[#1e2d3a]/30 pb-1 text-sm tracking-widest uppercase text-[#1e2d3a] hover:border-[#4a7fa5] hover:text-[#4a7fa5] transition-all flex items-center gap-2 w-fit font-medium"
+                >
+                  Cómo llegar <ArrowUpRight className="w-3 h-3" />
+                </a>
+              </div>
+            </motion.div>
+
+            {/* Contact info */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              className="flex flex-col justify-between"
+            >
+              <div className="space-y-8">
+                {[
+                  {
+                    icon: MapPin,
+                    label: "Dirección",
+                    value: direccion,
+                    sub: ciudadEstado,
+                    color: "text-[#4a7fa5] bg-[#4a7fa5]/10",
+                  },
+                  {
+                    icon: Phone,
+                    label: "WhatsApp",
+                    value: phoneDisplay,
+                    sub: "Escríbenos para cualquier duda",
+                    color: "text-[#4a7fa5] bg-[#4a7fa5]/10",
+                  },
+                  {
+                    icon: Clock,
+                    label: "Horario",
+                    value: horarioResumen.dias,
+                    sub: horarioResumen.horas,
+                    color: "text-[#e89b3f] bg-[#e89b3f]/10",
+                  },
+                ].map((item) => (
+                  <div key={item.label} className="flex items-start gap-4">
+                    <div className={`h-12 w-12 rounded-xl ${item.color} flex items-center justify-center shrink-0`}>
+                      <item.icon className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#8fa8ba] mb-1">{item.label}</p>
+                      <p className="font-semibold text-[#1e2d3a]">{item.value}</p>
+                      <p className="text-sm text-[#5a7080]">{item.sub}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex gap-4 mt-10">
+                <a
+                  href={instagramUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="cursor-pointer flex-1 border border-[#c8dce8] rounded-xl px-5 py-4 text-center text-sm font-medium text-[#5a7080] hover:border-[#4a7fa5] hover:text-[#4a7fa5] transition-all"
+                >
+                  Instagram
+                </a>
+                <a
+                  href={whatsappLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="cursor-pointer flex-1 bg-[#25d366] rounded-xl px-5 py-4 text-center text-sm font-medium text-white hover:bg-[#1da851] transition-all"
+                >
+                  WhatsApp
+                </a>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* ─── CTA FINAL ──────────────────────────────────────────────── */}
+        <section className="bg-[#1e2d3a] py-28">
+          <div className="max-w-4xl mx-auto px-6 text-center">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              <h2
+                className="text-5xl md:text-7xl text-white leading-[0.95] tracking-tight"
+                style={{ fontFamily: "'Cormorant Garamond', serif" }}
+              >
+                Tu bienestar <br />
+                <span className="italic font-light text-[#7ab5d4]">comienza hoy.</span>
+              </h2>
+              <p className="mt-8 text-white/50 text-lg max-w-lg mx-auto font-light leading-relaxed">
+                Agenda tu primera cita y experimenta la diferencia de un cuidado profesional y personalizado.
+              </p>
+              <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+                <Link href="/agendar">
+                  <button className="cursor-pointer bg-[#4a7fa5] text-white px-12 py-5 rounded-xl font-medium tracking-widest uppercase text-sm hover:bg-white hover:text-[#1e2d3a] transition-all duration-300 flex items-center gap-3 active:scale-95 shadow-xl">
+                    Agendar mi cita
+                    <CalendarDays className="w-4 h-4" />
+                  </button>
+                </Link>
+              </div>
+              <p className="mt-8 text-[10px] text-white/30 uppercase tracking-[0.2em] leading-relaxed font-medium">
+                Anticipo de $100 MXN · Cancelación 24h antes<br />
+                Aviso de privacidad · Art. 15 y 16 LFPDPPP
+              </p>
+            </motion.div>
+          </div>
+        </section>
+      </main>
+
+      {/* ─── FOOTER ─────────────────────────────────────────────────── */}
+      <footer className="bg-[#1e3a4f] pt-24 pb-12" role="contentinfo">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-16 mb-24">
+            <div className="md:col-span-1">
+              <Image
+                src="/images/logo-kaya-kalp.png"
+                alt={clinicName}
+                width={600}
+                height={214}
+                className="h-44 w-auto brightness-0 invert opacity-80 mb-4"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-8 md:col-span-2">
+              <div className="space-y-6">
+                <span className="text-[10px] tracking-widest uppercase text-white/30 font-bold">
+                  Servicios
+                </span>
+                <div className="flex flex-col gap-3">
+                  {["Fisioterapia", "Masajes", "Faciales", "Corporales", "Epilación"].map(
+                    (link) => (
+                      <span
+                        key={link}
+                        className="text-white/50 text-sm tracking-wide"
+                      >
+                        {link}
+                      </span>
+                    )
+                  )}
+                </div>
+              </div>
+              <div className="space-y-6">
+                <span className="text-[10px] tracking-widest uppercase text-white/30 font-bold">
+                  Redes
+                </span>
+                <div className="flex flex-col gap-3">
+                  {[
+                    { label: "Instagram", href: instagramUrl },
+                    { label: "WhatsApp", href: whatsappLink },
+                  ].map((link) => (
+                    <a
+                      key={link.label}
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#7ab5d4] hover:text-white text-sm tracking-wide uppercase transition-all cursor-pointer"
+                    >
+                      {link.label}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="md:text-right space-y-6">
+              <span className="text-[10px] tracking-widest uppercase text-white/30 font-bold block">
+                Contacto
+              </span>
+              <div>
+                <p className="text-lg text-white mb-1" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+                  {phoneDisplay}
+                </p>
+                <p className="text-[10px] uppercase tracking-[0.2em] text-white/30 font-bold">
+                  Disponible {horarioResumen.dias} {horarioResumen.horas}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-12 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-6">
+            <p className="text-[10px] tracking-widest uppercase text-white/30 font-bold">
+              © 2026 {clinicName}. Todos los derechos reservados.
+            </p>
+            <div className="flex gap-8">
+              {["Aviso de privacidad", "Términos"].map((item) => (
+                <span
+                  key={item}
+                  className="text-[10px] tracking-widest uppercase text-white/30 font-bold"
+                >
+                  {item}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}

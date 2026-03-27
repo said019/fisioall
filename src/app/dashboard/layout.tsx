@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -73,17 +74,16 @@ function SidebarContent({
         <Link
           href="/dashboard"
           onClick={onNavigate}
-          className="flex flex-col cursor-pointer"
+          className="cursor-pointer"
         >
-          <span
-            className="text-[22px] font-semibold text-[#a8cfe0] leading-none"
-            style={{ fontFamily: "'Cormorant Garamond', serif" }}
-          >
-            Kaya Kalp
-          </span>
-          <span className="text-[9px] font-light tracking-[2px] uppercase text-[#a8cfe0]/40 mt-1">
-            Dando vida a tu cuerpo
-          </span>
+          <Image
+            src="/images/logo-kaya-kalp.png"
+            alt="Kaya Kalp"
+            width={280}
+            height={100}
+            className="h-14 w-auto brightness-0 invert opacity-80"
+            priority
+          />
         </Link>
       </div>
 

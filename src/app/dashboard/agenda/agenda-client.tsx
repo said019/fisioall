@@ -269,58 +269,130 @@ export default function AgendaClient({
 
       {/* ── MONTH VIEW ── */}
       {vistaCalendario === "mes" && (
-        <Card className="border-[#c8dce8] bg-white">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-bold text-[#1e2d3a]">Marzo 2026</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-7 gap-1 mb-2">
-              {["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"].map((d) => (
-                <div key={d} className="text-center text-[10px] font-semibold text-[#8fa8ba] py-1">{d}</div>
-              ))}
-            </div>
-            <div className="grid grid-cols-7 gap-1">
-              {Array.from({ length: 31 }, (_, i) => {
-                const day = i + 1;
-                const dayIdx = diasSemana.findIndex(d => parseInt(d.fecha.split(" ")[0]) === day);
-                const citasCount = dayIdx >= 0 ? citasData.filter(c => c.dayIndex === dayIdx && c.estado !== "cancelada").length : 0;
-                const isToday = day === 24;
-                return (
-                  <button
-                    key={day}
-                    onClick={() => {
-                      const idx = diasSemana.findIndex(d => parseInt(d.fecha.split(" ")[0]) === day);
-                      if (idx >= 0) {
-                        setDiaActivo(idx);
-                        setVistaCalendario("dia");
-                      }
-                    }}
-                    className={`aspect-square rounded-lg flex flex-col items-center justify-center text-xs transition-all cursor-pointer ${
-                      isToday
-                        ? "bg-[#4a7fa5] text-white font-bold"
-                        : dayIdx >= 0
-                        ? "hover:bg-[#e4ecf2] text-[#1e2d3a] font-medium"
-                        : "text-[#1e2d3a]/30"
-                    }`}
-                    style={day === 1 ? { gridColumnStart: 7 } : undefined}
+        <div className="grid gap-4 lg:grid-cols-7">
+          {/* Mini calendar */}
+          <Card className="border-[#c8dce8] bg-white lg:col-span-3">
+            <CardHeader className="pb-2 pt-4 px-4">
+              <CardTitle className="text-sm font-bold text-[#1e2d3a]">Marzo 2026</CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 pb-4">
+              <div className="grid grid-cols-7 mb-1">
+                {["Lu", "Ma", "Mi", "Ju", "Vi", "Sá", "Do"].map((d) => (
+                  <div key={d} className="text-center text-[10px] font-semibold text-[#8fa8ba] py-1.5">{d}</div>
+                ))}
+              </div>
+              <div className="grid grid-cols-7">
+                {Array.from({ length: 31 }, (_, i) => {
+                  const day = i + 1;
+                  const dayIdx = diasSemana.findIndex(d => parseInt(d.fecha.split(" ")[0]) === day);
+                  const citasCount = dayIdx >= 0 ? citasData.filter(c => c.dayIndex === dayIdx && c.estado !== "cancelada").length : 0;
+                  const isToday = day === 24;
+                  const isSelected = dayIdx === diaActivo && dayIdx >= 0;
+                  return (
+                    <button
+                      key={day}
+                      onClick={() => {
+                        const idx = diasSemana.findIndex(d => parseInt(d.fecha.split(" ")[0]) === day);
+                        if (idx >= 0) setDiaActivo(idx);
+                      }}
+                      className={`relative h-9 rounded-md flex items-center justify-center text-xs transition-all cursor-pointer ${
+                        isSelected
+                          ? "bg-[#4a7fa5] text-white font-bold"
+                          : isToday
+                          ? "bg-[#4a7fa5]/10 text-[#4a7fa5] font-bold ring-1 ring-[#4a7fa5]/30"
+                          : dayIdx >= 0
+                          ? "hover:bg-[#e4ecf2] text-[#1e2d3a] font-medium"
+                          : "text-[#1e2d3a]/25"
+                      }`}
+                      style={day === 1 ? { gridColumnStart: 7 } : undefined}
+                    >
+                      {day}
+                      {citasCount > 0 && (
+                        <span className={`absolute bottom-0.5 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full ${
+                          isSelected ? "bg-white" : "bg-[#4a7fa5]"
+                        }`} />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Day detail panel */}
+          <Card className="border-[#c8dce8] bg-white lg:col-span-4">
+            <CardHeader className="pb-2 pt-4 px-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-base font-bold text-[#1e2d3a]">
+                    {diasSemana[diaActivo]?.label} {diasSemana[diaActivo]?.fecha}
+                    {diaActivo === HOY_INDEX && (
+                      <Badge className="ml-2 text-[10px] bg-[#4a7fa5] text-white border-0 h-5">HOY</Badge>
+                    )}
+                  </CardTitle>
+                  <p className="text-xs text-[#1e2d3a]/50 mt-0.5">
+                    {citasDia.length === 0 ? "Sin citas" : `${citasDia.length} citas programadas`}
+                  </p>
+                </div>
+                <Button
+                  onClick={() => { setVistaCalendario("dia"); }}
+                  variant="outline"
+                  className="border-[#a8cfe0] hover:bg-[#e4ecf2] cursor-pointer text-[10px] h-7 px-2 text-[#4a7fa5]"
+                >
+                  Ver día completo
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              {citasDia.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <CalendarDays className="h-8 w-8 text-[#1e2d3a]/15 mb-2" />
+                  <p className="text-xs font-medium text-[#1e2d3a]/40">Sin citas este día</p>
+                  <Button
+                    onClick={openNuevaCita}
+                    className="mt-3 bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white cursor-pointer text-xs h-7 px-3"
                   >
-                    {day}
-                    {citasCount > 0 && !isToday && (
-                      <div className="flex gap-0.5 mt-0.5">
-                        {Array.from({ length: Math.min(citasCount, 3) }, (_, j) => (
-                          <div key={j} className="h-1 w-1 rounded-full bg-[#4a7fa5]" />
-                        ))}
+                    <Plus className="mr-1 h-3 w-3" />
+                    Agendar
+                  </Button>
+                </div>
+              ) : (
+                <div className="divide-y divide-[#e4ecf2]">
+                  {citasDia.map((cita) => {
+                    const conf = estadoConfig[cita.estado];
+                    return (
+                      <div
+                        key={cita.id}
+                        onClick={() => setCitaSeleccionada(cita)}
+                        className={`flex items-center gap-3 px-5 py-3 cursor-pointer hover:bg-[#e4ecf2]/50 transition-all ${
+                          cita.estado === "cancelada" ? "opacity-40" : ""
+                        }`}
+                      >
+                        <div className="flex flex-col items-center w-10 shrink-0">
+                          <span className="text-xs font-bold text-[#1e2d3a]">{cita.hora}</span>
+                          <span className="text-[10px] text-[#1e2d3a]/30">{cita.duracion}min</span>
+                        </div>
+                        <div className={`w-0.5 h-8 rounded-full shrink-0 ${conf.border} border-l-2`} />
+                        <Avatar className="h-8 w-8 border border-[#c8dce8] shrink-0">
+                          <AvatarFallback className="bg-[#4a7fa5]/10 text-[#4a7fa5] text-[10px] font-bold">
+                            {cita.initials}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-[#1e2d3a] truncate">{cita.paciente}</p>
+                          <p className="text-[11px] text-[#1e2d3a]/50 truncate">{cita.motivo}</p>
+                        </div>
+                        <Badge variant="outline" className={`text-[10px] px-1.5 py-0 h-5 ${conf.bg} ${conf.text} ${conf.border} shrink-0`}>
+                          {conf.label}
+                        </Badge>
                       </div>
-                    )}
-                    {citasCount > 0 && isToday && (
-                      <span className="text-[8px] font-bold">{citasCount}</span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       )}
 
       {vistaCalendario !== "mes" && (

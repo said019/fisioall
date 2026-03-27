@@ -2,6 +2,7 @@
 
 import { useState, useActionState, useEffect, useTransition } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -759,62 +760,106 @@ export default function AgendarPage() {
 
         {/* ── Tarjetas de lealtad ── */}
         {tarjetas.length > 0 && (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {tarjetas.map((t) => (
-              <div key={t.id} className="bg-white rounded-2xl border border-[#c8dce8] p-5">
-                <div className="flex items-center gap-2 mb-3">
-                  <Star className="h-4 w-4 text-[#e89b3f]" />
-                  <span className="text-xs font-bold text-[#1e2d3a] uppercase tracking-wider">
-                    Tarjeta de Lealtad
-                  </span>
+              <div key={t.id} className="rounded-2xl overflow-hidden shadow-lg shadow-[#4a7fa5]/10">
+                {/* ── Card Top: Brand header ── */}
+                <div className="relative bg-gradient-to-br from-[#f5f9fc] via-[#eaf1f7] to-[#dce8f0] px-5 pt-5 pb-4">
+                  {/* Decorative wave accent */}
+                  <div className="absolute top-0 right-0 w-32 h-32 opacity-10">
+                    <svg viewBox="0 0 120 120" fill="none">
+                      <circle cx="80" cy="40" r="60" fill="#4a7fa5" />
+                      <circle cx="90" cy="30" r="40" fill="#1e3a4f" />
+                    </svg>
+                  </div>
+                  <div className="relative flex items-start justify-between">
+                    <div>
+                      <Image
+                        src="/images/logo-kaya-kalp.png"
+                        alt="Kaya Kalp"
+                        width={120}
+                        height={43}
+                        className="h-10 w-auto mb-1"
+                      />
+                      <p className="text-[10px] text-[#5a7080] italic">Dando vida a tu cuerpo</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="bg-[#1e3a4f] rounded-lg px-3 py-1.5 inline-block">
+                        <p className="text-[9px] text-white/70 uppercase tracking-wider font-semibold leading-none">Tarjeta de</p>
+                        <p className="text-sm text-white font-bold italic leading-tight">Lealtad</p>
+                      </div>
+                      <p className="text-[9px] text-[#5a7080] mt-1 uppercase tracking-wide font-semibold">Fisioterapia</p>
+                    </div>
+                  </div>
                   {t.estado === "completada" && (
-                    <Badge className="ml-auto text-[10px] bg-[#3fa87c]/10 text-[#3fa87c] border-none">
-                      Completada
-                    </Badge>
+                    <div className="absolute top-3 left-1/2 -translate-x-1/2">
+                      <Badge className="text-[10px] bg-[#3fa87c] text-white border-none shadow-sm px-3">
+                        Completada
+                      </Badge>
+                    </div>
                   )}
                 </div>
 
-                {/* Sellos grid */}
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {t.sellos.map((usado, i) => (
-                    <div
-                      key={i}
-                      className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-                        usado
-                          ? "bg-[#4a7fa5] text-white shadow-sm shadow-[#4a7fa5]/30"
-                          : "bg-[#e4ecf2] text-[#c8dce8]"
-                      }`}
-                    >
-                      {usado ? (
-                        <CheckCircle2 className="h-4 w-4" />
-                      ) : (
-                        i + 1
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-                {/* Progress */}
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="flex-1 h-1.5 bg-[#e4ecf2] rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-[#4a7fa5] rounded-full transition-all"
-                      style={{ width: `${(t.sellosUsados / t.sellosTotal) * 100}%` }}
-                    />
+                {/* ── Card Bottom: Stamps area ── */}
+                <div className="relative bg-gradient-to-b from-[#b8d0e0] to-[#a3c1d4] px-5 py-5">
+                  {/* Decorative curve divider */}
+                  <div className="absolute -top-4 left-0 right-0 h-5 overflow-hidden">
+                    <svg viewBox="0 0 400 20" preserveAspectRatio="none" className="w-full h-full">
+                      <path d="M0 20 Q100 0 200 10 Q300 20 400 5 L400 20 Z" fill="#b8d0e0" />
+                    </svg>
                   </div>
-                  <span className="text-[10px] text-[#5a7080] font-semibold shrink-0">
-                    {t.sellosUsados}/{t.sellosTotal}
-                  </span>
+
+                  {/* Stamps 5x2 grid */}
+                  <div className="grid grid-cols-5 gap-3">
+                    {t.sellos.map((usado, i) => (
+                      <div
+                        key={i}
+                        className={`aspect-square rounded-full flex items-center justify-center transition-all ${
+                          usado
+                            ? "bg-white shadow-md shadow-[#4a7fa5]/20"
+                            : "bg-white/50 border-2 border-dashed border-white/60"
+                        }`}
+                      >
+                        {usado ? (
+                          <Image
+                            src="/images/logo-kaya-kalp.png"
+                            alt="Sello"
+                            width={48}
+                            height={48}
+                            className="h-7 w-7 object-contain opacity-80"
+                          />
+                        ) : (
+                          <span className="text-sm font-bold text-white/60">{i + 1}</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Progress bar */}
+                  <div className="flex items-center gap-2 mt-4">
+                    <div className="flex-1 h-1.5 bg-white/30 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-white rounded-full transition-all"
+                        style={{ width: `${(t.sellosUsados / t.sellosTotal) * 100}%` }}
+                      />
+                    </div>
+                    <span className="text-[11px] text-white font-bold shrink-0">
+                      {t.sellosUsados}/{t.sellosTotal}
+                    </span>
+                  </div>
                 </div>
 
-                {/* Recompensa */}
-                <div className="flex items-center gap-2 bg-[#e89b3f]/5 rounded-lg p-2.5">
-                  <span className="text-[10px] font-bold text-[#e89b3f] uppercase tracking-wider">Recompensa:</span>
-                  <span className="text-xs text-[#1e2d3a] font-medium">{t.recompensa}</span>
+                {/* ── Reward + Wallet ── */}
+                <div className="bg-white px-5 py-4 space-y-3">
+                  <div className="flex items-center gap-2 bg-[#e89b3f]/8 border border-[#e89b3f]/15 rounded-xl p-3">
+                    <Star className="h-4 w-4 text-[#e89b3f] shrink-0" />
+                    <div>
+                      <p className="text-[9px] font-bold text-[#e89b3f] uppercase tracking-wider">Recompensa</p>
+                      <p className="text-xs text-[#1e2d3a] font-semibold">{t.recompensa}</p>
+                    </div>
+                  </div>
+                  <WalletButtonsPublic tarjetaId={t.id} />
                 </div>
-
-                {/* Wallet buttons */}
-                <WalletButtonsPublic tarjetaId={t.id} />
               </div>
             ))}
           </div>
