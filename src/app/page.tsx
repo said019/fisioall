@@ -284,13 +284,13 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="mt-16 relative rounded-2xl overflow-hidden aspect-[21/9]"
+            className="mt-16 relative rounded-2xl overflow-hidden aspect-[16/9] md:aspect-[21/9]"
           >
             <Image
               src="/images/equipo-grupal.jpg"
               alt="Equipo Kaya Kalp — Fisioterapeutas certificadas"
               fill
-              className="object-cover object-top"
+              className="object-cover object-[center_20%]"
               priority
               sizes="(max-width: 1280px) 100vw, 1280px"
             />
@@ -392,12 +392,12 @@ export default function LandingPage() {
               { src: "/images/fisio-ejercicio.jpg", alt: "Ejercicio terapéutico guiado" },
               { src: "/images/equipo-paola-pelvico.jpg", alt: "Especialista en suelo pélvico" },
             ].map((img) => (
-              <div key={img.src} className="relative rounded-2xl overflow-hidden aspect-[4/3]">
+              <div key={img.src} className="relative rounded-2xl overflow-hidden aspect-[3/4]">
                 <Image
                   src={img.src}
                   alt={img.alt}
                   fill
-                  className="object-cover"
+                  className="object-cover object-top"
                   sizes="(max-width: 768px) 100vw, 33vw"
                 />
               </div>
@@ -426,15 +426,15 @@ export default function LandingPage() {
             </div>
           </motion.div>
 
-          <div className="relative rounded-2xl overflow-hidden aspect-[3/1] mb-8">
+          <div className="relative rounded-2xl overflow-hidden aspect-[2/1] mb-8">
             <Image
               src="/images/facial-tratamiento.jpg"
               alt="Tratamiento facial profesional en Kaya Kalp"
               fill
-              className="object-cover object-center"
+              className="object-cover object-[center_30%]"
               sizes="(max-width: 1280px) 100vw, 1280px"
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-[#9b59b6]/20 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#1e2d3a]/40 via-transparent to-transparent" />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -556,12 +556,12 @@ export default function LandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className={`group relative overflow-hidden rounded-2xl flex flex-col justify-end p-8 ${
+                className={`group relative overflow-hidden rounded-2xl flex flex-col justify-end p-8 h-[480px] ${
                   i === 0
-                    ? "bg-[#1e3a4f] text-white h-[420px]"
+                    ? "bg-[#1e3a4f] text-white"
                     : i === 1
-                    ? "bg-[#e4ecf2] text-[#1e2d3a] h-[420px] md:mt-16"
-                    : "bg-[#9b59b6]/10 text-[#1e2d3a] h-[420px]"
+                    ? "bg-[#1e2d3a] text-white md:mt-16"
+                    : "bg-[#1e2d3a] text-white"
                 }`}
               >
                 {/* Photo */}
@@ -575,17 +575,17 @@ export default function LandingPage() {
                   />
                   <div className={`absolute inset-0 ${
                     i === 0
-                      ? "bg-gradient-to-t from-[#1e3a4f] via-[#1e3a4f]/40 to-transparent"
+                      ? "bg-gradient-to-t from-[#1e3a4f] via-[#1e3a4f]/60 to-[#1e3a4f]/10"
                       : i === 1
-                      ? "bg-gradient-to-t from-[#e4ecf2] via-[#e4ecf2]/40 to-transparent"
-                      : "bg-gradient-to-t from-[#9b59b6]/20 via-white/30 to-transparent"
+                      ? "bg-gradient-to-t from-[#1e2d3a]/90 via-[#1e2d3a]/40 to-transparent"
+                      : "bg-gradient-to-t from-[#1e2d3a]/90 via-[#1e2d3a]/40 to-transparent"
                   }`} />
                 </div>
 
                 <div className="relative z-10">
                   <span
                     className={`text-[10px] uppercase tracking-[0.3em] mb-2 block font-bold ${
-                      i === 0 ? "text-[#7ab5d4]" : i === 2 ? "text-[#9b59b6]" : "text-[#4a7fa5]"
+                      i === 0 ? "text-[#7ab5d4]" : i === 2 ? "text-[#c49bd4]" : "text-[#7ab5d4]"
                     }`}
                   >
                     {e.rol}
@@ -597,9 +597,7 @@ export default function LandingPage() {
                     {e.nombre}
                   </h3>
                   <p
-                    className={`text-sm leading-relaxed font-light ${
-                      i === 0 ? "text-white/70" : "text-[#5a7080]"
-                    }`}
+                    className="text-sm leading-relaxed font-light text-white/70"
                   >
                     {e.especialidad}
                   </p>
