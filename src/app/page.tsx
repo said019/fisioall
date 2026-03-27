@@ -539,7 +539,7 @@ export default function LandingPage() {
                 className="relative rounded-2xl overflow-hidden aspect-[3/4] max-h-[560px]"
               >
                 <Image
-                  src="/images/equipo-paola-pelvico.jpg"
+                  src="/images/suelo-pelvico-paola.jpg"
                   alt="L.F.T. Paola Ríos — Especialista en Suelo Pélvico"
                   fill
                   className="object-cover object-top"
