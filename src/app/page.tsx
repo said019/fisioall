@@ -144,14 +144,14 @@ export default function LandingPage() {
     <div className="min-h-screen bg-[#f0f4f7]">
       {/* ─── NAVBAR ─────────────────────────────────────────────────────── */}
       <nav className="fixed top-0 w-full z-50 bg-[#f0f4f7]/80 backdrop-blur-xl border-b border-[#c8dce8]/60">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-6 h-28 flex items-center justify-between">
           <Link href="/" className="cursor-pointer">
             <Image
               src="/images/logo-kaya-kalp.png"
               alt="Kaya Kalp"
-              width={200}
-              height={70}
-              className="h-16 w-auto"
+              width={280}
+              height={100}
+              className="h-24 w-auto"
               priority
             />
           </Link>
