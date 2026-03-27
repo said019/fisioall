@@ -527,6 +527,112 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* ─── SUELO PÉLVICO ────────────────────────────────────────── */}
+        <section className="bg-[#1e2d3a] py-24 mb-32">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              {/* Foto */}
+              <motion.div
+                initial={{ opacity: 0, x: -30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                className="relative rounded-2xl overflow-hidden aspect-[3/4] max-h-[560px]"
+              >
+                <Image
+                  src="/images/equipo-paola-pelvico.jpg"
+                  alt="L.F.T. Paola Ríos — Especialista en Suelo Pélvico"
+                  fill
+                  className="object-cover object-top"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                />
+                <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-[#1e2d3a] to-transparent">
+                  <p className="text-white/60 text-xs uppercase tracking-[0.2em] font-bold">Especialista</p>
+                  <p className="text-white text-lg font-semibold" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+                    L.F.T. Paola Ríos Aguilar
+                  </p>
+                </div>
+              </motion.div>
+
+              {/* Contenido */}
+              <motion.div
+                initial={{ opacity: 0, x: 30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+              >
+                <span className="text-[#7ab5d4] text-xs tracking-[0.3em] uppercase font-semibold">
+                  Fisioterapia Especializada
+                </span>
+                <h2
+                  className="text-4xl md:text-5xl text-white tracking-tight mt-4 leading-[1.1]"
+                  style={{ fontFamily: "'Cormorant Garamond', serif" }}
+                >
+                  Suelo <span className="italic font-light">Pélvico</span>
+                </h2>
+                <div className="h-1 w-20 bg-[#4a7fa5] mt-6 mb-8" />
+
+                <p className="text-white/70 leading-relaxed mb-4">
+                  El suelo pélvico es un conjunto de tejidos blandos y músculos que pueden ser
+                  valorados, fortalecidos y concientizados, así como cualquier músculo del cuerpo.
+                </p>
+                <p className="text-white/70 leading-relaxed mb-8">
+                  Estas sesiones son ideales para ti si tienes alguna disfunción en esta zona,
+                  si te encuentras en etapa de <span className="text-white font-medium">embarazo</span>,{" "}
+                  <span className="text-white font-medium">postparto</span>, o si quieres ser más consciente
+                  de esta zona y prevenir cualquier disfunción.
+                </p>
+
+                {/* Abordajes */}
+                <div className="grid grid-cols-2 gap-3 mb-8">
+                  {[
+                    { icon: Heart, label: "Embarazo", desc: "Preparación y acompañamiento" },
+                    { icon: Heart, label: "Post parto", desc: "Recuperación y fortalecimiento" },
+                    { icon: Heart, label: "Incontinencia", desc: "Tratamiento urinario" },
+                    { icon: Heart, label: "Dolor pélvico", desc: "Evaluación y rehabilitación" },
+                  ].map((item) => (
+                    <div key={item.label} className="bg-white/5 border border-white/10 rounded-xl p-4">
+                      <item.icon className="h-4 w-4 text-[#7ab5d4] mb-2" />
+                      <p className="text-white text-sm font-semibold">{item.label}</p>
+                      <p className="text-white/40 text-xs mt-0.5">{item.desc}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Primera sesión */}
+                <div className="bg-[#4a7fa5]/15 border border-[#4a7fa5]/30 rounded-xl p-5">
+                  <div className="flex items-start gap-3">
+                    <Sparkles className="h-5 w-5 text-[#7ab5d4] shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-white font-semibold text-sm mb-1">Tu primera sesión</p>
+                      <p className="text-white/60 text-sm leading-relaxed">
+                        Se realiza una valoración completa para entender desde qué punto partimos
+                        y explicarte hacia dónde vamos. Ya entendido esto, iniciamos con el abordaje inicial.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-8 flex flex-col sm:flex-row gap-3">
+                  <Link href="/agendar">
+                    <button className="cursor-pointer bg-[#4a7fa5] text-white px-8 py-4 rounded-xl font-medium tracking-widest uppercase text-sm hover:bg-[#2d5f80] transition-all duration-300 flex items-center justify-center gap-3 active:scale-95">
+                      Agendar valoración
+                      <CalendarDays className="w-4 h-4" />
+                    </button>
+                  </Link>
+                  <a
+                    href="https://wa.me/524271659204?text=Hola%2C%20me%20interesa%20una%20sesión%20de%20suelo%20pélvico"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="cursor-pointer border border-white/20 text-white/70 px-8 py-4 rounded-xl font-medium tracking-widest uppercase text-sm hover:border-white/40 hover:text-white transition-all duration-300 flex items-center justify-center gap-3"
+                  >
+                    Más información
+                    <Phone className="w-4 h-4" />
+                  </a>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        </section>
+
         {/* ─── EQUIPO ─────────────────────────────────────────────────── */}
         <section id="equipo" className="max-w-7xl mx-auto px-6 mb-32">
           <motion.div
