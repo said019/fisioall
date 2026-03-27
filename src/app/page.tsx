@@ -146,12 +146,14 @@ export default function LandingPage() {
       <nav className="fixed top-0 w-full z-50 bg-[#f0f4f7]/80 backdrop-blur-xl border-b border-[#c8dce8]/60">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <Link href="/" className="cursor-pointer">
-            <span
-              className="text-2xl font-bold text-[#4a7fa5] tracking-tight"
-              style={{ fontFamily: "'Cormorant Garamond', serif" }}
-            >
-              Kaya Kalp
-            </span>
+            <Image
+              src="/images/logo-kaya-kalp.png"
+              alt="Kaya Kalp"
+              width={140}
+              height={50}
+              className="h-10 w-auto"
+              priority
+            />
           </Link>
 
           <div className="hidden md:flex items-center space-x-12">
@@ -988,18 +990,13 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-16 mb-24">
             <div className="md:col-span-1">
-              <span
-                className="text-2xl text-white block mb-4 font-bold"
-                style={{ fontFamily: "'Cormorant Garamond', serif" }}
-              >
-                Kaya Kalp
-              </span>
-              <p
-                className="text-2xl text-white/60 leading-tight"
-                style={{ fontFamily: "'Cormorant Garamond', serif" }}
-              >
-                Dando vida <br /> a tu cuerpo.
-              </p>
+              <Image
+                src="/images/logo-kaya-kalp.png"
+                alt="Kaya Kalp"
+                width={160}
+                height={57}
+                className="h-14 w-auto brightness-0 invert opacity-80 mb-4"
+              />
             </div>
 
             <div className="grid grid-cols-2 gap-8 md:col-span-2">
