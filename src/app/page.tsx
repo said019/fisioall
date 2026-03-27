@@ -149,9 +149,9 @@ export default function LandingPage() {
             <Image
               src="/images/logo-kaya-kalp.png"
               alt="Kaya Kalp"
-              width={140}
-              height={50}
-              className="h-10 w-auto"
+              width={200}
+              height={70}
+              className="h-16 w-auto"
               priority
             />
           </Link>
