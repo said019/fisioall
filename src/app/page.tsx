@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "motion/react";
 import {
   Menu,
@@ -113,18 +114,21 @@ const equipo = [
     rol: "CEO · Fisioterapeuta",
     especialidad: "Medios físicos, terapia manual, suelo pélvico y obstetricia",
     initials: "PA",
+    foto: "equipo-paola.jpg",
   },
   {
     nombre: "L.F.T. Jenni Álvarez Álvarez",
     rol: "Fisioterapeuta",
     especialidad: "Ejercicio terapéutico, rehabilitación, coordinación de citas",
     initials: "JA",
+    foto: "equipo-jenni.jpg",
   },
   {
     nombre: "Gaby Aguilar",
     rol: "Cosmiatra",
     especialidad: "Tratamientos faciales, corporales y epilación",
     initials: "GA",
+    foto: "equipo-gaby.jpg",
   },
 ];
 
@@ -276,6 +280,22 @@ export default function LandingPage() {
             </motion.div>
           </div>
 
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+            className="mt-16 relative rounded-2xl overflow-hidden aspect-[21/9]"
+          >
+            <Image
+              src="/images/equipo-grupal.jpg"
+              alt="Equipo Kaya Kalp — Fisioterapeutas certificadas"
+              fill
+              className="object-cover object-top"
+              priority
+              sizes="(max-width: 1280px) 100vw, 1280px"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#1e2d3a]/30 to-transparent" />
+          </motion.div>
         </header>
 
         {/* ─── SERVICIOS FISIOTERAPIA ─────────────────────────────────── */}
@@ -365,6 +385,24 @@ export default function LandingPage() {
               ))}
             </div>
           </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
+            {[
+              { src: "/images/fisio-percusion.jpg", alt: "Terapia con pistola de percusión" },
+              { src: "/images/fisio-ejercicio.jpg", alt: "Ejercicio terapéutico guiado" },
+              { src: "/images/equipo-paola-pelvico.jpg", alt: "Especialista en suelo pélvico" },
+            ].map((img) => (
+              <div key={img.src} className="relative rounded-2xl overflow-hidden aspect-[4/3]">
+                <Image
+                  src={img.src}
+                  alt={img.alt}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 33vw"
+                />
+              </div>
+            ))}
+          </div>
         </section>
 
         {/* ─── FACIALES ───────────────────────────────────────────────── */}
@@ -387,6 +425,17 @@ export default function LandingPage() {
               <div className="h-1 w-20 bg-[#9b59b6] mt-6" />
             </div>
           </motion.div>
+
+          <div className="relative rounded-2xl overflow-hidden aspect-[3/1] mb-8">
+            <Image
+              src="/images/facial-tratamiento.jpg"
+              alt="Tratamiento facial profesional en Kaya Kalp"
+              fill
+              className="object-cover object-center"
+              sizes="(max-width: 1280px) 100vw, 1280px"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#9b59b6]/20 to-transparent" />
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {serviciosFaciales.map((s, i) => (
@@ -515,15 +564,22 @@ export default function LandingPage() {
                     : "bg-[#9b59b6]/10 text-[#1e2d3a] h-[420px]"
                 }`}
               >
-                {/* Decorative initials */}
-                <div
-                  className={`absolute top-8 right-8 text-[120px] font-bold leading-none opacity-[0.06] pointer-events-none ${
-                    i === 0 ? "text-white" : "text-[#1e2d3a]"
-                  }`}
-                  style={{ fontFamily: "'Cormorant Garamond', serif" }}
-                  aria-hidden="true"
-                >
-                  {e.initials}
+                {/* Photo */}
+                <div className="absolute inset-0">
+                  <Image
+                    src={`/images/${e.foto}`}
+                    alt={e.nombre}
+                    fill
+                    className="object-cover object-top"
+                    sizes="(max-width: 768px) 100vw, 33vw"
+                  />
+                  <div className={`absolute inset-0 ${
+                    i === 0
+                      ? "bg-gradient-to-t from-[#1e3a4f] via-[#1e3a4f]/40 to-transparent"
+                      : i === 1
+                      ? "bg-gradient-to-t from-[#e4ecf2] via-[#e4ecf2]/40 to-transparent"
+                      : "bg-gradient-to-t from-[#9b59b6]/20 via-white/30 to-transparent"
+                  }`} />
                 </div>
 
                 <div className="relative z-10">
@@ -688,11 +744,13 @@ export default function LandingPage() {
               viewport={{ once: true }}
               className="relative h-[450px] rounded-2xl bg-[#e4ecf2] overflow-hidden"
             >
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-[#3fa87c]/15 via-transparent to-transparent" />
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-                <div className="w-5 h-5 bg-[#4a7fa5] rounded-full animate-ping absolute" />
-                <div className="w-5 h-5 bg-[#4a7fa5] rounded-full relative" />
-              </div>
+              <Image
+                src="/images/clinica-espejo.jpg"
+                alt="Interior clínica Kaya Kalp"
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 50vw"
+              />
 
               <div className="absolute bottom-0 left-0 right-0 bg-white p-8 rounded-t-2xl shadow-lg">
                 <span className="text-[#4a7fa5] text-[10px] uppercase tracking-[0.3em] mb-2 block font-bold">

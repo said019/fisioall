@@ -417,7 +417,7 @@ export default function BodyMap({
       </div>
 
       {/* ── SVG + PANEL — fills remaining height ── */}
-      <div className="flex-1 min-h-0 flex items-start gap-3 relative">
+      <div className="flex-1 min-h-0 flex flex-col md:flex-row md:items-start gap-3 relative">
         {/* SVG — scales to fill available height */}
         <div className="h-full flex items-center justify-center flex-1">
           <svg
@@ -441,7 +441,7 @@ export default function BodyMap({
         {zonaSeleccionada && editable && (
           <div
             ref={panelRef}
-            className="absolute right-0 top-0 z-10 w-64 max-h-full overflow-y-auto"
+            className="w-full md:absolute md:right-0 md:top-0 md:z-10 md:w-64 max-h-[300px] md:max-h-full overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="bg-white border border-[#a8cfe0] rounded-2xl shadow-xl shadow-cyan-900/10 overflow-hidden">

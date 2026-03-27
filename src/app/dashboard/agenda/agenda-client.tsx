@@ -137,6 +137,7 @@ export default function AgendaClient({
   const citasData = initialCitas && initialCitas.length > 0 ? initialCitas : mockCitas;
 
   const [diaActivo, setDiaActivo] = useState(HOY_INDEX);
+  const [vistaCalendario, setVistaCalendario] = useState<"mes" | "semana" | "dia">("semana");
   const [citaSeleccionada, setCitaSeleccionada] = useState<Cita | null>(null);
   const [modalNuevaCita, setModalNuevaCita] = useState(false);
 
@@ -216,6 +217,21 @@ export default function AgendaClient({
           <p className="text-sm text-[#1e2d3a]/50">{totalSemana} citas programadas esta semana</p>
         </div>
         <div className="flex items-center gap-2">
+          <div className="flex rounded-lg border border-[#c8dce8] overflow-hidden">
+            {(["mes", "semana", "dia"] as const).map((v) => (
+              <button
+                key={v}
+                onClick={() => setVistaCalendario(v)}
+                className={`px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
+                  vistaCalendario === v
+                    ? "bg-[#4a7fa5] text-white"
+                    : "bg-white text-[#5a7080] hover:bg-[#e4ecf2]"
+                }`}
+              >
+                {v === "mes" ? "Mes" : v === "semana" ? "Semana" : "Día"}
+              </button>
+            ))}
+          </div>
           <Button variant="outline" size="icon" className="border-[#a8cfe0] hover:bg-[#e4ecf2] cursor-pointer h-9 w-9">
             <ChevronLeft className="h-4 w-4 text-[#1e2d3a]" />
           </Button>
@@ -251,8 +267,66 @@ export default function AgendaClient({
         ))}
       </div>
 
+      {/* ── MONTH VIEW ── */}
+      {vistaCalendario === "mes" && (
+        <Card className="border-[#c8dce8] bg-white">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-bold text-[#1e2d3a]">Marzo 2026</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-7 gap-1 mb-2">
+              {["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"].map((d) => (
+                <div key={d} className="text-center text-[10px] font-semibold text-[#8fa8ba] py-1">{d}</div>
+              ))}
+            </div>
+            <div className="grid grid-cols-7 gap-1">
+              {Array.from({ length: 31 }, (_, i) => {
+                const day = i + 1;
+                const dayIdx = diasSemana.findIndex(d => parseInt(d.fecha.split(" ")[0]) === day);
+                const citasCount = dayIdx >= 0 ? citasData.filter(c => c.dayIndex === dayIdx && c.estado !== "cancelada").length : 0;
+                const isToday = day === 24;
+                return (
+                  <button
+                    key={day}
+                    onClick={() => {
+                      const idx = diasSemana.findIndex(d => parseInt(d.fecha.split(" ")[0]) === day);
+                      if (idx >= 0) {
+                        setDiaActivo(idx);
+                        setVistaCalendario("dia");
+                      }
+                    }}
+                    className={`aspect-square rounded-lg flex flex-col items-center justify-center text-xs transition-all cursor-pointer ${
+                      isToday
+                        ? "bg-[#4a7fa5] text-white font-bold"
+                        : dayIdx >= 0
+                        ? "hover:bg-[#e4ecf2] text-[#1e2d3a] font-medium"
+                        : "text-[#1e2d3a]/30"
+                    }`}
+                    style={day === 1 ? { gridColumnStart: 7 } : undefined}
+                  >
+                    {day}
+                    {citasCount > 0 && !isToday && (
+                      <div className="flex gap-0.5 mt-0.5">
+                        {Array.from({ length: Math.min(citasCount, 3) }, (_, j) => (
+                          <div key={j} className="h-1 w-1 rounded-full bg-[#4a7fa5]" />
+                        ))}
+                      </div>
+                    )}
+                    {citasCount > 0 && isToday && (
+                      <span className="text-[8px] font-bold">{citasCount}</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {vistaCalendario !== "mes" && (
       <div className="grid gap-4 lg:grid-cols-7">
         {/* Selector días */}
+        {vistaCalendario === "semana" && (
         <Card className="border-[#c8dce8] bg-white lg:col-span-2">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-bold text-[#1e2d3a]">Días de la Semana</CardTitle>
@@ -299,9 +373,10 @@ export default function AgendaClient({
             })}
           </CardContent>
         </Card>
+        )}
 
         {/* Lista de citas del día */}
-        <Card className="border-[#c8dce8] bg-white lg:col-span-5">
+        <Card className={`border-[#c8dce8] bg-white ${vistaCalendario === "semana" ? "lg:col-span-5" : "lg:col-span-7"}`}>
           <CardHeader className="pb-3 flex flex-row items-center justify-between">
             <div>
               <CardTitle className="text-base font-bold text-[#1e2d3a]">
@@ -368,6 +443,7 @@ export default function AgendaClient({
           </CardContent>
         </Card>
       </div>
+      )}
 
       {/* ── MODAL: DETALLE CITA ── */}
       <Dialog open={!!citaSeleccionada} onOpenChange={() => setCitaSeleccionada(null)}>
