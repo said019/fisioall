@@ -418,12 +418,12 @@ export default function BodyMap({
 
       {/* ── SVG + PANEL — fills remaining height ── */}
       <div className="flex-1 min-h-0 flex flex-col md:flex-row md:items-start gap-3 relative">
-        {/* SVG — scales to fill available height */}
-        <div className="h-full flex items-center justify-center flex-1">
+        {/* SVG — scales to fill available height, min-height on mobile */}
+        <div className="min-h-[350px] md:h-full flex items-center justify-center flex-1">
           <svg
             viewBox="0 0 260 560"
             className="h-full max-h-full w-auto select-none drop-shadow-sm"
-            style={{ maxWidth: "280px" }}
+            style={{ maxWidth: "280px", minHeight: "320px" }}
             aria-label={`Mapa corporal – vista ${VISTA_LABELS[vistaActual]}`}
           >
             <defs>

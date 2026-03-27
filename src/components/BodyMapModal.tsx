@@ -196,8 +196,8 @@ export default function BodyMapModal({
           </p>
         </div>
 
-        {/* ── BODY — fills remaining space, NO scroll ── */}
-        <div className="flex-1 min-h-0 px-4 py-2 overflow-hidden">
+        {/* ── BODY — fills remaining space, scroll on mobile ── */}
+        <div className="flex-1 min-h-0 px-4 py-2 overflow-y-auto">
           {cargando ? (
             <div className="flex gap-4 h-full items-center justify-center">
               <Skeleton className="h-[300px] w-[200px] rounded-xl" />
