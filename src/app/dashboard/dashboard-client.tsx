@@ -81,19 +81,19 @@ const membresiasAlerta: MembresiasAlerta[] = [
 const actividadReciente: ActividadItem[] = [
   { id: "1", icono: CheckCircle2, iconoBg: "bg-emerald-50", iconoColor: "text-emerald-500", texto: "Sesión completada con Ana Flores", detalle: "Fisio deportiva · Rodilla derecha", tiempo: "hace 5 min" },
   { id: "2", icono: UserPlus, iconoBg: "bg-[#e4ecf2]", iconoColor: "text-[#4a7fa5]", texto: "Nuevo paciente registrado", detalle: "Sebastián Cruz Medina · Evaluación inicial", tiempo: "hace 42 min" },
-  { id: "3", icono: CreditCard, iconoBg: "bg-violet-50", iconoColor: "text-violet-500", texto: "Pago recibido $600 MXN", detalle: "Patricia Morales · Renovación membresía", tiempo: "hace 1 h" },
+  { id: "3", icono: CreditCard, iconoBg: "bg-violet-50", iconoColor: "text-violet-500", texto: "Tarjeta de lealtad sellada", detalle: "Patricia Morales · 8/10 sellos completados", tiempo: "hace 1 h" },
   { id: "4", icono: FileEdit, iconoBg: "bg-amber-50", iconoColor: "text-amber-500", texto: "Nota SOAP actualizada", detalle: "Carlos Mendoza · Terapia manual C3-C5", tiempo: "hace 2 h" },
   { id: "5", icono: CalendarCheck, iconoBg: "bg-[#4a7fa5]/10", iconoColor: "text-[#4a7fa5]", texto: "Cita confirmada por WhatsApp", detalle: "Roberto Sánchez · 11:30 hrs", tiempo: "hace 3 h" },
 ];
 
-const ingresosData = [
-  { mes: "Ago", valor: 8200 },
-  { mes: "Sep", valor: 9100 },
-  { mes: "Oct", valor: 8750 },
-  { mes: "Nov", valor: 10400 },
-  { mes: "Dic", valor: 7900 },
-  { mes: "Ene", valor: 10300 },
-  { mes: "Feb", valor: 12234 },
+const sesionesData = [
+  { mes: "Sep", valor: 62 },
+  { mes: "Oct", valor: 58 },
+  { mes: "Nov", valor: 71 },
+  { mes: "Dic", valor: 54 },
+  { mes: "Ene", valor: 68 },
+  { mes: "Feb", valor: 75 },
+  { mes: "Mar", valor: 87 },
 ];
 
 const dolorData = [7, 6, 5, 5, 4, 3, 2]; // escala 0-10, sesiones 1-7
@@ -192,7 +192,7 @@ export interface DashboardData {
     citasHoy: number;
     pacientesActivos: number;
     membresiasActivas: number;
-    ingresosMes: number;
+    sesionesCompletadas: number;
   };
   citasHoy?: {
     id: string;
@@ -299,18 +299,18 @@ export default function DashboardClient({ data }: { data?: DashboardData }) {
           </CardContent>
         </Card>
 
-        {/* Ingresos Feb */}
+        {/* Sesiones Completadas */}
         <Card className="border-[#c8dce8] bg-white hover:shadow-md transition-all duration-200">
           <CardContent className="p-5">
             <div className="flex items-start justify-between mb-3">
               <div className="h-10 w-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
-                <TrendingUp className="h-5 w-5 text-emerald-500" />
+                <CheckCircle2 className="h-5 w-5 text-emerald-500" />
               </div>
             </div>
-            <p className="text-2xl font-bold text-[#1e2d3a]">${(data?.kpis?.ingresosMes ?? 12234).toLocaleString("es-MX")}</p>
-            <p className="text-xs text-[#1e2d3a]/50 mt-0.5">Ingresos del Mes</p>
+            <p className="text-2xl font-bold text-[#1e2d3a]">{data?.kpis?.sesionesCompletadas ?? 87}</p>
+            <p className="text-xs text-[#1e2d3a]/50 mt-0.5">Sesiones del Mes</p>
             <p className="text-[11px] text-emerald-600 font-medium mt-1.5 flex items-center gap-1">
-              <TrendingUp className="h-3 w-3" /> +19% vs enero
+              <TrendingUp className="h-3 w-3" /> +12 vs mes anterior
             </p>
           </CardContent>
         </Card>
@@ -438,22 +438,22 @@ export default function DashboardClient({ data }: { data?: DashboardData }) {
           </CardContent>
         </Card>
 
-        {/* Ingresos Mensuales — col-span-3 (pero visualmente alineado) */}
+        {/* Sesiones Mensuales — col-span-3 */}
         <Card className="lg:col-span-3 border-[#c8dce8] bg-white">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-bold text-[#1e2d3a]">Ingresos Mensuales</CardTitle>
-              <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-600 border-emerald-200">
-                Feb 2026
+              <CardTitle className="text-sm font-bold text-[#1e2d3a]">Sesiones Mensuales</CardTitle>
+              <Badge variant="outline" className="text-[10px] bg-[#e4ecf2] text-[#4a7fa5] border-[#a8cfe0]">
+                Mar 2026
               </Badge>
             </div>
-            <p className="text-2xl font-bold text-[#1e2d3a]">$12,234</p>
+            <p className="text-2xl font-bold text-[#1e2d3a]">87</p>
             <p className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
-              <TrendingUp className="h-3 w-3" /> +19% vs enero · $10,300
+              <TrendingUp className="h-3 w-3" /> +12 vs febrero · 75
             </p>
           </CardHeader>
           <CardContent className="pt-2">
-            <MiniBarChart data={ingresosData} />
+            <MiniBarChart data={sesionesData} />
           </CardContent>
         </Card>
       </div>
