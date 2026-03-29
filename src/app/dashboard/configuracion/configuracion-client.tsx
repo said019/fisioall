@@ -44,6 +44,7 @@ import {
   type DiaBloqueadoData,
   type ConfigCompleta,
 } from "./actions";
+import WhatsAppPanel from "../notificaciones/whatsapp-panel";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TIPOS
@@ -76,7 +77,13 @@ interface GCalStatus {
   email: string | null;
 }
 
-export default function ConfiguracionClient({ initial, gcalStatus }: { initial: ConfigCompleta; gcalStatus: GCalStatus }) {
+interface PacienteOption {
+  id: string;
+  nombre: string;
+  telefono: string;
+}
+
+export default function ConfiguracionClient({ initial, gcalStatus, pacientes }: { initial: ConfigCompleta; gcalStatus: GCalStatus; pacientes: PacienteOption[] }) {
   const [config, setConfig] = useState<ConfigClinica>(initial.clinica);
   const [horarios, setHorarios] = useState<HorarioDia[]>(
     initial.horarios.map((h) => ({ ...h, dia: DIA_LABELS[h.diaKey] ?? h.diaKey }))
@@ -707,6 +714,9 @@ export default function ConfiguracionClient({ initial, gcalStatus }: { initial: 
               )}
             </CardContent>
           </Card>
+
+          {/* ── WhatsApp (Evolution API) ── */}
+          <WhatsAppPanel pacientes={pacientes} />
         </div>
       </div>
     </div>
