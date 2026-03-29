@@ -152,6 +152,35 @@ export async function guardarConfiguracion(data: ConfigCompleta) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// GOOGLE CALENDAR STATUS
+// ─────────────────────────────────────────────────────────────────────────────
+export async function getGoogleCalendarStatus(): Promise<{
+  connected: boolean;
+  email: string | null;
+}> {
+  const tenant = await prisma.tenant.findUnique({ where: { slug: TENANT_SLUG } });
+  if (!tenant) return { connected: false, email: null };
+
+  const token = await prisma.googleCalendarToken.findUnique({
+    where: { tenantId: tenant.id },
+    select: { email: true },
+  });
+
+  return { connected: !!token, email: token?.email ?? null };
+}
+
+export async function disconnectGoogleCalendar() {
+  const tenant = await prisma.tenant.findUnique({ where: { slug: TENANT_SLUG } });
+  if (!tenant) return { error: "Tenant no encontrado" };
+
+  const { disconnectCalendar } = await import("@/lib/google-calendar");
+  await disconnectCalendar(tenant.id);
+
+  revalidatePath("/dashboard/configuracion");
+  return { ok: true };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // LECTURA PÚBLICA — para landing y agendar
 // ─────────────────────────────────────────────────────────────────────────────
 export async function getConfigPublica() {

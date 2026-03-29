@@ -145,9 +145,26 @@ model Tenant {
   notificaciones        Notificacion[]
   plantillasMensaje     PlantillaMensaje[]
   tarjetasLealtad       TarjetaLealtad[]
+  googleCalendarToken   GoogleCalendarToken?
 
   @@index([slug])
   @@map("tenants")
+}
+
+model GoogleCalendarToken {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String    @unique @map("tenant_id") @db.Uuid
+  accessToken   String    @map("access_token")
+  refreshToken  String    @map("refresh_token")
+  tokenExpiry   DateTime  @map("token_expiry") @db.Timestamptz
+  email         String?   @db.VarChar(150)
+  calendarId    String?   @default("primary") @map("calendar_id") @db.VarChar(200)
+  createdAt     DateTime? @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("google_calendar_tokens")
 }
 
 model Usuario {
@@ -445,6 +462,7 @@ model Cita {
   confirmadaPaciente    Boolean?          @default(false) @map("confirmada_paciente")
   
   notasPrevias          String?           @map("notas_previas")
+  googleEventId         String?           @map("google_event_id") @db.VarChar(200)
   createdBy             String?           @map("created_by") @db.Uuid
   
   createdAt             DateTime?         @default(now()) @map("created_at") @db.Timestamptz

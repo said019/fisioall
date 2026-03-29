@@ -77,7 +77,7 @@ export async function crearCita(prevState: unknown, formData: FormData) {
     const fechaHoraInicio = new Date(`${fecha}T${horaInicio}:00`);
     const fechaHoraFin = new Date(fechaHoraInicio.getTime() + duracion * 60 * 1000);
 
-    await prisma.cita.create({
+    const cita = await prisma.cita.create({
       data: {
         tenantId,
         fisioterapeutaId,
@@ -89,6 +89,27 @@ export async function crearCita(prevState: unknown, formData: FormData) {
         createdBy: userId,
       },
     });
+
+    // Sync to Google Calendar (best-effort)
+    try {
+      const { createCalendarEvent } = await import("@/lib/google-calendar");
+      const pac = await prisma.paciente.findUnique({
+        where: { id: pacienteId },
+        select: { nombre: true, apellido: true, telefono: true },
+      });
+      const googleEventId = await createCalendarEvent(tenantId, {
+        fechaHoraInicio,
+        fechaHoraFin,
+        pacienteNombre: `${pac?.nombre ?? ""} ${pac?.apellido ?? ""}`.trim(),
+        pacienteTelefono: pac?.telefono ?? "",
+        tipoSesion: tipoSesion || "Sesión de fisioterapia",
+      });
+      if (googleEventId) {
+        await prisma.cita.update({ where: { id: cita.id }, data: { googleEventId } });
+      }
+    } catch (gcalErr) {
+      console.error("[GCal] Sync error on admin create:", gcalErr);
+    }
 
     revalidatePath("/dashboard/agenda");
     revalidatePath("/dashboard");
@@ -107,10 +128,26 @@ export async function actualizarEstadoCita(
   const { tenantId } = await requireAuth();
 
   try {
+    // Fetch cita first for GCal sync
+    const cita = await prisma.cita.findFirst({
+      where: { id: citaId, tenantId },
+      select: { googleEventId: true, tenantId: true },
+    });
+
     await prisma.cita.update({
       where: { id: citaId, tenantId },
       data: { estado },
     });
+
+    // Delete Google Calendar event on cancel
+    if ((estado === "cancelada" || estado === "no_show") && cita?.googleEventId) {
+      try {
+        const { deleteCalendarEvent } = await import("@/lib/google-calendar");
+        await deleteCalendarEvent(cita.tenantId, cita.googleEventId);
+      } catch (gcalErr) {
+        console.error("[GCal] Sync error on status change:", gcalErr);
+      }
+    }
 
     revalidatePath("/dashboard/agenda");
     revalidatePath("/dashboard");

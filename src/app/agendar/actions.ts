@@ -205,6 +205,21 @@ export async function getHorariosDisponibles(fecha: string) {
     fin: c.fechaHoraFin.getHours() * 60 + c.fechaHoraFin.getMinutes(),
   }));
 
+  // Also fetch Google Calendar events to block those slots
+  let gcalOcupadas: { inicio: number; fin: number }[] = [];
+  try {
+    const { listCalendarEvents } = await import("@/lib/google-calendar");
+    const gcalEvents = await listCalendarEvents(tenantId, inicio, fin);
+    gcalOcupadas = gcalEvents.map((e) => ({
+      inicio: e.start.getHours() * 60 + e.start.getMinutes(),
+      fin: e.end.getHours() * 60 + e.end.getMinutes(),
+    }));
+  } catch {
+    // Google Calendar not connected or error — continue without it
+  }
+
+  const todasOcupadas = [...horasOcupadas, ...gcalOcupadas];
+
   // Generar slots según config
   const slots: { hora: string; disponible: boolean }[] = [];
   for (let m = atencionInicio; m < atencionFin; m += intervalo) {
@@ -213,7 +228,7 @@ export async function getHorariosDisponibles(fecha: string) {
 
     const h = String(Math.floor(m / 60)).padStart(2, "0");
     const min = String(m % 60).padStart(2, "0");
-    const ocupado = horasOcupadas.some(
+    const ocupado = todasOcupadas.some(
       (o) => m >= o.inicio && m < o.fin
     );
     slots.push({ hora: `${h}:${min}`, disponible: !ocupado });
@@ -280,7 +295,7 @@ export async function agendarCitaPublica(prevState: unknown, formData: FormData)
       return { error: "Ese horario ya no está disponible. Elige otro." };
     }
 
-    await prisma.cita.create({
+    const cita = await prisma.cita.create({
       data: {
         tenantId,
         fisioterapeutaId: fisioId,
@@ -291,6 +306,27 @@ export async function agendarCitaPublica(prevState: unknown, formData: FormData)
         createdBy: fisioId,
       },
     });
+
+    // Sync to Google Calendar (best-effort, non-blocking)
+    try {
+      const { createCalendarEvent } = await import("@/lib/google-calendar");
+      const pac = await prisma.paciente.findUnique({
+        where: { id: pacienteId },
+        select: { nombre: true, apellido: true, telefono: true },
+      });
+      const googleEventId = await createCalendarEvent(tenantId, {
+        fechaHoraInicio,
+        fechaHoraFin,
+        pacienteNombre: `${pac?.nombre ?? ""} ${pac?.apellido ?? ""}`.trim(),
+        pacienteTelefono: pac?.telefono ?? "",
+        tipoSesion: tipoSesion || "Sesión",
+      });
+      if (googleEventId) {
+        await prisma.cita.update({ where: { id: cita.id }, data: { googleEventId } });
+      }
+    } catch (gcalErr) {
+      console.error("[GCal] Sync error on create:", gcalErr);
+    }
 
     revalidatePath("/agendar");
     return { success: true };
@@ -318,6 +354,16 @@ export async function cancelarCitaPublica(citaId: string, pacienteId: string) {
       where: { id: citaId },
       data: { estado: "cancelada" },
     });
+
+    // Delete Google Calendar event (best-effort)
+    if (cita.googleEventId) {
+      try {
+        const { deleteCalendarEvent } = await import("@/lib/google-calendar");
+        await deleteCalendarEvent(cita.tenantId, cita.googleEventId);
+      } catch (gcalErr) {
+        console.error("[GCal] Sync error on cancel:", gcalErr);
+      }
+    }
 
     revalidatePath("/agendar");
     return { success: true };

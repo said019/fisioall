@@ -1,7 +1,10 @@
 import ConfiguracionClient from "./configuracion-client";
-import { getConfiguracion } from "./actions";
+import { getConfiguracion, getGoogleCalendarStatus } from "./actions";
 
 export default async function ConfiguracionPage() {
-  const config = await getConfiguracion();
-  return <ConfiguracionClient initial={config} />;
+  const [config, gcalStatus] = await Promise.all([
+    getConfiguracion(),
+    getGoogleCalendarStatus(),
+  ]);
+  return <ConfiguracionClient initial={config} gcalStatus={gcalStatus} />;
 }
