@@ -195,7 +195,7 @@ export default function ConfiguracionClient({ initial, gcalStatus }: { initial: 
               <div className="flex items-center gap-4">
                 <div className="relative h-16 w-16 rounded-xl bg-[#f0f4f7] border border-[#c8dce8] flex items-center justify-center overflow-hidden shrink-0">
                   <Image
-                    src="/images/logo-kaya-kalp.png"
+                    src="/images/logo-kaya-kalp.webp"
                     alt="Logo"
                     width={60}
                     height={60}

@@ -77,7 +77,7 @@ function SidebarContent({
           className="cursor-pointer"
         >
           <Image
-            src="/images/logo-kaya-kalp.png"
+            src="/images/logo-kaya-kalp.webp"
             alt="Kaya Kalp"
             width={280}
             height={100}

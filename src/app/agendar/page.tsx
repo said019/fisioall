@@ -775,7 +775,7 @@ export default function AgendarPage() {
                   <div className="relative flex items-start justify-between">
                     <div>
                       <Image
-                        src="/images/logo-kaya-kalp.png"
+                        src="/images/logo-kaya-kalp.webp"
                         alt="Kaya Kalp"
                         width={120}
                         height={43}
@@ -822,7 +822,7 @@ export default function AgendarPage() {
                       >
                         {usado ? (
                           <Image
-                            src="/images/logo-kaya-kalp.png"
+                            src="/images/logo-kaya-kalp.webp"
                             alt="Sello"
                             width={48}
                             height={48}

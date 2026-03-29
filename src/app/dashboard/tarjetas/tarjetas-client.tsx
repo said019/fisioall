@@ -102,7 +102,7 @@ function SelloGrid({ sellos }: { sellos: boolean[] }) {
         >
           {activo ? (
             <Image
-              src="/images/logo-kaya-kalp.png"
+              src="/images/logo-kaya-kalp.webp"
               alt="Sello"
               width={32}
               height={32}

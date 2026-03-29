@@ -137,21 +137,21 @@ const equipo = [
     rol: "CEO · Fisioterapeuta",
     especialidad: "Medios físicos, terapia manual, suelo pélvico y obstetricia",
     initials: "PA",
-    foto: "equipo-paola.jpg",
+    foto: "equipo-paola.webp",
   },
   {
     nombre: "L.F.T. Jenni Álvarez Álvarez",
     rol: "Fisioterapeuta",
     especialidad: "Ejercicio terapéutico, rehabilitación, coordinación de citas",
     initials: "JA",
-    foto: "equipo-jenni.jpg",
+    foto: "equipo-jenni.webp",
   },
   {
     nombre: "Gaby Aguilar",
     rol: "Cosmiatra",
     especialidad: "Tratamientos faciales, corporales y epilación",
     initials: "GA",
-    foto: "equipo-gaby.jpg",
+    foto: "equipo-gaby.webp",
   },
 ];
 
@@ -241,10 +241,10 @@ export default function LandingClient({ config }: { config: ConfigPublica | null
         <div className="max-w-7xl mx-auto px-6 h-52 flex items-center justify-between">
           <Link href="/" className="cursor-pointer">
             <Image
-              src="/images/logo-kaya-kalp.png"
+              src="/images/logo-kaya-kalp.webp"
               alt={clinicName}
-              width={600}
-              height={214}
+              width={400}
+              height={143}
               className="h-44 w-auto"
               priority
             />
@@ -385,7 +385,7 @@ export default function LandingClient({ config }: { config: ConfigPublica | null
             className="mt-16 relative rounded-2xl overflow-hidden aspect-[16/9] md:aspect-[21/9]"
           >
             <Image
-              src="/images/equipo-grupal.jpg"
+              src="/images/equipo-grupal.webp"
               alt={`Equipo ${clinicName} — Fisioterapeutas certificadas`}
               fill
               className="object-cover object-[center_20%]"
@@ -486,9 +486,9 @@ export default function LandingClient({ config }: { config: ConfigPublica | null
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
             {[
-              { src: "/images/fisio-percusion.jpg", alt: "Terapia con pistola de percusión" },
-              { src: "/images/fisio-ejercicio.jpg", alt: "Ejercicio terapéutico guiado" },
-              { src: "/images/equipo-paola-pelvico.jpg", alt: "Especialista en suelo pélvico" },
+              { src: "/images/fisio-percusion.webp", alt: "Terapia con pistola de percusión" },
+              { src: "/images/fisio-ejercicio.webp", alt: "Ejercicio terapéutico guiado" },
+              { src: "/images/equipo-paola-pelvico.webp", alt: "Especialista en suelo pélvico" },
             ].map((img) => (
               <div key={img.src} className="relative rounded-2xl overflow-hidden aspect-[3/4]">
                 <Image
@@ -526,7 +526,7 @@ export default function LandingClient({ config }: { config: ConfigPublica | null
 
           <div className="relative rounded-2xl overflow-hidden aspect-[2/1] mb-8">
             <Image
-              src="/images/facial-tratamiento.jpg"
+              src="/images/facial-tratamiento.webp"
               alt={`Tratamiento facial profesional en ${clinicName}`}
               fill
               className="object-cover object-[center_30%]"
@@ -637,7 +637,7 @@ export default function LandingClient({ config }: { config: ConfigPublica | null
                 className="relative rounded-2xl overflow-hidden aspect-[3/4] max-h-[560px]"
               >
                 <Image
-                  src="/images/suelo-pelvico-paola.jpg"
+                  src="/images/suelo-pelvico-paola.webp"
                   alt="L.F.T. Paola Ríos — Especialista en Suelo Pélvico"
                   fill
                   className="object-cover object-top"
@@ -947,7 +947,7 @@ export default function LandingClient({ config }: { config: ConfigPublica | null
               className="relative h-[450px] rounded-2xl bg-[#e4ecf2] overflow-hidden"
             >
               <Image
-                src="/images/clinica-espejo.jpg"
+                src="/images/clinica-espejo.webp"
                 alt={`Interior clínica ${clinicName}`}
                 fill
                 className="object-cover"
@@ -1087,10 +1087,10 @@ export default function LandingClient({ config }: { config: ConfigPublica | null
           <div className="grid grid-cols-1 md:grid-cols-4 gap-16 mb-24">
             <div className="md:col-span-1">
               <Image
-                src="/images/logo-kaya-kalp.png"
+                src="/images/logo-kaya-kalp.webp"
                 alt={clinicName}
-                width={600}
-                height={214}
+                width={400}
+                height={143}
                 className="h-44 w-auto brightness-0 invert opacity-80 mb-4"
               />
             </div>
