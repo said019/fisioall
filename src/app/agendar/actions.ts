@@ -153,6 +153,35 @@ export async function getMembresiasPaciente(pacienteId: string) {
   }));
 }
 
+// ─── OBTENER CONFIG DE HORARIOS (para el calendario público) ─────────────
+export async function getScheduleConfig() {
+  const tenantId = await getTenantId();
+  const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
+  const cfg = (tenant?.configuracion ?? {}) as Record<string, unknown>;
+
+  const horarios = (cfg.horarios as { diaKey: string; activo: boolean; inicio: string; fin: string }[]) ?? [];
+  const diasBloqueados = (cfg.diasBloqueados as { fecha: string; motivo: string }[]) ?? [];
+
+  // Días de la semana inactivos (0=domingo, 1=lunes, ..., 6=sábado)
+  const diasSemanaMap: Record<string, number> = {
+    domingo: 0, lunes: 1, martes: 2, miercoles: 3, jueves: 4, viernes: 5, sabado: 6,
+  };
+  const diasInactivos = horarios
+    .filter((h) => !h.activo)
+    .map((h) => diasSemanaMap[h.diaKey])
+    .filter((n) => n !== undefined);
+
+  // Si no hay config, solo domingo está inactivo por default
+  if (horarios.length === 0) {
+    diasInactivos.push(0);
+  }
+
+  return {
+    diasInactivos,
+    diasBloqueados: diasBloqueados.map((d) => d.fecha),
+  };
+}
+
 // ─── HORARIOS DISPONIBLES PARA UN DÍA ─────────────────────────────────────
 export async function getHorariosDisponibles(fecha: string) {
   const tenantId = await getTenantId();
@@ -263,6 +292,7 @@ export async function agendarCitaPublica(prevState: unknown, formData: FormData)
   const duracion = Number(formData.get("duracion") || 45);
   const tipoSesion = formData.get("tipoSesion") as string;
   const fisioterapeutaId = formData.get("fisioterapeutaId") as string;
+  const comprobanteUrl = formData.get("comprobanteUrl") as string;
 
   if (!pacienteId || !fecha || !horaInicio) {
     return { error: "Fecha y hora son obligatorios" };
@@ -303,6 +333,9 @@ export async function agendarCitaPublica(prevState: unknown, formData: FormData)
         fechaHoraInicio,
         fechaHoraFin,
         tipoSesion: tipoSesion || "Sesión",
+        anticipoMonto: 200,
+        anticipoComprobante: comprobanteUrl || null,
+        anticipoPagado: !!comprobanteUrl,
         createdBy: fisioId,
       },
     });

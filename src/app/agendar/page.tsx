@@ -39,6 +39,9 @@ import {
   ChevronRight,
   User,
   AlertCircle,
+  Upload,
+  Receipt,
+  ImageIcon,
 } from "lucide-react";
 import {
   buscarPorTelefono,
@@ -50,6 +53,7 @@ import {
   agendarCitaPublica,
   cancelarCitaPublica,
   getTarjetasPaciente,
+  getScheduleConfig,
 } from "./actions";
 
 // ── TIPOS ────────────────────────────────────────────────────────────────────
@@ -270,9 +274,13 @@ function WalletButtonsPublic({ tarjetaId }: { tarjetaId: string }) {
 function MiniCalendario({
   selected,
   onSelect,
+  diasInactivos = [0],
+  diasBloqueados = [],
 }: {
   selected: string;
   onSelect: (fecha: string) => void;
+  diasInactivos?: number[];
+  diasBloqueados?: string[];
 }) {
   const [mesOffset, setMesOffset] = useState(0);
 
@@ -324,8 +332,9 @@ function MiniCalendario({
           const fecha = new Date(mesBase.getFullYear(), mesBase.getMonth(), dia);
           const dateStr = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
           const isPast = fecha < hoy;
-          const isDomingo = fecha.getDay() === 0;
-          const isDisabled = isPast || isDomingo;
+          const isDiaInactivo = diasInactivos.includes(fecha.getDay());
+          const isBloqueado = diasBloqueados.includes(dateStr);
+          const isDisabled = isPast || isDiaInactivo || isBloqueado;
           const isSelected = dateStr === selected;
           const isToday = fecha.getTime() === hoy.getTime();
 
@@ -383,6 +392,12 @@ export default function AgendarPage() {
   const [fisioId, setFisioId] = useState("");
   const [fisios, setFisios] = useState<Fisio[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const [scheduleConfig, setScheduleConfig] = useState<{ diasInactivos: number[]; diasBloqueados: string[] }>({ diasInactivos: [0], diasBloqueados: [] });
+
+  // Anticipo
+  const [comprobanteUrl, setComprobanteUrl] = useState("");
+  const [comprobantePreview, setComprobantePreview] = useState("");
+  const [uploadingComprobante, setUploadingComprobante] = useState(false);
 
   const [formState, formAction, isPending] = useActionState(agendarCitaPublica, null);
 
@@ -455,10 +470,11 @@ export default function AgendarPage() {
       .finally(() => setLoadingSlots(false));
   }, [fechaCita]);
 
-  // ── Cargar fisioterapeutas al abrir modal ──
+  // ── Cargar fisioterapeutas y config de horarios al abrir modal ──
   useEffect(() => {
-    if (modalNuevaCita && fisios.length === 0) {
-      getFisioterapeutasPublic().then(setFisios);
+    if (modalNuevaCita) {
+      if (fisios.length === 0) getFisioterapeutasPublic().then(setFisios);
+      getScheduleConfig().then(setScheduleConfig);
     }
   }, [modalNuevaCita]);
 
@@ -483,6 +499,8 @@ export default function AgendarPage() {
       setFechaCita("");
       setHoraSeleccionada("");
       setTipoSesion("");
+      setComprobanteUrl("");
+      setComprobantePreview("");
       // Refresh citas
       getCitasPaciente(paciente.id).then(setCitas);
     }
@@ -967,6 +985,7 @@ export default function AgendarPage() {
             <input type="hidden" name="fisioterapeutaId" value={fisioId} />
             <input type="hidden" name="fecha" value={fechaCita} />
             <input type="hidden" name="tipoSesion" value={tipoSesion} />
+            <input type="hidden" name="comprobanteUrl" value={comprobanteUrl} />
 
             {/* ── PASO 1: Categoría ── */}
             <div className="space-y-2.5">
@@ -1052,6 +1071,8 @@ export default function AgendarPage() {
                       setFechaCita(f);
                       setHoraSeleccionada("");
                     }}
+                    diasInactivos={scheduleConfig.diasInactivos}
+                    diasBloqueados={scheduleConfig.diasBloqueados}
                   />
                 </div>
               </div>
@@ -1164,6 +1185,114 @@ export default function AgendarPage() {
               </div>
             )}
 
+            {/* ── PASO 5: Anticipo ── */}
+            {horaSeleccionada && fechaCita && tipoSesion && (
+              <div className="space-y-3">
+                <div className="border-t border-[#e4ecf2]" />
+                <div className="flex items-center gap-2">
+                  <div className="h-6 w-6 rounded-full bg-[#e89b3f] flex items-center justify-center">
+                    <Receipt className="h-3 w-3 text-white" />
+                  </div>
+                  <Label className="text-sm font-semibold text-[#1e2d3a]">Anticipo</Label>
+                </div>
+
+                <div className="bg-[#e89b3f]/5 border border-[#e89b3f]/20 rounded-xl p-4 space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="h-10 w-10 rounded-lg bg-[#e89b3f]/10 flex items-center justify-center shrink-0">
+                      <CreditCard className="h-5 w-5 text-[#e89b3f]" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-[#1e2d3a]">$200 MXN</p>
+                      <p className="text-[10px] text-[#5a7080] mt-0.5 leading-relaxed">
+                        Para confirmar tu cita, realiza una transferencia de <strong>$200 MXN</strong> y sube tu comprobante.
+                        El resto se paga el día de tu cita.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Datos bancarios */}
+                  <div className="bg-white rounded-lg p-3 border border-[#e4ecf2] space-y-1.5">
+                    <p className="text-[10px] font-bold text-[#8fa8ba] uppercase tracking-wider">Datos para transferencia</p>
+                    <div className="grid grid-cols-2 gap-1 text-xs">
+                      <span className="text-[#8fa8ba]">Banco:</span>
+                      <span className="font-medium text-[#1e2d3a]">BBVA</span>
+                      <span className="text-[#8fa8ba]">CLABE:</span>
+                      <span className="font-mono font-medium text-[#1e2d3a] text-[11px]">0121 8001 5367 0948 72</span>
+                      <span className="text-[#8fa8ba]">Beneficiario:</span>
+                      <span className="font-medium text-[#1e2d3a]">Kaya Kalp</span>
+                    </div>
+                  </div>
+
+                  {/* Upload comprobante */}
+                  {comprobantePreview ? (
+                    <div className="relative">
+                      <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-xl p-3">
+                        <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-emerald-700">Comprobante subido</p>
+                          <p className="text-[10px] text-emerald-600/70 truncate">{comprobantePreview}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setComprobanteUrl("");
+                            setComprobantePreview("");
+                          }}
+                          className="text-[#8fa8ba] hover:text-[#d9534f] cursor-pointer transition-colors"
+                        >
+                          <XCircle className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center gap-2 border-2 border-dashed border-[#c8dce8] rounded-xl p-4 cursor-pointer hover:border-[#4a7fa5] hover:bg-[#4a7fa5]/3 transition-all">
+                      {uploadingComprobante ? (
+                        <Loader2 className="h-6 w-6 text-[#4a7fa5] animate-spin" />
+                      ) : (
+                        <Upload className="h-6 w-6 text-[#8fa8ba]" />
+                      )}
+                      <div className="text-center">
+                        <p className="text-xs font-semibold text-[#1e2d3a]">
+                          {uploadingComprobante ? "Subiendo..." : "Subir comprobante de pago"}
+                        </p>
+                        <p className="text-[10px] text-[#8fa8ba] mt-0.5">
+                          JPG, PNG, WebP o PDF · Máx. 5 MB
+                        </p>
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/*,.pdf"
+                        className="sr-only"
+                        disabled={uploadingComprobante}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          setUploadingComprobante(true);
+                          try {
+                            const fd = new FormData();
+                            fd.append("file", file);
+                            const res = await fetch("/api/upload", { method: "POST", body: fd });
+                            const data = await res.json();
+                            if (res.ok && data.url) {
+                              setComprobanteUrl(data.url);
+                              setComprobantePreview(file.name);
+                            } else {
+                              alert(data.error || "Error al subir archivo");
+                            }
+                          } catch {
+                            alert("Error de conexión al subir archivo");
+                          } finally {
+                            setUploadingComprobante(false);
+                            e.target.value = "";
+                          }
+                        }}
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Error */}
             {formState?.error && (
               <div className="bg-red-50 border border-red-200 rounded-xl p-3">
@@ -1211,7 +1340,7 @@ export default function AgendarPage() {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={isPending || !horaSeleccionada || !fechaCita || !tipoSesion}
+                  disabled={isPending || !horaSeleccionada || !fechaCita || !tipoSesion || !comprobanteUrl}
                   className="flex-1 h-11 bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white cursor-pointer transition-all duration-200 text-sm rounded-xl font-semibold"
                 >
                   {isPending ? (

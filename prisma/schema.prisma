@@ -463,6 +463,11 @@ model Cita {
   
   notasPrevias          String?           @map("notas_previas")
   googleEventId         String?           @map("google_event_id") @db.VarChar(200)
+
+  anticipoMonto         Decimal?          @default(0) @map("anticipo_monto") @db.Decimal(10, 2)
+  anticipoComprobante   String?           @map("anticipo_comprobante") @db.VarChar(500)
+  anticipoPagado        Boolean?          @default(false) @map("anticipo_pagado")
+
   createdBy             String?           @map("created_by") @db.Uuid
   
   createdAt             DateTime?         @default(now()) @map("created_at") @db.Timestamptz

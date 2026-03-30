@@ -38,3 +38,6 @@ next-env.d.ts
 
 # Prisma generated
 /src/generated/prisma
+
+# User uploads
+/public/uploads/comprobantes/
