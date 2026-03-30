@@ -158,7 +158,7 @@ export default function WhatsAppPanel({
     }
   };
 
-  const cfg = STATE_CONFIG[state];
+  const cfg = STATE_CONFIG[state] ?? STATE_CONFIG.unknown;
   const StateIcon = cfg.icon;
 
   return (
