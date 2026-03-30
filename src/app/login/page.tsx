@@ -3,6 +3,7 @@
 import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,13 +29,15 @@ export default function LoginPage() {
             </Link>
 
             <div className="w-full max-w-md space-y-6">
-                <div className="flex flex-col items-center space-y-2 text-center">
-                    <span
-                        className="text-3xl font-semibold text-[#4a7fa5]"
-                        style={{ fontFamily: "'Cormorant Garamond', serif" }}
-                    >
-                        Kaya Kalp
-                    </span>
+                <div className="flex flex-col items-center space-y-3 text-center">
+                    <Image
+                        src="/images/logo-kaya-kalp.webp"
+                        alt="Kaya Kalp"
+                        width={400}
+                        height={309}
+                        className="h-28 w-auto"
+                        priority
+                    />
                     <p className="text-muted-foreground">Ingresa tus credenciales para acceder al sistema</p>
                 </div>
 
