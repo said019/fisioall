@@ -66,8 +66,9 @@ const KAYA_KALP = {
   description: "Tarjeta de Lealtad — Kaya Kalp",
   logoText: "Kaya Kalp",
   foregroundColor: "rgb(255, 255, 255)",
-  backgroundColor: "rgb(63, 168, 124)", // #3fa87c
-  labelColor: "rgb(230, 255, 243)",
+  backgroundColor: "rgb(30, 58, 79)",   // #1e3a4f — dark navy
+  labelColor: "rgb(168, 207, 224)",      // #a8cfe0 — soft blue
+  stripColor: "rgb(63, 168, 124)",       // #3fa87c — accent green
   // San Juan del Río, Querétaro, México
   location: {
     latitude: 20.3898,
@@ -75,6 +76,34 @@ const KAYA_KALP = {
     relevantText: "¡Estás cerca de Kaya Kalp! No olvides tu tarjeta de lealtad.",
   },
 } as const;
+
+/**
+ * Loads wallet pass image assets from public/wallet/.
+ * Returns an array of { name, data } entries to include in the .pkpass ZIP.
+ */
+function loadPassImages(): { name: string; data: Buffer }[] {
+  const walletDir = resolve(process.cwd(), "public", "wallet");
+  const imageFiles = [
+    "icon.png",
+    "icon@2x.png",
+    "icon@3x.png",
+    "logo.png",
+    "logo@2x.png",
+    "strip.png",
+    "strip@2x.png",
+    "thumbnail.png",
+    "thumbnail@2x.png",
+  ];
+
+  const entries: { name: string; data: Buffer }[] = [];
+  for (const file of imageFiles) {
+    const filePath = resolve(walletDir, file);
+    if (existsSync(filePath)) {
+      entries.push({ name: file, data: readFileSync(filePath) });
+    }
+  }
+  return entries;
+}
 
 // ---------------------------------------------------------------------------
 // pass.json generator (always available, even without certs)
@@ -318,8 +347,10 @@ export async function generateLoyaltyPass(
   const passJsonBuffer = Buffer.from(JSON.stringify(passJson), "utf-8");
 
   // 2. Build manifest.json (SHA-1 hash of every file in the pass)
+  const imageFiles = loadPassImages();
   const files: { name: string; data: Buffer }[] = [
     { name: "pass.json", data: passJsonBuffer },
+    ...imageFiles,
   ];
 
   const manifest: Record<string, string> = {};

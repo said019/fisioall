@@ -47,7 +47,8 @@ export function isGoogleWalletConfigured(): boolean {
 // Kaya Kalp brand constants
 // ---------------------------------------------------------------------------
 
-const KAYA_KALP_HEX = "#3fa87c";
+const KAYA_KALP_HEX = "#1e3a4f"; // dark navy background
+const KAYA_KALP_BASE_URL = process.env.NEXT_PUBLIC_URL || "https://kayakalp.com.mx";
 
 // ---------------------------------------------------------------------------
 // Google Wallet loyalty object builder
@@ -72,13 +73,26 @@ function buildLoyaltyPayload(
     programName: "Tarjeta de Lealtad",
     programLogo: {
       sourceUri: {
-        uri: "https://kayakalp.mx/logo.png",
+        uri: `${KAYA_KALP_BASE_URL}/wallet/google-logo.png`,
         description: "Kaya Kalp Logo",
+      },
+    },
+    wideProgramLogo: {
+      sourceUri: {
+        uri: `${KAYA_KALP_BASE_URL}/wallet/google-wide-logo.png`,
+        description: "Kaya Kalp",
+      },
+    },
+    heroImage: {
+      sourceUri: {
+        uri: `${KAYA_KALP_BASE_URL}/wallet/google-hero.png`,
+        description: "Kaya Kalp — Dando vida a tu cuerpo",
       },
     },
     hexBackgroundColor: KAYA_KALP_HEX,
     reviewStatus: "UNDER_REVIEW",
     countryCode: "MX",
+    localizedIssuerName: "Kaya Kalp — Fisioterapia",
     // Location — San Juan del Río, Querétaro
     locations: [
       {
@@ -180,7 +194,7 @@ export async function generateGoogleWalletSaveUrl(
       iss: saEmail,
       aud: "google",
       typ: "savetowallet",
-      origins: ["https://kayakalp.mx"],
+      origins: [KAYA_KALP_BASE_URL],
       payload,
     })
       .setProtectedHeader({ alg: "RS256", typ: "JWT" })
