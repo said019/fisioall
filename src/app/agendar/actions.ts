@@ -211,13 +211,20 @@ export async function getHorariosDisponibles(fecha: string) {
   const atencionInicio = horarioDia ? parseInt(horarioDia.inicio.split(":")[0]) * 60 + parseInt(horarioDia.inicio.split(":")[1]) : 9 * 60;
   const atencionFin = horarioDia ? parseInt(horarioDia.fin.split(":")[0]) * 60 + parseInt(horarioDia.fin.split(":")[1]) : 19 * 60;
 
-  // Hora de comida
-  const comida = (cfg.comida as { activo: boolean; inicio: string; fin: string }) ?? { activo: false, inicio: "14:00", fin: "15:00" };
+  // Hora de comida (default: activo 14:00-15:00)
+  const comida = (cfg.comida as { activo: boolean; inicio: string; fin: string }) ?? { activo: true, inicio: "14:00", fin: "15:00" };
+  if (comida.inicio === undefined) { comida.inicio = "14:00"; comida.fin = "15:00"; comida.activo = true; }
   const comidaInicio = comida.activo ? parseInt(comida.inicio.split(":")[0]) * 60 + parseInt(comida.inicio.split(":")[1]) : -1;
   const comidaFin = comida.activo ? parseInt(comida.fin.split(":")[0]) * 60 + parseInt(comida.fin.split(":")[1]) : -1;
 
   // Intervalo de slots (default 30 min)
   const intervalo = (cfg.intervaloSlots as number) ?? 30;
+
+  // Hora actual en Ciudad de México para filtrar slots pasados
+  const ahoraMx = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Mexico_City" }));
+  const hoyStr = `${ahoraMx.getFullYear()}-${String(ahoraMx.getMonth() + 1).padStart(2, "0")}-${String(ahoraMx.getDate()).padStart(2, "0")}`;
+  const esHoy = fechaISO === hoyStr;
+  const minutosActuales = esHoy ? ahoraMx.getHours() * 60 + ahoraMx.getMinutes() : -1;
 
   // Citas ya ocupadas ese día
   const citasOcupadas = await prisma.cita.findMany({
@@ -257,10 +264,12 @@ export async function getHorariosDisponibles(fecha: string) {
 
     const h = String(Math.floor(m / 60)).padStart(2, "0");
     const min = String(m % 60).padStart(2, "0");
+    // Si es hoy, marcar slots pasados como no disponibles
+    const yaPaso = esHoy && m <= minutosActuales;
     const ocupado = todasOcupadas.some(
       (o) => m >= o.inicio && m < o.fin
     );
-    slots.push({ hora: `${h}:${min}`, disponible: !ocupado });
+    slots.push({ hora: `${h}:${min}`, disponible: !ocupado && !yaPaso });
   }
 
   return slots;
