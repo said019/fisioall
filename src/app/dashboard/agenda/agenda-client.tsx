@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useActionState, useEffect, useTransition } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -38,12 +39,14 @@ import {
   DollarSign,
   CreditCard,
   Banknote,
+  ClipboardList,
 } from "lucide-react";
 import { crearCita, actualizarEstadoCita, confirmarAnticipo, getSlotsDisponibles } from "./actions";
 
 // ── TIPOS ───────────────────────────────────────────────────────────────────
 type Cita = {
   id: string;
+  pacienteId?: string;
   paciente: string;
   initials: string;
   motivo: string;
@@ -589,6 +592,17 @@ export default function AgendaClient({
                   {estadoConfig[citaSeleccionada.estado]?.label ?? citaSeleccionada.estado}
                 </Badge>
               </div>
+
+              {/* Nota SOAP / Expediente button */}
+              <Link href={`/dashboard/expediente?citaId=${citaSeleccionada.id}`}>
+                <Button
+                  variant="outline"
+                  className="w-full border-[#4a7fa5]/30 text-[#4a7fa5] hover:bg-[#4a7fa5]/5 cursor-pointer text-xs h-9 gap-1.5"
+                >
+                  <ClipboardList className="h-3.5 w-3.5" />
+                  Nota SOAP / Expediente
+                </Button>
+              </Link>
 
               {/* Anticipo confirmation buttons */}
               {citaSeleccionada.estado === "pendiente_anticipo" && (

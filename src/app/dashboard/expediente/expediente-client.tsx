@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   CheckCircle2,
   Save,
@@ -12,6 +13,10 @@ import {
   ArrowLeft,
   ScanLine,
   Loader2,
+  ChevronDown,
+  ChevronUp,
+  ClipboardCheck,
+  CalendarDays,
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -69,7 +74,31 @@ interface ExpedienteData {
     estado: string;
     numeroSesion: number;
     sesionesTotal: number | null;
+    fechaHoraInicio?: string | null;
   };
+  notaExistente?: {
+    id: string;
+    subjetivo: string | null;
+    objetivo: string | null;
+    analisis: string | null;
+    plan: string | null;
+    dolorInicio: string | null;
+    dolorFin: string | null;
+    tecnicasUtilizadas: string[];
+    evolucion: string | null;
+    porcentajeObjetivo: number | null;
+    notasAdicionales: string | null;
+  } | null;
+  historialCitas?: Array<{
+    id: string;
+    tipoSesion: string;
+    estado: string;
+    numeroSesion: number | null;
+    fechaHoraInicio: string;
+    sala: string | null;
+    tieneNota: boolean;
+    esActual: boolean;
+  }>;
   notasSesion: Array<{
     id: string;
     fecha: string;
@@ -104,7 +133,96 @@ const ESTADO_LABELS: Record<string, { label: string; color: string }> = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PAGE
+// HISTORIAL DE SESIONES — Sub-component
+// ─────────────────────────────────────────────────────────────────────────────
+function HistorialSesiones({
+  historial,
+  citaActualId,
+}: {
+  historial: NonNullable<ExpedienteData["historialCitas"]>;
+  citaActualId: string | null;
+}) {
+  const [abierto, setAbierto] = useState(false);
+  const visibles = abierto ? historial : historial.slice(0, 3);
+
+  return (
+    <Card className="border-[#c8dce8] bg-white">
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm font-bold text-[#1e2d3a] flex items-center gap-1.5">
+            <CalendarDays className="h-3.5 w-3.5 text-[#4a7fa5]" />
+            Historial de Sesiones ({historial.length})
+          </CardTitle>
+          {historial.length > 3 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setAbierto(!abierto)}
+              className="text-xs text-[#4a7fa5] h-7 cursor-pointer"
+            >
+              {abierto ? (
+                <><ChevronUp className="h-3 w-3 mr-1" /> Ver menos</>
+              ) : (
+                <><ChevronDown className="h-3 w-3 mr-1" /> Ver todas</>
+              )}
+            </Button>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <div className="space-y-1.5">
+          {visibles.map((h) => {
+            const esActual = h.id === citaActualId;
+            const fechaFmt = format(new Date(h.fechaHoraInicio), "d MMM yyyy · HH:mm", { locale: es });
+            return (
+              <Link
+                key={h.id}
+                href={`/dashboard/expediente?citaId=${h.id}`}
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
+                  esActual
+                    ? "bg-[#4a7fa5]/10 border border-[#4a7fa5]/30"
+                    : "hover:bg-[#e4ecf2]/50"
+                }`}
+              >
+                <div className={`w-1.5 h-8 rounded-full shrink-0 ${
+                  h.tieneNota ? "bg-[#3fa87c]" : esActual ? "bg-[#4a7fa5]" : "bg-[#c8dce8]"
+                }`} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-[#1e2d3a] truncate">
+                      {h.tipoSesion}
+                    </span>
+                    {h.numeroSesion && (
+                      <span className="text-[10px] text-[#1e2d3a]/40">
+                        #{h.numeroSesion}
+                      </span>
+                    )}
+                    {esActual && (
+                      <Badge variant="outline" className="text-[9px] h-4 px-1.5 bg-[#4a7fa5]/10 text-[#4a7fa5] border-[#4a7fa5]/30">
+                        Actual
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-[#1e2d3a]/40">{fechaFmt}{h.sala ? ` · ${h.sala}` : ""}</p>
+                </div>
+                <div className="shrink-0">
+                  {h.tieneNota ? (
+                    <ClipboardCheck className="h-3.5 w-3.5 text-[#3fa87c]" />
+                  ) : (
+                    <div className="h-3.5 w-3.5 rounded-full border-2 border-[#c8dce8]" />
+                  )}
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MAIN COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
 export default function ExpedienteClient({
   initialData,
@@ -115,20 +233,29 @@ export default function ExpedienteClient({
 }) {
   const router = useRouter();
   const { paciente, sesion } = initialData;
+  const nota = initialData.notaExistente;
 
-  // ── Estado del formulario ──
-  const [subjetivo, setSubjetivo] = useState("");
-  const [objetivo, setObjetivo] = useState("");
-  const [analisis, setAnalisis] = useState("");
-  const [plan, setPlan] = useState("");
-  const [dolorInicio, setDolorInicio] = useState(5);
-  const [dolorFin, setDolorFin] = useState(3);
-  const [tecnicas, setTecnicas] = useState<string[]>([]);
-  const [evolucion, setEvolucion] = useState("");
-  const [porcentajeObjetivo, setPorcentajeObjetivo] = useState(50);
-  const [notasAdicionales, setNotasAdicionales] = useState("");
+  // Helper to parse DolorEscala enum back to number
+  const parseDolorEnum = (val: string | null | undefined): number => {
+    if (!val) return 5;
+    const m = val.match(/^N(\d+)$/);
+    return m ? parseInt(m[1], 10) : 5;
+  };
+
+  // ── Estado del formulario (pre-fill from existing nota if revisiting) ──
+  const [subjetivo, setSubjetivo] = useState(nota?.subjetivo ?? "");
+  const [objetivo, setObjetivo] = useState(nota?.objetivo ?? "");
+  const [analisis, setAnalisis] = useState(nota?.analisis ?? "");
+  const [plan, setPlan] = useState(nota?.plan ?? "");
+  const [dolorInicio, setDolorInicio] = useState(parseDolorEnum(nota?.dolorInicio));
+  const [dolorFin, setDolorFin] = useState(parseDolorEnum(nota?.dolorFin));
+  const [tecnicas, setTecnicas] = useState<string[]>(nota?.tecnicasUtilizadas ?? []);
+  const [evolucion, setEvolucion] = useState(nota?.evolucion ?? "");
+  const [porcentajeObjetivo, setPorcentajeObjetivo] = useState(nota?.porcentajeObjetivo ?? 50);
+  const [notasAdicionales, setNotasAdicionales] = useState(nota?.notasAdicionales ?? "");
   const [fechaSesion, setFechaSesion] = useState("");
   const [guardando, setGuardando] = useState(false);
+  const yaGuardada = !!nota;
 
   const citaId = citaIdParam ?? sesion.citaId;
   const estadoInfo = ESTADO_LABELS[sesion.estado] ?? ESTADO_LABELS.agendada;
@@ -136,8 +263,11 @@ export default function ExpedienteClient({
   const tipoBadge = TIPO_BADGE[tipoExpediente];
 
   useEffect(() => {
-    setFechaSesion(format(new Date(), "EEEE d 'de' MMMM, yyyy", { locale: es }));
-  }, []);
+    const fecha = sesion.fechaHoraInicio
+      ? new Date(sesion.fechaHoraInicio)
+      : new Date();
+    setFechaSesion(format(fecha, "EEEE d 'de' MMMM, yyyy", { locale: es }));
+  }, [sesion.fechaHoraInicio]);
 
   const toggleTecnica = (t: string) => {
     setTecnicas((prev) =>
@@ -162,6 +292,10 @@ export default function ExpedienteClient({
     fd.set("plan", plan);
     fd.set("dolorInicio", String(dolorInicio));
     fd.set("dolorFin", String(dolorFin));
+    fd.set("tecnicas", JSON.stringify(tecnicas));
+    fd.set("evolucion", evolucion);
+    fd.set("porcentajeObjetivo", String(porcentajeObjetivo));
+    fd.set("notasAdicionales", notasAdicionales);
 
     const result = await crearNotaSesion(null, fd);
     setGuardando(false);
@@ -234,6 +368,24 @@ export default function ExpedienteClient({
           </div>
         </CardContent>
       </Card>
+
+      {/* ── HISTORIAL DE SESIONES ── */}
+      {initialData.historialCitas && initialData.historialCitas.length > 1 && (
+        <HistorialSesiones
+          historial={initialData.historialCitas}
+          citaActualId={citaId ?? null}
+        />
+      )}
+
+      {/* ── NOTA YA GUARDADA BANNER ── */}
+      {yaGuardada && (
+        <div className="bg-[#3fa87c]/10 border border-[#3fa87c]/30 rounded-lg p-3 flex items-center gap-2">
+          <ClipboardCheck className="h-4 w-4 text-[#3fa87c] shrink-0" />
+          <p className="text-xs text-[#2d6a4f] font-medium">
+            Esta sesión ya tiene nota SOAP guardada. Los campos muestran los datos registrados.
+          </p>
+        </div>
+      )}
 
       {/* ── FORMULARIOS ESPECIALIZADOS ── */}
       {tipoExpediente === "suelo_pelvico" && (
@@ -656,15 +808,17 @@ export default function ExpedienteClient({
         </Button>
         <Button
           onClick={handleGuardar}
-          disabled={guardando}
+          disabled={guardando || yaGuardada}
           className="cursor-pointer bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white transition-all duration-200 text-sm gap-1.5 disabled:opacity-50"
         >
           {guardando ? (
             <Loader2 className="h-4 w-4 animate-spin" />
+          ) : yaGuardada ? (
+            <ClipboardCheck className="h-4 w-4" />
           ) : (
             <CheckCircle2 className="h-4 w-4" />
           )}
-          Guardar Nota SOAP
+          {yaGuardada ? "Nota ya guardada" : "Guardar Nota SOAP"}
         </Button>
       </div>
       </>

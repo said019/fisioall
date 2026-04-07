@@ -32,6 +32,7 @@ export async function getCitasSemana(fechaInicio: string, fechaFin: string) {
 
   return citas.map((c) => ({
     id: c.id,
+    pacienteId: c.pacienteId,
     paciente: `${c.paciente.nombre} ${c.paciente.apellido}`,
     iniciales: `${c.paciente.nombre[0]}${c.paciente.apellido[0]}`.toUpperCase(),
     telefono: c.paciente.telefono,
