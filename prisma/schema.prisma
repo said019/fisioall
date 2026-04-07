@@ -148,6 +148,8 @@ model Tenant {
   horariosUsuario       HorarioUsuario[]
   cubiculosUsuario      CubiculoUsuario[]
   expedientesEspecializados ExpedienteEspecializado[]
+  tarjetasLealtad       TarjetaLealtad[]
+  googleCalendarToken   GoogleCalendarToken?
 
   @@index([slug])
   @@map("tenants")
@@ -279,6 +281,7 @@ model Paciente {
   notificaciones              Notificacion[]
   progresosDolor              ProgresoDolor[]
   expedientesEspecializados   ExpedienteEspecializado[]
+  tarjetasLealtad             TarjetaLealtad[]
 
   @@index([tenantId])
   @@index([fisioterapeutaId])
@@ -867,4 +870,53 @@ enum Lateralidad {
   bilateral
   izquierdo
   derecho
+}
+
+enum TarjetaLealtadEstado {
+  activa
+  completada
+  canjeada
+  expirada
+}
+
+model GoogleCalendarToken {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String    @unique @map("tenant_id") @db.Uuid
+  accessToken   String    @map("access_token")
+  refreshToken  String    @map("refresh_token")
+  tokenExpiry   DateTime  @map("token_expiry") @db.Timestamptz
+  email         String?   @db.VarChar(150)
+  calendarId    String?   @default("primary") @map("calendar_id") @db.VarChar(200)
+  createdAt     DateTime? @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("google_calendar_tokens")
+}
+
+model TarjetaLealtad {
+  id              String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String                @map("tenant_id") @db.Uuid
+  pacienteId      String                @map("paciente_id") @db.Uuid
+  sellosTotal     Int                   @map("sellos_total")
+  sellosUsados    Int                   @default(0) @map("sellos_usados")
+  recompensa      String                @db.VarChar(255)
+  estado          TarjetaLealtadEstado  @default(activa)
+  fechaCreacion   DateTime              @default(now()) @map("fecha_creacion") @db.Date
+  fechaExpiracion DateTime?             @map("fecha_expiracion") @db.Date
+  notas           String?
+
+  walletApplePassId   String?           @map("wallet_apple_pass_id") @db.VarChar(100)
+  walletGoogleSaveUrl String?           @map("wallet_google_save_url")
+
+  createdAt       DateTime?             @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime?             @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  tenant          Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  paciente        Paciente              @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([pacienteId])
+  @@map("tarjetas_lealtad")
 }

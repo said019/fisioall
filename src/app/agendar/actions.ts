@@ -342,10 +342,31 @@ export async function agendarCitaPublica(prevState: unknown, formData: FormData)
         fechaHoraInicio,
         fechaHoraFin,
         tipoSesion: tipoSesion || "Sesión",
-        anticipoMonto: 200,
-        anticipoComprobante: comprobanteUrl || null,
-        anticipoPagado: !!comprobanteUrl,
         createdBy: fisioId,
+      },
+    });
+
+    // Create anticipo Pago and set pendiente_anticipo state
+    const pago = await prisma.pago.create({
+      data: {
+        tenantId,
+        pacienteId,
+        citaId: cita.id,
+        monto: 200,
+        metodo: comprobanteUrl ? "transferencia" : "otro",
+        estado: comprobanteUrl ? "pagado" : "pendiente",
+        concepto: "Anticipo obligatorio",
+        registradoPor: fisioId,
+      },
+    });
+
+    await prisma.cita.update({
+      where: { id: cita.id },
+      data: {
+        anticipoPagoId: pago.id,
+        anticipoPagado: !!comprobanteUrl,
+        anticipoVenceAt: comprobanteUrl ? null : new Date(Date.now() + 24 * 60 * 60 * 1000),
+        estado: comprobanteUrl ? "confirmada" : "pendiente_anticipo",
       },
     });
 

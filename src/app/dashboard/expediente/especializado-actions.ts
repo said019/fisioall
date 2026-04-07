@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
+import { Prisma } from "@prisma/client";
 
 export async function guardarExpedienteEspecializado(params: {
   pacienteId: string;
@@ -19,7 +20,7 @@ export async function guardarExpedienteEspecializado(params: {
       pacienteId: params.pacienteId,
       tipo: params.tipo,
       esInicial: params.esInicial,
-      datosJson: params.datosJson,
+      datosJson: params.datosJson as Prisma.InputJsonValue,
       citaId: params.citaId ?? null,
       creadoPor: userId,
     },
