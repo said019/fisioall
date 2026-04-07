@@ -111,6 +111,31 @@ export async function crearCita(prevState: unknown, formData: FormData) {
       console.error("[GCal] Sync error on admin create:", gcalErr);
     }
 
+    // Crear pago de anticipo en estado pendiente
+    const pagoPendiente = await prisma.pago.create({
+      data: {
+        tenantId,
+        pacienteId,
+        monto: 200,
+        metodo: "transferencia",
+        concepto: "Anticipo de sesión",
+        estado: "pendiente",
+        registradoPor: userId,
+        fechaPago: new Date(),
+        citaId: cita.id,
+      },
+    });
+
+    // Marcar la cita con vencimiento de anticipo (24h)
+    await prisma.cita.update({
+      where: { id: cita.id },
+      data: {
+        estado: "pendiente_anticipo",
+        anticipoVenceAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        anticipoPagoId: pagoPendiente.id,
+      },
+    });
+
     revalidatePath("/dashboard/agenda");
     revalidatePath("/dashboard");
     return { success: true };
@@ -123,7 +148,7 @@ export async function crearCita(prevState: unknown, formData: FormData) {
 // ─── UPDATE CITA STATUS ──────────────────────────────────────────────────────
 export async function actualizarEstadoCita(
   citaId: string,
-  estado: "agendada" | "confirmada" | "en_curso" | "completada" | "cancelada" | "no_show"
+  estado: "agendada" | "confirmada" | "en_curso" | "completada" | "cancelada" | "no_show" | "pendiente_anticipo"
 ) {
   const { tenantId } = await requireAuth();
 
@@ -192,4 +217,112 @@ export async function getPacientesLite() {
     iniciales: `${p.nombre[0]}${p.apellido[0]}`.toUpperCase(),
     telefono: p.telefono,
   }));
+}
+
+// ─── CONFIRMAR ANTICIPO ──────────────────────────────────────────────────────
+export async function confirmarAnticipo(citaId: string, metodo: string) {
+  const { tenantId } = await requireAuth();
+
+  const cita = await prisma.cita.findFirst({
+    where: { id: citaId, tenantId },
+    select: { anticipoPagoId: true },
+  });
+
+  if (!cita?.anticipoPagoId) return { error: "No hay anticipo registrado" };
+
+  await prisma.$transaction([
+    prisma.pago.update({
+      where: { id: cita.anticipoPagoId },
+      data: {
+        estado: "pagado",
+        metodo: metodo as "efectivo" | "transferencia" | "tarjeta_debito" | "tarjeta_credito" | "otro",
+      },
+    }),
+    prisma.cita.update({
+      where: { id: citaId },
+      data: { estado: "confirmada", anticipoPagado: true },
+    }),
+  ]);
+
+  revalidatePath("/dashboard/agenda");
+  revalidatePath("/dashboard");
+  return { success: true };
+}
+
+// ─── GET SLOTS DISPONIBLES (Feature 2) ───────────────────────────────────────
+export async function getSlotsDisponibles(params: {
+  fecha: string;
+  fisioterapeutaId: string;
+  tipoSesion: string;
+  duracionMin?: number;
+}) {
+  const { tenantId } = await requireAuth();
+  const { fecha, fisioterapeutaId, tipoSesion, duracionMin = 60 } = params;
+
+  const fechaObj = new Date(fecha + "T00:00:00");
+  const diaKey = ["domingo", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado"][fechaObj.getDay()];
+
+  // 1. Obtener horario del terapeuta para ese día
+  const horario = await prisma.horarioUsuario.findFirst({
+    where: { tenantId, usuarioId: fisioterapeutaId, diaKey, activo: true },
+  });
+  if (!horario) return [];
+
+  const franjas = horario.franjas as { inicio: string; fin: string }[];
+
+  // 2. Obtener cubículo preferido para el tipo de sesión
+  const cubiculoConfig = await prisma.cubiculoUsuario.findFirst({
+    where: { tenantId, usuarioId: fisioterapeutaId, tipoSesion },
+  });
+  const cubiculosPref = cubiculoConfig?.cubiculoPref ?? [1];
+
+  // 3. Obtener citas ocupadas ese día
+  const inicioDia = new Date(fecha + "T00:00:00");
+  const finDia = new Date(fecha + "T23:59:59");
+
+  const citasOcupadas = await prisma.cita.findMany({
+    where: {
+      tenantId,
+      fechaHoraInicio: { gte: inicioDia, lte: finDia },
+      estado: { notIn: ["cancelada"] },
+    },
+    select: { fechaHoraInicio: true, fechaHoraFin: true, sala: true },
+  });
+
+  // 4. Generar slots dentro de las franjas
+  const slots: { hora: string; cubiculo: number; disponible: boolean }[] = [];
+
+  for (const franja of franjas) {
+    const [hIni, mIni] = franja.inicio.split(":").map(Number);
+    const [hFin, mFin] = franja.fin.split(":").map(Number);
+    let minutos = hIni * 60 + mIni;
+    const finMinutos = hFin * 60 + mFin;
+
+    while (minutos + duracionMin <= finMinutos) {
+      const slotIni = new Date(fecha + "T00:00:00");
+      slotIni.setMinutes(slotIni.getMinutes() + minutos);
+      const slotFin = new Date(slotIni.getTime() + duracionMin * 60 * 1000);
+
+      let cubiculoLibre: number | null = null;
+      for (const cubId of cubiculosPref) {
+        const cubiculoStr = `Cubículo ${cubId}`;
+        const ocupado = citasOcupadas.some(
+          (c) =>
+            c.sala === cubiculoStr &&
+            c.fechaHoraInicio < slotFin &&
+            c.fechaHoraFin > slotIni
+        );
+        if (!ocupado) {
+          cubiculoLibre = cubId;
+          break;
+        }
+      }
+
+      const hora = `${String(Math.floor(minutos / 60)).padStart(2, "0")}:${String(minutos % 60).padStart(2, "0")}`;
+      slots.push({ hora, cubiculo: cubiculoLibre ?? 0, disponible: cubiculoLibre !== null });
+      minutos += duracionMin;
+    }
+  }
+
+  return slots.filter((s) => s.disponible);
 }

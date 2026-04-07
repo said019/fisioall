@@ -212,3 +212,74 @@ export async function getConfigPublica() {
     diasBloqueados: (cfg.diasBloqueados as DiaBloqueadoData[]) ?? [],
   };
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HORARIOS POR TERAPEUTA (Feature 5 — Kaya Kalp)
+// ─────────────────────────────────────────────────────────────────────────────
+export async function getHorariosTerapeutas() {
+  const tenant = await prisma.tenant.findUnique({ where: { slug: TENANT_SLUG } });
+  if (!tenant) return [];
+
+  const [horarios, cubiculos, usuarios] = await Promise.all([
+    prisma.horarioUsuario.findMany({ where: { tenantId: tenant.id } }),
+    prisma.cubiculoUsuario.findMany({ where: { tenantId: tenant.id } }),
+    prisma.usuario.findMany({
+      where: { tenantId: tenant.id, activo: true },
+      select: { id: true, nombre: true, apellido: true, rol: true },
+    }),
+  ]);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return usuarios.map((u: any) => ({
+    ...u,
+    horarios: horarios.filter((h: any) => h.usuarioId === u.id),
+    cubiculos: cubiculos.filter((c: any) => c.usuarioId === u.id),
+  }));
+}
+
+export async function guardarHorariosTerapeutas(data: {
+  usuarioId: string;
+  horarios: { diaKey: string; activo: boolean; franjas: { inicio: string; fin: string }[] }[];
+  cubiculos: { tipoSesion: string; cubiculoPref: number[] }[];
+}) {
+  const tenant = await prisma.tenant.findUnique({ where: { slug: TENANT_SLUG } });
+  if (!tenant) return { error: "Tenant no encontrado" };
+
+  await prisma.$transaction([
+    // Borrar horarios existentes del usuario y recrear
+    prisma.horarioUsuario.deleteMany({
+      where: { tenantId: tenant.id, usuarioId: data.usuarioId },
+    }),
+    ...data.horarios
+      .filter((h) => h.activo)
+      .map((h) =>
+        prisma.horarioUsuario.create({
+          data: {
+            tenantId: tenant.id,
+            usuarioId: data.usuarioId,
+            diaKey: h.diaKey,
+            franjas: h.franjas,
+            activo: true,
+          },
+        })
+      ),
+    // Borrar cubículos existentes y recrear
+    prisma.cubiculoUsuario.deleteMany({
+      where: { tenantId: tenant.id, usuarioId: data.usuarioId },
+    }),
+    ...data.cubiculos.map((c) =>
+      prisma.cubiculoUsuario.create({
+        data: {
+          tenantId: tenant.id,
+          usuarioId: data.usuarioId,
+          tipoSesion: c.tipoSesion,
+          cubiculoPref: c.cubiculoPref,
+        },
+      })
+    ),
+  ]);
+
+  revalidatePath("/dashboard/configuracion");
+  revalidatePath("/dashboard/agenda");
+  return { ok: true };
+}

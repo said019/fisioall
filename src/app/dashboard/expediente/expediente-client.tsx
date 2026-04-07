@@ -25,6 +25,8 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import dynamic from "next/dynamic";
 import { crearNotaSesion } from "./actions";
+import { getTipoExpediente, TIPO_BADGE } from "@/types/expedientes";
+import type { TipoExpediente } from "@/types/expedientes";
 
 const BodyMapModal = dynamic(() => import("@/components/BodyMapModal"), {
   ssr: false,
@@ -32,6 +34,9 @@ const BodyMapModal = dynamic(() => import("@/components/BodyMapModal"), {
     <div className="h-10 w-40 rounded-lg bg-[#e4ecf2] animate-pulse" />
   ),
 });
+
+const ExpedienteSueloPelvico = dynamic(() => import("./forms/ExpedienteSueloPelvico"), { ssr: false });
+const ExpedienteCosme = dynamic(() => import("./forms/ExpedienteCosme"), { ssr: false });
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TÉCNICAS
@@ -127,6 +132,8 @@ export default function ExpedienteClient({
 
   const citaId = citaIdParam ?? sesion.citaId;
   const estadoInfo = ESTADO_LABELS[sesion.estado] ?? ESTADO_LABELS.agendada;
+  const tipoExpediente: TipoExpediente = getTipoExpediente(sesion.tipoSesion);
+  const tipoBadge = TIPO_BADGE[tipoExpediente];
 
   useEffect(() => {
     setFechaSesion(format(new Date(), "EEEE d 'de' MMMM, yyyy", { locale: es }));
@@ -211,16 +218,43 @@ export default function ExpedienteClient({
               </p>
             </div>
           </div>
-          <Badge
-            variant="outline"
-            className={`text-[10px] shrink-0 ${estadoInfo.color}`}
-          >
-            {estadoInfo.label}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge
+              variant="outline"
+              className={`text-[10px] shrink-0 ${tipoBadge.color} border`}
+            >
+              {tipoBadge.label}
+            </Badge>
+            <Badge
+              variant="outline"
+              className={`text-[10px] shrink-0 ${estadoInfo.color}`}
+            >
+              {estadoInfo.label}
+            </Badge>
+          </div>
         </CardContent>
       </Card>
 
-      {/* ── SECCIÓN 2: ESCALA EVA ── */}
+      {/* ── FORMULARIOS ESPECIALIZADOS ── */}
+      {tipoExpediente === "suelo_pelvico" && (
+        <ExpedienteSueloPelvico
+          pacienteId={paciente.id}
+          citaId={citaId ?? undefined}
+          esInicial={initialData.notasSesion.length === 0}
+        />
+      )}
+
+      {tipoExpediente === "cosme" && (
+        <ExpedienteCosme
+          pacienteId={paciente.id}
+          citaId={citaId ?? undefined}
+          esInicial={initialData.notasSesion.length === 0}
+        />
+      )}
+
+      {/* ── SECCIÓN 2: ESCALA EVA (solo fisioterapia o seguimiento suelo pélvico) ── */}
+      {(tipoExpediente === "fisioterapia" || (tipoExpediente === "suelo_pelvico" && initialData.notasSesion.length > 0)) && (
+      <>
       <Card className="border-[#c8dce8] bg-white">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-bold text-[#1e2d3a]">
@@ -633,6 +667,8 @@ export default function ExpedienteClient({
           Guardar Nota SOAP
         </Button>
       </div>
+      </>
+      )}
     </div>
   );
 }

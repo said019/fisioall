@@ -45,6 +45,7 @@ import {
   type ConfigCompleta,
 } from "./actions";
 import WhatsAppPanel from "../notificaciones/whatsapp-panel";
+import HorariosPanel from "./horarios-panel";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TIPOS
@@ -83,7 +84,15 @@ interface PacienteOption {
   telefono: string;
 }
 
-export default function ConfiguracionClient({ initial, gcalStatus, pacientes }: { initial: ConfigCompleta; gcalStatus: GCalStatus; pacientes: PacienteOption[] }) {
+/* eslint-disable @typescript-eslint/no-explicit-any */
+interface ConfiguracionClientProps {
+  initial: ConfigCompleta;
+  gcalStatus: GCalStatus;
+  pacientes: PacienteOption[];
+  terapeutas?: any[];
+}
+
+export default function ConfiguracionClient({ initial, gcalStatus, pacientes, terapeutas = [] }: ConfiguracionClientProps) {
   const [config, setConfig] = useState<ConfigClinica>(initial.clinica);
   const [horarios, setHorarios] = useState<HorarioDia[]>(
     initial.horarios.map((h) => ({ ...h, dia: DIA_LABELS[h.diaKey] ?? h.diaKey }))
@@ -727,6 +736,11 @@ export default function ConfiguracionClient({ initial, gcalStatus, pacientes }: 
           <WhatsAppPanel pacientes={pacientes} />
         </div>
       </div>
+
+      {/* ── FULL WIDTH: Horarios del Equipo ── */}
+      {terapeutas.length > 0 && (
+        <HorariosPanel terapeutas={terapeutas} />
+      )}
     </div>
   );
 }

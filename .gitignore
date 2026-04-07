@@ -41,3 +41,8 @@ next-env.d.ts
 
 # User uploads
 /public/uploads/comprobantes/
+GOOGLE_CALENDAR_SETUP.md
+EVOLUTION-API-SETUP.md
+WALLET_SETUP.md
+*.pdf
+public/.next/

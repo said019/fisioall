@@ -27,6 +27,7 @@ enum GeneroTipo {
 enum SesionEstado {
   agendada
   confirmada
+  pendiente_anticipo
   en_curso
   completada
   cancelada
@@ -144,27 +145,12 @@ model Tenant {
   ejercicios            Ejercicio[]
   notificaciones        Notificacion[]
   plantillasMensaje     PlantillaMensaje[]
-  tarjetasLealtad       TarjetaLealtad[]
-  googleCalendarToken   GoogleCalendarToken?
+  horariosUsuario       HorarioUsuario[]
+  cubiculosUsuario      CubiculoUsuario[]
+  expedientesEspecializados ExpedienteEspecializado[]
 
   @@index([slug])
   @@map("tenants")
-}
-
-model GoogleCalendarToken {
-  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId      String    @unique @map("tenant_id") @db.Uuid
-  accessToken   String    @map("access_token")
-  refreshToken  String    @map("refresh_token")
-  tokenExpiry   DateTime  @map("token_expiry") @db.Timestamptz
-  email         String?   @db.VarChar(150)
-  calendarId    String?   @default("primary") @map("calendar_id") @db.VarChar(200)
-  createdAt     DateTime? @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt     DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
-
-  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  @@map("google_calendar_tokens")
 }
 
 model Usuario {
@@ -193,6 +179,8 @@ model Usuario {
   
   horariosTrabajo       HorarioTrabajo[]
   bloqueosHorario       BloqueoHorario[]
+  horariosUsuario       HorarioUsuario[]
+  cubiculosUsuario      CubiculoUsuario[]
   pacientesAsignados    Paciente[]       @relation("FisioPrincipal")
   diagnosticosEmitidos  Diagnostico[]
   expedientesSubidos    ExpedienteAdjunto[]
@@ -204,6 +192,7 @@ model Usuario {
   ejerciciosCreados     Ejercicio[]
   ejerciciosAsignados   EjercicioAsignado[]
   notificacionesRecibidas Notificacion[]
+  expedientesEspecializadosCreados ExpedienteEspecializado[]
 
   @@index([tenantId])
   @@index([email])
@@ -289,7 +278,7 @@ model Paciente {
   encuestas                   EncuestaSesion[]
   notificaciones              Notificacion[]
   progresosDolor              ProgresoDolor[]
-  tarjetasLealtad             TarjetaLealtad[]
+  expedientesEspecializados   ExpedienteEspecializado[]
 
   @@index([tenantId])
   @@index([fisioterapeutaId])
@@ -461,13 +450,14 @@ model Cita {
   recordatorioAt        DateTime?         @map("recordatorio_at") @db.Timestamptz
   confirmadaPaciente    Boolean?          @default(false) @map("confirmada_paciente")
   
-  notasPrevias          String?           @map("notas_previas")
-  googleEventId         String?           @map("google_event_id") @db.VarChar(200)
-
-  anticipoMonto         Decimal?          @default(0) @map("anticipo_monto") @db.Decimal(10, 2)
-  anticipoComprobante   String?           @map("anticipo_comprobante") @db.VarChar(500)
+  // Anticipo
   anticipoPagado        Boolean?          @default(false) @map("anticipo_pagado")
-
+  anticipoPagoId        String?           @map("anticipo_pago_id") @db.Uuid
+  anticipoVenceAt       DateTime?         @map("anticipo_vence_at") @db.Timestamptz
+  
+  googleEventId         String?           @map("google_event_id") @db.VarChar(200)
+  
+  notasPrevias          String?           @map("notas_previas")
   createdBy             String?           @map("created_by") @db.Uuid
   
   createdAt             DateTime?         @default(now()) @map("created_at") @db.Timestamptz
@@ -485,6 +475,7 @@ model Cita {
   ejerciciosAsignados   EjercicioAsignado[]
   encuestas             EncuestaSesion[]
   progresosDolor        ProgresoDolor[]
+  expedientesEspecializados ExpedienteEspecializado[]
 
   @@index([fisioterapeutaId])
   @@index([pacienteId])
@@ -756,6 +747,63 @@ model ProgresoDolor {
   @@map("progreso_dolor")
 }
 
+// ── Horarios por usuario (Feature 2 — Kaya Kalp) ──────────────────────────── //
+
+model HorarioUsuario {
+  id        String   @id @default(cuid())
+  tenantId  String   @map("tenant_id") @db.Uuid
+  usuarioId String   @map("usuario_id") @db.Uuid
+  diaKey    String   @map("dia_key") @db.VarChar(20) // "lunes" | "martes" | ... | "domingo"
+  franjas   Json     // [{ inicio: "09:00", fin: "13:00" }, { inicio: "16:00", fin: "19:00" }]
+  activo    Boolean  @default(true)
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, usuarioId, diaKey])
+  @@map("horarios_usuario")
+}
+
+model CubiculoUsuario {
+  id           String   @id @default(cuid())
+  tenantId     String   @map("tenant_id") @db.Uuid
+  usuarioId    String   @map("usuario_id") @db.Uuid
+  tipoSesion   String   @map("tipo_sesion") @db.VarChar(60) // "fisioterapia" | "suelo_pelvico" | "cosme" | "ejercicio"
+  cubiculoPref Int[]    @map("cubiculo_pref") // [2, 1] → preferido 2, fallback 1
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, usuarioId, tipoSesion])
+  @@map("cubiculos_usuario")
+}
+
+// ── Expedientes especializados (Feature 3 — Kaya Kalp) ────────────────────── //
+
+model ExpedienteEspecializado {
+  id         String   @id @default(cuid())
+  tenantId   String   @map("tenant_id") @db.Uuid
+  pacienteId String   @map("paciente_id") @db.Uuid
+  tipo       String   @db.VarChar(30) // "fisioterapia" | "suelo_pelvico" | "cosme"
+  esInicial  Boolean  @default(true) @map("es_inicial")
+  datosJson  Json     @map("datos_json")
+  citaId     String?  @map("cita_id") @db.Uuid
+  creadoPor  String   @map("creado_por") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  paciente Paciente @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
+  cita     Cita?    @relation(fields: [citaId], references: [id], onDelete: SetNull)
+  creador  Usuario  @relation(fields: [creadoPor], references: [id])
+
+  @@index([tenantId])
+  @@index([pacienteId])
+  @@map("expedientes_especializados")
+}
+
 // ── Body Map Snapshots (sistema de seguimiento clínico) ───────────────────── //
 
 model BodyMapSnapshot {
@@ -819,40 +867,4 @@ enum Lateralidad {
   bilateral
   izquierdo
   derecho
-}
-
-enum TarjetaLealtadEstado {
-  activa
-  completada
-  canjeada
-  expirada
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// TARJETA DE LEALTAD (loyalty punch card — free, not tied to packages)
-// ─────────────────────────────────────────────────────────────────────────────
-model TarjetaLealtad {
-  id              String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId        String                @map("tenant_id") @db.Uuid
-  pacienteId      String                @map("paciente_id") @db.Uuid
-  sellosTotal     Int                   @map("sellos_total")
-  sellosUsados    Int                   @default(0) @map("sellos_usados")
-  recompensa      String                @db.VarChar(255)
-  estado          TarjetaLealtadEstado  @default(activa)
-  fechaCreacion   DateTime              @default(now()) @map("fecha_creacion") @db.Date
-  fechaExpiracion DateTime?             @map("fecha_expiracion") @db.Date
-  notas           String?
-
-  walletApplePassId   String?           @map("wallet_apple_pass_id") @db.VarChar(100)
-  walletGoogleSaveUrl String?           @map("wallet_google_save_url")
-
-  createdAt       DateTime?             @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt       DateTime?             @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
-
-  tenant          Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  paciente        Paciente              @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
-
-  @@index([tenantId])
-  @@index([pacienteId])
-  @@map("tarjetas_lealtad")
 }

@@ -34,8 +34,12 @@ import {
   RefreshCw,
   Search,
   Loader2,
+  AlertCircle,
+  DollarSign,
+  CreditCard,
+  Banknote,
 } from "lucide-react";
-import { crearCita, actualizarEstadoCita } from "./actions";
+import { crearCita, actualizarEstadoCita, confirmarAnticipo, getSlotsDisponibles } from "./actions";
 
 // ── TIPOS ───────────────────────────────────────────────────────────────────
 type Cita = {
@@ -45,7 +49,7 @@ type Cita = {
   motivo: string;
   hora: string;
   duracion: number;
-  estado: "confirmada" | "en-curso" | "pendiente" | "cancelada" | "completada";
+  estado: "confirmada" | "en-curso" | "pendiente" | "cancelada" | "completada" | "pendiente_anticipo";
   dayIndex: number;
   sesion: string;
   sala: string;
@@ -98,6 +102,7 @@ const estadoConfig: Record<string, { label: string; bg: string; border: string; 
   confirmada:  { label: "Confirmada",  bg: "bg-[#3fa87c]/10",  border: "border-[#3fa87c]/30", text: "text-[#3fa87c]" },
   "en-curso":  { label: "En curso",    bg: "bg-[#4a7fa5]/15",  border: "border-[#4a7fa5]/40", text: "text-[#4a7fa5]" },
   pendiente:   { label: "Pendiente",   bg: "bg-[#F59E0B]/10",  border: "border-[#F59E0B]/30", text: "text-[#F59E0B]" },
+  pendiente_anticipo: { label: "Anticipo pendiente", bg: "bg-[#e89b3f]/10", border: "border-[#e89b3f]/30", text: "text-[#e89b3f]" },
   cancelada:   { label: "Cancelada",   bg: "bg-[#d9534f]/5",   border: "border-[#d9534f]/20", text: "text-[#d9534f]" },
   completada:  { label: "Completada",  bg: "bg-[#1e2d3a]/5",   border: "border-[#1e2d3a]/15", text: "text-[#1e2d3a]/50" },
 };
@@ -151,6 +156,10 @@ export default function AgendaClient({
   const [sala, setSala] = useState("");
   const [fechaCita, setFechaCita] = useState(diasSemana[diaActivo]?.isoDate || "2026-03-24");
 
+  // Dynamic slot state (Feature 2)
+  const [slotsDisponibles, setSlotsDisponibles] = useState<{ hora: string; cubiculo: number }[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+
   // Server action state
   const [formState, formAction, isPending] = useActionState(crearCita, null);
   const [statusPending, startStatusTransition] = useTransition();
@@ -169,6 +178,21 @@ export default function AgendaClient({
       resetForm();
     }
   }, [formState]);
+
+  // Fetch dynamic slots when dependencies change
+  useEffect(() => {
+    if (!fechaCita || !fisioId) return;
+    setLoadingSlots(true);
+    getSlotsDisponibles({
+      fecha: fechaCita,
+      fisioterapeutaId: fisioId,
+      tipoSesion: tipoSesion || "fisioterapia",
+      duracionMin: Number(duracion),
+    }).then((s) => {
+      setSlotsDisponibles(s);
+      setLoadingSlots(false);
+    });
+  }, [fechaCita, fisioId, tipoSesion, duracion]);
 
   function resetForm() {
     setBusquedaPaciente("");
@@ -560,11 +584,49 @@ export default function AgendaClient({
               <div className="flex items-center gap-2">
                 <Badge
                   variant="outline"
-                  className={`${estadoConfig[citaSeleccionada.estado].bg} ${estadoConfig[citaSeleccionada.estado].text} ${estadoConfig[citaSeleccionada.estado].border} text-xs`}
+                  className={`${estadoConfig[citaSeleccionada.estado]?.bg ?? ""} ${estadoConfig[citaSeleccionada.estado]?.text ?? ""} ${estadoConfig[citaSeleccionada.estado]?.border ?? ""} text-xs`}
                 >
-                  {estadoConfig[citaSeleccionada.estado].label}
+                  {estadoConfig[citaSeleccionada.estado]?.label ?? citaSeleccionada.estado}
                 </Badge>
               </div>
+
+              {/* Anticipo confirmation buttons */}
+              {citaSeleccionada.estado === "pendiente_anticipo" && (
+                <div className="bg-[#e89b3f]/10 border border-[#e89b3f]/30 rounded-lg p-3 space-y-2">
+                  <p className="text-xs text-[#854f0b] font-medium flex items-start gap-2">
+                    <DollarSign className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                    Anticipo de $200 MXN pendiente de confirmación
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={async () => {
+                        startStatusTransition(async () => {
+                          await confirmarAnticipo(citaSeleccionada.id, "transferencia");
+                          setCitaSeleccionada(null);
+                        });
+                      }}
+                      disabled={statusPending}
+                      className="flex-1 bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white cursor-pointer text-xs h-8"
+                    >
+                      <CreditCard className="mr-1 h-3 w-3" />
+                      Transferencia
+                    </Button>
+                    <Button
+                      onClick={async () => {
+                        startStatusTransition(async () => {
+                          await confirmarAnticipo(citaSeleccionada.id, "efectivo");
+                          setCitaSeleccionada(null);
+                        });
+                      }}
+                      disabled={statusPending}
+                      className="flex-1 bg-[#4a7fa5] hover:bg-[#4a7fa5]/90 text-white cursor-pointer text-xs h-8"
+                    >
+                      <Banknote className="mr-1 h-3 w-3" />
+                      Efectivo
+                    </Button>
+                  </div>
+                </div>
+              )}
 
               <div className="flex gap-2 pt-1">
                 <Button
@@ -674,35 +736,79 @@ export default function AgendaClient({
             </div>
 
             {/* Hora + Duración */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-[#1e2d3a]/70">Hora *</Label>
-                <Select value={horaInicio} onValueChange={setHoraInicio} name="horaInicio">
-                  <SelectTrigger className="h-9 text-sm border-[#a8cfe0] cursor-pointer">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {HORAS_DISPONIBLES.map((h) => (
-                      <SelectItem key={h} value={h} className="cursor-pointer">{h}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <input type="hidden" name="horaInicio" value={horaInicio} />
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-[#1e2d3a]/70">Duración</Label>
+                  <Select value={duracion} onValueChange={setDuracion} name="duracion">
+                    <SelectTrigger className="h-9 text-sm border-[#a8cfe0] cursor-pointer">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="30" className="cursor-pointer">30 min</SelectItem>
+                      <SelectItem value="45" className="cursor-pointer">45 min</SelectItem>
+                      <SelectItem value="60" className="cursor-pointer">60 min</SelectItem>
+                      <SelectItem value="90" className="cursor-pointer">90 min</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <input type="hidden" name="duracion" value={duracion} />
+                </div>
               </div>
+
+              {/* Dynamic slot grid */}
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-[#1e2d3a]/70">Duración</Label>
-                <Select value={duracion} onValueChange={setDuracion} name="duracion">
-                  <SelectTrigger className="h-9 text-sm border-[#a8cfe0] cursor-pointer">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="30" className="cursor-pointer">30 min</SelectItem>
-                    <SelectItem value="45" className="cursor-pointer">45 min</SelectItem>
-                    <SelectItem value="60" className="cursor-pointer">60 min</SelectItem>
-                    <SelectItem value="90" className="cursor-pointer">90 min</SelectItem>
-                  </SelectContent>
-                </Select>
-                <input type="hidden" name="duracion" value={duracion} />
+                <Label className="text-xs font-semibold text-[#1e2d3a]/70">Horario disponible *</Label>
+                {!fisioId ? (
+                  <p className="text-xs text-center text-[#1e2d3a]/40 py-3">Selecciona un fisioterapeuta primero</p>
+                ) : (
+                  <div className="grid grid-cols-4 gap-2">
+                    {loadingSlots ? (
+                      <p className="col-span-4 text-xs text-center text-[#1e2d3a]/40 py-3">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin inline mr-1" />
+                        Cargando horarios...
+                      </p>
+                    ) : slotsDisponibles.length === 0 ? (
+                      <div className="col-span-4 text-center py-3">
+                        <p className="text-xs text-[#1e2d3a]/40">Sin disponibilidad este día</p>
+                        <p className="text-[10px] text-[#1e2d3a]/30 mt-0.5">
+                          También puedes seleccionar manualmente:
+                        </p>
+                        <Select value={horaInicio} onValueChange={setHoraInicio}>
+                          <SelectTrigger className="h-8 text-xs border-[#a8cfe0] cursor-pointer mt-1.5 max-w-[140px] mx-auto">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {HORAS_DISPONIBLES.map((h) => (
+                              <SelectItem key={h} value={h} className="cursor-pointer">{h}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    ) : (
+                      slotsDisponibles.map((s) => (
+                        <button
+                          key={s.hora}
+                          type="button"
+                          onClick={() => {
+                            setHoraInicio(s.hora);
+                            setSala(`Cubículo ${s.cubiculo}`);
+                          }}
+                          className={`px-2 py-2 rounded-lg text-xs font-medium border cursor-pointer transition-all ${
+                            horaInicio === s.hora
+                              ? "bg-[#4a7fa5] text-white border-[#4a7fa5]"
+                              : "bg-white border-[#c8dce8] text-[#1e2d3a] hover:border-[#4a7fa5]"
+                          }`}
+                        >
+                          {s.hora}
+                          <span className={`block text-[9px] mt-0.5 ${horaInicio === s.hora ? "text-white/70" : "text-[#1e2d3a]/40"}`}>
+                            Cub. {s.cubiculo}
+                          </span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+                <input type="hidden" name="horaInicio" value={horaInicio} />
               </div>
             </div>
 
@@ -745,18 +851,23 @@ export default function AgendaClient({
                 )}
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-[#1e2d3a]/70">Sala</Label>
-                <Select value={sala} onValueChange={setSala}>
-                  <SelectTrigger className="h-9 text-sm border-[#a8cfe0] cursor-pointer">
-                    <SelectValue placeholder="Sala..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Sala A" className="cursor-pointer">Sala A</SelectItem>
-                    <SelectItem value="Sala B" className="cursor-pointer">Sala B</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label className="text-xs font-semibold text-[#1e2d3a]/70">Cubículo</Label>
+                {sala ? (
+                  <p className="text-sm text-[#1e2d3a] font-medium pt-1">{sala}</p>
+                ) : (
+                  <p className="text-xs text-[#1e2d3a]/40 pt-2">Auto-asignado al seleccionar horario</p>
+                )}
                 <input type="hidden" name="sala" value={sala} />
               </div>
+            </div>
+
+            {/* Anticipo warning banner */}
+            <div className="bg-[#e89b3f]/10 border border-[#e89b3f]/30 rounded-lg p-3">
+              <p className="text-xs text-[#854f0b] font-medium flex items-start gap-2">
+                <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                Se generará un anticipo de <strong>$200 MXN</strong>. La cita se confirma
+                una vez que se valide el pago. Sin pago en 24h el slot se libera.
+              </p>
             </div>
 
             {/* Error message */}
@@ -772,6 +883,14 @@ export default function AgendaClient({
                 <p className="text-xs text-emerald-600 font-medium">Cita agendada correctamente</p>
               </div>
             )}
+
+            {/* Anticipo warning */}
+            <div className="bg-[#e89b3f]/10 border border-[#e89b3f]/30 rounded-lg p-3">
+              <p className="text-xs text-[#854f0b] font-medium flex items-start gap-2">
+                <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                Se generará un anticipo obligatorio de <strong>$200 MXN</strong>. La cita quedará en estado &quot;Pendiente anticipo&quot; hasta que se confirme el pago (transferencia o efectivo). Si no se confirma en 24 h la cita se cancelará automáticamente.
+              </p>
+            </div>
 
             <DialogFooter className="gap-2 pt-2">
               <Button
