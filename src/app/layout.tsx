@@ -1,8 +1,15 @@
 import type { Metadata, Viewport } from "next";
-import { Outfit } from "next/font/google";
+import { Figtree, Fira_Sans } from "next/font/google";
 import "./globals.css";
 
-const outfit = Outfit({
+const figtree = Figtree({
+  variable: "--font-heading",
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["400", "500", "600", "700"],
+});
+
+const firaSans = Fira_Sans({
   variable: "--font-sans",
   subsets: ["latin"],
   display: "swap",
@@ -12,31 +19,28 @@ const outfit = Outfit({
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#4a7fa5",
+  themeColor: "#0891B2",
 };
 
 export const metadata: Metadata = {
   title: {
-    default: "Kaya Kalp | Dando vida a tu cuerpo",
-    template: "%s | Kaya Kalp",
+    default: "FisioAll | Fisioterapia y Rehabilitación",
+    template: "%s | FisioAll",
   },
   description:
-    "Centro de Fisioterapia, Masajes y Tratamientos Faciales en San Juan del Río, Querétaro. Agenda tu cita en línea. Certificación CONOCER ante la SEP.",
+    "Plataforma SaaS para Fisioterapeutas y Clínicas — Agenda, expediente clínico digital, membresías y más.",
   keywords: [
     "fisioterapia",
-    "masajes",
-    "tratamientos faciales",
-    "San Juan del Río",
-    "Querétaro",
-    "suelo pélvico",
     "rehabilitación",
-    "Kaya Kalp",
+    "clínica",
+    "SaaS",
+    "expediente clínico",
+    "body map",
   ],
-  authors: [{ name: "Kaya Kalp" }],
+  authors: [{ name: "FisioAll" }],
   openGraph: {
-    title: "Kaya Kalp | Dando vida a tu cuerpo",
-    description:
-      "Centro de Fisioterapia, Masajes y Tratamientos Faciales en San Juan del Río, Querétaro.",
+    title: "FisioAll | Fisioterapia y Rehabilitación",
+    description: "Plataforma SaaS para Fisioterapeutas y Clínicas",
     type: "website",
     locale: "es_MX",
   },
@@ -49,24 +53,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <head>
-        <link rel="manifest" href="/manifest.json" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="Kaya Kalp" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap"
-          rel="stylesheet"
-        />
-      </head>
       <body
-        className={`${outfit.variable} font-sans antialiased`}
+        className={`${figtree.variable} ${firaSans.variable} font-sans antialiased`}
       >
         {/* Skip to main content — accessibility */}
         <a
           href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:bg-[#4a7fa5] focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:text-sm focus:font-semibold focus:shadow-lg"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:bg-[#0891B2] focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:text-sm focus:font-semibold focus:shadow-lg"
         >
           Ir al contenido principal
         </a>

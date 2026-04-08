@@ -44,6 +44,7 @@ export default function BodyMapComparador({ pacienteId }: BodyMapComparadorProps
   const [idxB, setIdxB] = useState(1); // índice del snapshot derecho (más reciente)
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCargando(true);
     getHistorialSnapshots(pacienteId)
       .then((snaps) => {
@@ -63,7 +64,7 @@ export default function BodyMapComparador({ pacienteId }: BodyMapComparadorProps
       <div className="space-y-4 p-4">
         <div className="flex gap-4">
           <Skeleton className="flex-1 h-[480px] rounded-xl" />
-          <div className="w-px bg-[#c8dce8]" />
+          <div className="w-px bg-cyan-100" />
           <Skeleton className="flex-1 h-[480px] rounded-xl" />
         </div>
       </div>
@@ -74,11 +75,11 @@ export default function BodyMapComparador({ pacienteId }: BodyMapComparadorProps
   if (historial.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center gap-2">
-        <div className="h-12 w-12 rounded-xl bg-[#e4ecf2] flex items-center justify-center">
+        <div className="h-12 w-12 rounded-xl bg-cyan-50 flex items-center justify-center">
           <TrendingUp className="h-6 w-6 text-cyan-400" />
         </div>
-        <p className="text-sm font-semibold text-[#1e2d3a]">Sin snapshots aún</p>
-        <p className="text-xs text-[#1e2d3a]/50 max-w-xs">
+        <p className="text-sm font-semibold text-[#164E63]">Sin snapshots aún</p>
+        <p className="text-xs text-[#164E63]/50 max-w-xs">
           El comparador estará disponible una vez que se registren al menos
           dos evaluaciones del body map.
         </p>
@@ -92,7 +93,7 @@ export default function BodyMapComparador({ pacienteId }: BodyMapComparadorProps
     const estado = marcasToState(snap.marcas);
     return (
       <div className="space-y-3 p-4">
-        <p className="text-xs text-[#1e2d3a]/50 text-center">
+        <p className="text-xs text-[#164E63]/50 text-center">
           Se necesitan al menos 2 snapshots para comparar. Mostrando el único registro.
         </p>
         <div className="max-w-xl mx-auto">
@@ -121,15 +122,15 @@ export default function BodyMapComparador({ pacienteId }: BodyMapComparadorProps
   return (
     <div className="space-y-4 p-4">
       {/* Selector de snapshots */}
-      <div className="flex flex-wrap items-center gap-3 bg-[#e4ecf2]/60 rounded-xl p-3">
+      <div className="flex flex-wrap items-center gap-3 bg-cyan-50/60 rounded-xl p-3">
         <div className="flex-1 min-w-[180px] space-y-1">
-          <p className="text-[10px] font-bold text-[#1e2d3a]/50 uppercase">
+          <p className="text-[10px] font-bold text-[#164E63]/50 uppercase">
             Comparar desde
           </p>
           <select
             value={idxA}
             onChange={(e) => setIdxA(Number(e.target.value))}
-            className="w-full text-xs border border-[#a8cfe0] rounded-lg px-3 py-1.5 bg-white text-[#1e2d3a] focus:outline-none focus:border-[#4a7fa5]"
+            className="w-full text-xs border border-cyan-200 rounded-lg px-3 py-1.5 bg-white text-[#164E63] focus:outline-none focus:border-[#0891B2]"
           >
             {historial.map((s, i) => (
               <option key={s.id} value={i} disabled={i === idxB}>
@@ -139,13 +140,13 @@ export default function BodyMapComparador({ pacienteId }: BodyMapComparadorProps
           </select>
         </div>
         <div className="flex-1 min-w-[180px] space-y-1">
-          <p className="text-[10px] font-bold text-[#1e2d3a]/50 uppercase">
+          <p className="text-[10px] font-bold text-[#164E63]/50 uppercase">
             Hasta
           </p>
           <select
             value={idxB}
             onChange={(e) => setIdxB(Number(e.target.value))}
-            className="w-full text-xs border border-[#a8cfe0] rounded-lg px-3 py-1.5 bg-white text-[#1e2d3a] focus:outline-none focus:border-[#4a7fa5]"
+            className="w-full text-xs border border-cyan-200 rounded-lg px-3 py-1.5 bg-white text-[#164E63] focus:outline-none focus:border-[#0891B2]"
           >
             {historial.map((s, i) => (
               <option key={s.id} value={i} disabled={i === idxA}>
@@ -166,7 +167,7 @@ export default function BodyMapComparador({ pacienteId }: BodyMapComparadorProps
           variant="outline"
           size="sm"
           onClick={handlePrint}
-          className="cursor-pointer border-[#a8cfe0] text-[#1e2d3a] hover:bg-[#e4ecf2] gap-1.5"
+          className="cursor-pointer border-cyan-200 text-[#164E63] hover:bg-cyan-50 gap-1.5"
         >
           <Printer className="h-3.5 w-3.5" />
           Imprimir
@@ -181,7 +182,7 @@ export default function BodyMapComparador({ pacienteId }: BodyMapComparadorProps
             <Badge className="bg-orange-100 text-orange-700 border-0 text-[10px] font-bold">
               {formatFecha(snapA.createdAt)}
             </Badge>
-            <span className="text-[10px] text-[#1e2d3a]/50">
+            <span className="text-[10px] text-[#164E63]/50">
               {SNAPSHOT_TIPO_LABELS[snapA.tipo]} · sesión #{snapA.sesionNum}
             </span>
           </div>
@@ -194,7 +195,7 @@ export default function BodyMapComparador({ pacienteId }: BodyMapComparadorProps
             <Badge className="bg-green-100 text-green-700 border-0 text-[10px] font-bold">
               {formatFecha(snapB.createdAt)}
             </Badge>
-            <span className="text-[10px] text-[#1e2d3a]/50">
+            <span className="text-[10px] text-[#164E63]/50">
               {SNAPSHOT_TIPO_LABELS[snapB.tipo]} · sesión #{snapB.sesionNum}
             </span>
           </div>
@@ -219,11 +220,11 @@ function KpiChip({
 }) {
   const diff = after - before;
   const color =
-    diff < 0 ? "text-green-600" : diff > 0 ? "text-red-500" : "text-[#1e2d3a]/40";
+    diff < 0 ? "text-green-600" : diff > 0 ? "text-red-500" : "text-[#164E63]/40";
   return (
-    <div className="text-center px-3 py-1.5 bg-white rounded-lg border border-[#c8dce8]">
-      <p className="text-[9px] font-bold text-[#1e2d3a]/40 uppercase">{label}</p>
-      <p className="text-sm font-bold text-[#1e2d3a]">{after}</p>
+    <div className="text-center px-3 py-1.5 bg-white rounded-lg border border-cyan-100">
+      <p className="text-[9px] font-bold text-[#164E63]/40 uppercase">{label}</p>
+      <p className="text-sm font-bold text-[#164E63]">{after}</p>
       <p className={`text-[10px] font-semibold ${color}`}>
         {diff === 0 ? "—" : diff > 0 ? `+${diff}` : `${diff}`}
       </p>
@@ -240,7 +241,7 @@ function MejoraBadge({ pct }: { pct: number }) {
         positivo
           ? "bg-green-50 border-green-200 text-green-700"
           : neutro
-          ? "bg-[#e4ecf2] border-[#a8cfe0] text-[#1e2d3a]/50"
+          ? "bg-cyan-50 border-cyan-200 text-[#164E63]/50"
           : "bg-red-50 border-red-200 text-red-600"
       }`}
     >

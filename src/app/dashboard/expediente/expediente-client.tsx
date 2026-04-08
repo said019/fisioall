@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   CheckCircle2,
-  Save,
   Camera,
   TrendingDown,
   TrendingUp,
@@ -313,6 +312,7 @@ export default function ExpedienteClient({
     const fecha = sesion.fechaHoraInicio
       ? new Date(sesion.fechaHoraInicio)
       : new Date();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFechaSesion(format(fecha, "EEEE d 'de' MMMM, yyyy", { locale: es }));
   }, [sesion.fechaHoraInicio]);
 

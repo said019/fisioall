@@ -48,89 +48,74 @@
 }
 
 :root {
-  --radius: 0.875rem;
-  /* Kaya Kalp — Blue-Slate palette */
-  --background: #f0f4f7;
-  --foreground: #1e2d3a;
+  --radius: 0.625rem;
+  --background: #ecfeff;
+  --foreground: #164e63;
   --card: #ffffff;
-  --card-foreground: #1e2d3a;
+  --card-foreground: #164e63;
   --popover: #ffffff;
-  --popover-foreground: #1e2d3a;
-  --primary: #4a7fa5;
+  --popover-foreground: #164e63;
+  --primary: #0891b2;
   --primary-foreground: #ffffff;
-  --secondary: #7ab5d4;
-  --secondary-foreground: #1e2d3a;
-  --muted: #e4ecf2;
-  --muted-foreground: #5a7080;
-  --accent: #a8cfe0;
-  --accent-foreground: #1e2d3a;
-  --destructive: #d9534f;
+  --secondary: #22d3ee;
+  --secondary-foreground: #164e63;
+  --muted: #cffafe;
+  --muted-foreground: #0891b2;
+  --accent: #22d3ee;
+  --accent-foreground: #083344;
+  --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  --border: #c8dce8;
-  --input: #c8dce8;
-  --ring: #4a7fa5;
-  --chart-1: #4a7fa5;
-  --chart-2: #3fa87c;
-  --chart-3: #7ab5d4;
-  --chart-4: #2d5f80;
-  --chart-5: #e89b3f;
-  --sidebar: #1e3a4f;
-  --sidebar-foreground: #a8cfe0;
-  --sidebar-primary: #4a7fa5;
+  --border: #a5f3fc;
+  --input: #a5f3fc;
+  --ring: #0891b2;
+  --chart-1: #0891b2;
+  --chart-2: #059669;
+  --chart-3: #22d3ee;
+  --chart-4: #0284c7;
+  --chart-5: #0d9488;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #164e63;
+  --sidebar-primary: #0891b2;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: rgba(74, 127, 165, 0.25);
-  --sidebar-accent-foreground: #a8cfe0;
-  --sidebar-border: rgba(255, 255, 255, 0.08);
-  --sidebar-ring: #7ab5d4;
-  /* Kaya Kalp semantic tokens */
-  --kk-primary: #4a7fa5;
-  --kk-primary-light: #6b9dbf;
-  --kk-primary-dark: #2d5f80;
-  --kk-accent: #7ab5d4;
-  --kk-accent2: #a8cfe0;
-  --kk-sidebar-bg: #1e3a4f;
-  --kk-sidebar-hover: #2a4d68;
-  --kk-success: #3fa87c;
-  --kk-warning: #e89b3f;
-  --kk-danger: #d9534f;
-  --kk-text: #1e2d3a;
-  --kk-text-light: #5a7080;
-  --kk-text-muted: #8fa8ba;
+  --sidebar-accent: #cffafe;
+  --sidebar-accent-foreground: #164e63;
+  --sidebar-border: #a5f3fc;
+  --sidebar-ring: #0891b2;
 }
 
 .dark {
-  --background: #0f1e2a;
-  --foreground: #e4ecf2;
-  --card: #1e3a4f;
-  --card-foreground: #e4ecf2;
-  --popover: #1e3a4f;
-  --popover-foreground: #e4ecf2;
-  --primary: #7ab5d4;
-  --primary-foreground: #0f1e2a;
-  --secondary: #4a7fa5;
+  --background: #083344;
+  --foreground: #ecfeff;
+  --card: #164e63;
+  --card-foreground: #ecfeff;
+  --popover: #164e63;
+  --popover-foreground: #ecfeff;
+  --primary: #22d3ee;
+  --primary-foreground: #083344;
+  --secondary: #0891b2;
   --secondary-foreground: #ffffff;
-  --muted: #1e3a4f;
-  --muted-foreground: #8fa8ba;
-  --accent: #4a7fa5;
+  --muted: #164e63;
+  --muted-foreground: #a5f3fc;
+  --accent: #0891b2;
   --accent-foreground: #ffffff;
-  --destructive: #d9534f;
+  --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  --border: #2a4d68;
-  --input: #2a4d68;
-  --ring: #7ab5d4;
-  --chart-1: #7ab5d4;
-  --chart-2: #3fa87c;
-  --chart-3: #a8cfe0;
-  --chart-4: #6b9dbf;
-  --chart-5: #e89b3f;
-  --sidebar: #0f1e2a;
-  --sidebar-foreground: #a8cfe0;
-  --sidebar-primary: #7ab5d4;
-  --sidebar-primary-foreground: #0f1e2a;
-  --sidebar-accent: #4a7fa5;
+  --border: #0891b2;
+  --input: #0891b2;
+  --ring: #22d3ee;
+  --chart-1: #22d3ee;
+  --chart-2: #059669;
+  --chart-3: #a5f3fc;
+  --chart-4: #38bdf8;
+  --chart-5: #2dd4bf;
+  --sidebar: #164e63;
+  --sidebar-foreground: #ecfeff;
+  --sidebar-primary: #22d3ee;
+  --sidebar-primary-foreground: #083344;
+  --sidebar-accent: #0891b2;
   --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #2a4d68;
-  --sidebar-ring: #7ab5d4;
+  --sidebar-border: #0891b2;
+  --sidebar-ring: #22d3ee;
 }
 
 @layer base {
@@ -146,7 +131,7 @@
 /* ─── Focus-Visible — Keyboard accessibility (3-4px ring) ─── */
 @layer base {
   :focus-visible {
-    outline: 3px solid var(--ring, #4a7fa5);
+    outline: 3px solid var(--ring, #0891B2);
     outline-offset: 2px;
     border-radius: 4px;
   }
@@ -203,6 +188,6 @@
 
 /* ─── Selection color ─── */
 ::selection {
-  background: rgba(74, 127, 165, 0.2);
-  color: #1e2d3a;
+  background: rgba(8, 145, 178, 0.2);
+  color: #164E63;
 }

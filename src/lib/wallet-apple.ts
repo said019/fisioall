@@ -1,5 +1,4 @@
 import { createHash } from "crypto";
-import { deflateRawSync } from "zlib";
 import { readFileSync, existsSync } from "fs";
 import { resolve } from "path";
 

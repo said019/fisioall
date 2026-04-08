@@ -15,7 +15,9 @@ export default async function TarjetasLealtadPage() {
 
   return (
     <TarjetasClient
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       initialTarjetas={tarjetas as any}
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       pacientes={pacientes as any}
     />
   );

@@ -134,7 +134,7 @@ export async function getReportesData(periodo?: string) {
     pacientesAtendidos,
     sesionesCompletadas,
     sesionesTotales,
-    ingresosMensuales,
+    ,
     topPacientes,
     npsPromedio,
   ] = await Promise.all([

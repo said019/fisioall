@@ -232,7 +232,9 @@ export async function getHorariosTerapeutas() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return usuarios.map((u: any) => ({
     ...u,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     horarios: horarios.filter((h: any) => h.usuarioId === u.id),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     cubiculos: cubiculos.filter((c: any) => c.usuarioId === u.id),
   }));
 }

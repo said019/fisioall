@@ -3,12 +3,11 @@
 import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, ArrowLeft, AlertCircle } from "lucide-react";
+import { Activity, Loader2, ArrowLeft, AlertCircle } from "lucide-react";
 import { loginAction } from "./actions/auth";
 
 export default function LoginPage() {
@@ -29,16 +28,12 @@ export default function LoginPage() {
             </Link>
 
             <div className="w-full max-w-md space-y-6">
-                <div className="flex flex-col items-center space-y-3 text-center">
-                    <Image
-                        src="/images/logo-kaya-kalp.webp"
-                        alt="Kaya Kalp"
-                        width={400}
-                        height={309}
-                        className="h-28 w-auto"
-                        priority
-                    />
-                    <p className="text-muted-foreground">Ingresa tus credenciales para acceder al sistema</p>
+                <div className="flex flex-col items-center space-y-2 text-center">
+                    <div className="h-12 w-12 bg-primary/10 rounded-full flex items-center justify-center mb-2">
+                        <Activity className="h-6 w-6 text-primary" />
+                    </div>
+                    <h1 className="text-3xl font-bold tracking-tight text-foreground">FisioAll</h1>
+                    <p className="text-muted-foreground">Ingresa tus credenciales para acceder a tu clínica</p>
                 </div>
 
                 <Card className="border-border shadow-lg">
@@ -102,7 +97,7 @@ export default function LoginPage() {
                         <div className="text-sm text-center text-muted-foreground">
                             ¿No tienes una cuenta?{" "}
                             <Link href="#" className="font-semibold text-primary hover:underline cursor-pointer">
-                                Crear cuenta
+                                Registra tu Clínica
                             </Link>
                         </div>
                     </CardFooter>

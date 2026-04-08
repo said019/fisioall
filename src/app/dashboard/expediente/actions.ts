@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
+import type { DolorEscala } from "@prisma/client";
 
 // ─── FETCH EXPEDIENTE (diagnostico + notas SOAP) ────────────────────────────
 export async function getExpediente(pacienteId: string) {
@@ -275,11 +276,11 @@ export async function crearNotaSesion(prevState: unknown, formData: FormData) {
     return { error: "Cita y paciente son obligatorios" };
   }
 
-  const toDolorEnum = (val: string | null): any => {
+  const toDolorEnum = (val: string | null): DolorEscala | null => {
     if (!val) return null;
     const n = parseInt(val, 10);
     if (isNaN(n) || n < 0 || n > 10) return null;
-    return `N${n}`;
+    return `N${n}` as DolorEscala;
   };
 
   const dolorInicio = toDolorEnum(dolorInicioRaw);

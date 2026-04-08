@@ -10,24 +10,20 @@ import {
   TrendingUp,
   Clock,
   CheckCircle2,
-  AlertCircle,
   ArrowUpRight,
   ArrowDownRight,
   Banknote,
   ArrowRightLeft,
   CircleDot,
   Download,
-  CalendarDays,
-  User,
   FileText,
   MoreHorizontal,
   RefreshCcw,
   Eye,
-  X,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -60,7 +56,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TIPOS

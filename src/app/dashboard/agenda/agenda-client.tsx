@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useActionState, useEffect, useTransition, useCallback } from "react";
+import { useState, useActionState, useEffect, useTransition, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -194,7 +194,7 @@ export default function AgendaClient({
   weekStartISO: string;
   todayISO: string;
 }) {
-  const today = new Date(todayISO);
+  const today = useMemo(() => new Date(todayISO), [todayISO]);
   const [monday, setMonday] = useState(() => getMondayFromISO(weekStartISO));
   const diasSemana = buildWeekDays(monday);
 

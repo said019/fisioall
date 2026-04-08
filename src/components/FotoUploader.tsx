@@ -147,9 +147,9 @@ export default function FotoUploader({ pacienteId, citaId, onFotosSubidas }: Fot
     <div className="space-y-4">
       {/* Vista selector */}
       <div className="flex items-center gap-3">
-        <p className="text-sm font-semibold text-[#1e2d3a]">Vista:</p>
+        <p className="text-sm font-semibold text-[#164E63]">Vista:</p>
         <Select value={vistaSeleccionada} onValueChange={(v) => setVistaSeleccionada(v as Vista)}>
-          <SelectTrigger className="w-48 border-[#a8cfe0] cursor-pointer">
+          <SelectTrigger className="w-48 border-cyan-200 cursor-pointer">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -170,20 +170,20 @@ export default function FotoUploader({ pacienteId, citaId, onFotosSubidas }: Fot
         onClick={() => inputRef.current?.click()}
         className={`border-dashed border-2 rounded-xl p-8 text-center cursor-pointer transition-all duration-200 ${
           isDragOver
-            ? "border-[#4a7fa5] bg-[#4a7fa5]/5"
-            : "border-[#a8cfe0] hover:border-[#4a7fa5]/50 hover:bg-[#f0f4f7]/50"
+            ? "border-[#0891B2] bg-[#0891B2]/5"
+            : "border-cyan-200 hover:border-[#0891B2]/50 hover:bg-[#ECFEFF]/50"
         }`}
       >
         <div className="flex flex-col items-center gap-2">
           <div className={`h-12 w-12 rounded-xl flex items-center justify-center transition-all duration-200 ${
-            isDragOver ? "bg-[#4a7fa5]/15" : "bg-[#f0f4f7]"
+            isDragOver ? "bg-[#0891B2]/15" : "bg-[#ECFEFF]"
           }`}>
-            <Camera className={`h-5 w-5 transition-all duration-200 ${isDragOver ? "text-[#4a7fa5]" : "text-[#4a7fa5]/60"}`} />
+            <Camera className={`h-5 w-5 transition-all duration-200 ${isDragOver ? "text-[#0891B2]" : "text-[#0891B2]/60"}`} />
           </div>
-          <p className="text-sm font-medium text-[#1e2d3a]">
+          <p className="text-sm font-medium text-[#164E63]">
             {isDragOver ? "Suelta las fotos aquí" : "Arrastra fotos o haz clic"}
           </p>
-          <p className="text-xs text-[#1e2d3a]/40">JPG, PNG hasta 10MB</p>
+          <p className="text-xs text-[#164E63]/40">JPG, PNG hasta 10MB</p>
         </div>
         <input
           ref={inputRef}
@@ -202,7 +202,7 @@ export default function FotoUploader({ pacienteId, citaId, onFotosSubidas }: Fot
       {archivos.length > 0 && (
         <div className="grid grid-cols-3 gap-3">
           {archivos.map((a) => (
-            <div key={a.id} className="relative group rounded-xl overflow-hidden border border-[#c8dce8] aspect-square">
+            <div key={a.id} className="relative group rounded-xl overflow-hidden border border-cyan-100 aspect-square">
               <img
                 src={a.preview}
                 alt={a.file.name}
@@ -220,7 +220,7 @@ export default function FotoUploader({ pacienteId, citaId, onFotosSubidas }: Fot
                   e.stopPropagation();
                   eliminarArchivo(a.id);
                 }}
-                className="absolute top-2 right-2 h-6 w-6 rounded-full bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer hover:bg-[#d9534f]"
+                className="absolute top-2 right-2 h-6 w-6 rounded-full bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer hover:bg-[#EF4444]"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -229,10 +229,10 @@ export default function FotoUploader({ pacienteId, citaId, onFotosSubidas }: Fot
           {/* Add more placeholder */}
           <button
             onClick={() => inputRef.current?.click()}
-            className="border-2 border-dashed border-[#a8cfe0] rounded-xl aspect-square flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-[#4a7fa5]/50 hover:bg-[#f0f4f7]/50 transition-all duration-200"
+            className="border-2 border-dashed border-cyan-200 rounded-xl aspect-square flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-[#0891B2]/50 hover:bg-[#ECFEFF]/50 transition-all duration-200"
           >
-            <ImagePlus className="h-5 w-5 text-[#4a7fa5]/50" />
-            <span className="text-[10px] text-[#1e2d3a]/40 font-medium">Agregar más</span>
+            <ImagePlus className="h-5 w-5 text-[#0891B2]/50" />
+            <span className="text-[10px] text-[#164E63]/40 font-medium">Agregar más</span>
           </button>
         </div>
       )}
@@ -241,15 +241,15 @@ export default function FotoUploader({ pacienteId, citaId, onFotosSubidas }: Fot
       {subiendo && (
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <Loader2 className="h-4 w-4 text-[#4a7fa5] animate-spin" />
-            <p className="text-sm font-medium text-[#1e2d3a]">
+            <Loader2 className="h-4 w-4 text-[#0891B2] animate-spin" />
+            <p className="text-sm font-medium text-[#164E63]">
               Subiendo {archivos.length} foto{archivos.length !== 1 ? "s" : ""}...
             </p>
-            <span className="ml-auto text-sm font-bold text-[#4a7fa5] tabular-nums">
+            <span className="ml-auto text-sm font-bold text-[#0891B2] tabular-nums">
               {Math.round(progreso)}%
             </span>
           </div>
-          <Progress value={progreso} className="h-2 bg-[#c8dce8]" />
+          <Progress value={progreso} className="h-2 bg-cyan-100" />
         </div>
       )}
 
@@ -257,7 +257,7 @@ export default function FotoUploader({ pacienteId, citaId, onFotosSubidas }: Fot
       {archivos.length > 0 && !subiendo && (
         <Button
           onClick={handleSubir}
-          className="w-full bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white cursor-pointer transition-all duration-200 font-bold"
+          className="w-full bg-[#059669] hover:bg-[#059669]/90 text-white cursor-pointer transition-all duration-200 font-bold"
         >
           <Upload className="h-4 w-4 mr-2" />
           Subir {archivos.length} foto{archivos.length !== 1 ? "s" : ""}

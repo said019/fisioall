@@ -2,34 +2,24 @@
 
 import { useState } from "react";
 import {
-  Star,
   Search,
-  Filter,
   TrendingUp,
-  TrendingDown,
   MessageSquare,
   Send,
   ThumbsUp,
-  ThumbsDown,
   Meh,
   CheckCircle2,
   Clock,
-  Eye,
-  BarChart3,
   ChevronRight,
-  ArrowUpRight,
-  ArrowDownRight,
   SmilePlus,
   Frown,
-  Smile,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Progress } from "@/components/ui/progress";
 import {
   Dialog,
   DialogContent,
@@ -37,13 +27,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -109,7 +92,6 @@ export default function EncuestasClient({ initialEncuestas }: { initialEncuestas
   const encuestasData = initialEncuestas && initialEncuestas.length > 0 ? initialEncuestas : mockEncuestas;
 
   const [busqueda, setBusqueda] = useState("");
-  const [filtroEstado, setFiltroEstado] = useState<string>("todos");
   const [modalDetalle, setModalDetalle] = useState<EncuestaSesion | null>(null);
 
   // Solo encuestas respondidas para métricas
@@ -129,12 +111,6 @@ export default function EncuestasClient({ initialEncuestas }: { initialEncuestas
   const tasaMejoria = respondidas.length > 0 ? Math.round((respondidas.filter(e => e.mejoriaPercibida).length / respondidas.length) * 100) : 0;
   const tasaRespuesta = encuestasData.length > 0 ? Math.round((respondidas.length / encuestasData.length) * 100) : 0;
 
-  // Filtrado
-  const encuestasFiltradas = encuestasData.filter((e) => {
-    const matchBusqueda = e.pacienteNombre.toLowerCase().includes(busqueda.toLowerCase());
-    const matchEstado = filtroEstado === "todos" || (filtroEstado === "respondida" ? e.respondida : !e.respondida);
-    return matchBusqueda && matchEstado;
-  });
 
   function formatFechaHora(fecha: string): string {
     const d = new Date(fecha);

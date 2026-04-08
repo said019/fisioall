@@ -27,8 +27,11 @@ export default async function AgendaPage() {
 
   return (
     <AgendaClient
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       initialCitas={citas as any}
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       pacientes={pacientes as any}
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       fisioterapeutas={fisioterapeutas as any}
       weekStartISO={monday.toISOString()}
       todayISO={now.toISOString()}

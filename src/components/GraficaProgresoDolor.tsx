@@ -158,11 +158,11 @@ export default function GraficaProgresoDolor({
   if (datos.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
-        <div className="h-14 w-14 rounded-2xl bg-[#f0f4f7] flex items-center justify-center mb-4">
-          <Activity className="h-6 w-6 text-[#4a7fa5]/50" />
+        <div className="h-14 w-14 rounded-2xl bg-[#ECFEFF] flex items-center justify-center mb-4">
+          <Activity className="h-6 w-6 text-[#0891B2]/50" />
         </div>
-        <p className="text-sm font-semibold text-[#1e2d3a]/60 mb-1">Sin datos de sesiones registradas</p>
-        <p className="text-xs text-[#1e2d3a]/40">Los datos de dolor aparecerán aquí después de cada sesión</p>
+        <p className="text-sm font-semibold text-[#164E63]/60 mb-1">Sin datos de sesiones registradas</p>
+        <p className="text-xs text-[#164E63]/40">Los datos de dolor aparecerán aquí después de cada sesión</p>
       </div>
     );
   }
@@ -174,25 +174,25 @@ export default function GraficaProgresoDolor({
       {mostrarResumen && computado && (
         <div className="flex gap-3 flex-wrap">
           {/* Card: Dolor inicial */}
-          <div className="flex-1 min-w-[120px] bg-[#f0f4f7] rounded-xl p-3">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[#1e2d3a]/40 mb-1">Dolor inicial</p>
+          <div className="flex-1 min-w-[120px] bg-[#ECFEFF] rounded-xl p-3">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#164E63]/40 mb-1">Dolor inicial</p>
             <p className="text-2xl font-black text-rose-500 tabular-nums leading-none">{computado.primera.dolor_inicio}</p>
-            <p className="text-[10px] text-[#1e2d3a]/40 mt-1">EVA sesión 1</p>
+            <p className="text-[10px] text-[#164E63]/40 mt-1">EVA sesión 1</p>
           </div>
 
           {/* Card: Dolor actual */}
-          <div className="flex-1 min-w-[120px] bg-[#f0f4f7] rounded-xl p-3">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[#1e2d3a]/40 mb-1">Dolor actual</p>
+          <div className="flex-1 min-w-[120px] bg-[#ECFEFF] rounded-xl p-3">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#164E63]/40 mb-1">Dolor actual</p>
             <p className="text-2xl font-black text-emerald-600 tabular-nums leading-none">{computado.ultima.dolor_inicio}</p>
-            <p className="text-[10px] text-[#1e2d3a]/40 mt-1">EVA última sesión</p>
+            <p className="text-[10px] text-[#164E63]/40 mt-1">EVA última sesión</p>
           </div>
 
           {/* Card: Mejoría */}
-          <div className="flex-1 min-w-[120px] bg-[#f0f4f7] rounded-xl p-3">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[#1e2d3a]/40 mb-1">Mejoría</p>
+          <div className="flex-1 min-w-[120px] bg-[#ECFEFF] rounded-xl p-3">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#164E63]/40 mb-1">Mejoría</p>
             <div className="flex items-center gap-2">
               <p className={`text-2xl font-black tabular-nums leading-none ${
-                computado.mejoraPct > 0 ? "text-emerald-600" : computado.mejoraPct < 0 ? "text-[#d9534f]" : "text-[#1e2d3a]/60"
+                computado.mejoraPct > 0 ? "text-emerald-600" : computado.mejoraPct < 0 ? "text-[#EF4444]" : "text-[#164E63]/60"
               }`}>
                 {computado.mejoraPct > 0 ? "+" : ""}{computado.mejoraPct}%
               </p>
@@ -205,16 +205,16 @@ export default function GraficaProgresoDolor({
           </div>
 
           {/* Card: Tendencia */}
-          <div className="flex-1 min-w-[120px] bg-[#f0f4f7] rounded-xl p-3">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[#1e2d3a]/40 mb-1">Tendencia</p>
+          <div className="flex-1 min-w-[120px] bg-[#ECFEFF] rounded-xl p-3">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#164E63]/40 mb-1">Tendencia</p>
             <div className="flex items-center gap-2">
               {computado.tendencia === "bajando" && <TrendingDown className="h-5 w-5 text-emerald-600" />}
-              {computado.tendencia === "subiendo" && <TrendingUp className="h-5 w-5 text-[#d9534f]" />}
-              {computado.tendencia === "estable" && <Minus className="h-5 w-5 text-[#1e2d3a]/40" />}
+              {computado.tendencia === "subiendo" && <TrendingUp className="h-5 w-5 text-[#EF4444]" />}
+              {computado.tendencia === "estable" && <Minus className="h-5 w-5 text-[#164E63]/40" />}
               <p className={`text-sm font-bold capitalize ${
                 computado.tendencia === "bajando" ? "text-emerald-600" :
-                computado.tendencia === "subiendo" ? "text-[#d9534f]" :
-                "text-[#1e2d3a]/60"
+                computado.tendencia === "subiendo" ? "text-[#EF4444]" :
+                "text-[#164E63]/60"
               }`}>
                 {computado.tendencia === "bajando" ? "En descenso" :
                  computado.tendencia === "subiendo" ? "En aumento" : "Estable"}
@@ -271,7 +271,7 @@ export default function GraficaProgresoDolor({
             y={PAD.top + (1 - 3 / MAX_DOLOR) * GRAPH_H}
             width={GRAPH_W}
             height={(3 / MAX_DOLOR) * GRAPH_H}
-            fill="#3fa87c"
+            fill="#059669"
             opacity="0.04"
             rx="2"
           />
@@ -283,7 +283,7 @@ export default function GraficaProgresoDolor({
           <polyline
             points={polyInicio}
             fill="none"
-            stroke="#d9534f"
+            stroke="#EF4444"
             strokeWidth="2.5"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -293,7 +293,7 @@ export default function GraficaProgresoDolor({
           <polyline
             points={polyFin}
             fill="none"
-            stroke="#3fa87c"
+            stroke="#059669"
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -307,7 +307,7 @@ export default function GraficaProgresoDolor({
               cx={pt.x}
               cy={pt.y}
               r="4"
-              fill="#d9534f"
+              fill="#EF4444"
               stroke="white"
               strokeWidth="1.5"
               className="cursor-pointer transition-all duration-150"
@@ -327,7 +327,7 @@ export default function GraficaProgresoDolor({
               cx={pt.x}
               cy={pt.y}
               r="4"
-              fill="#3fa87c"
+              fill="#059669"
               stroke="white"
               strokeWidth="1.5"
               className="cursor-pointer transition-all duration-150"
@@ -363,28 +363,28 @@ export default function GraficaProgresoDolor({
         {/* Tooltip */}
         {hoveredPoint && (
           <div
-            className="absolute z-20 pointer-events-none bg-white border border-[#c8dce8] rounded-lg px-3 py-2 shadow-lg"
+            className="absolute z-20 pointer-events-none bg-white border border-cyan-100 rounded-lg px-3 py-2 shadow-lg"
             style={{
               left: `${hoveredPoint.x}px`,
               top: `${hoveredPoint.y - 8}px`,
               transform: "translate(-50%, -100%)",
             }}
           >
-            <p className="text-[11px] font-bold text-[#1e2d3a]">
+            <p className="text-[11px] font-bold text-[#164E63]">
               Sesión {hoveredPoint.sesion}
             </p>
-            <p className="text-[10px] text-[#1e2d3a]/50">
+            <p className="text-[10px] text-[#164E63]/50">
               {new Date(hoveredPoint.fecha).toLocaleDateString("es-MX", { day: "numeric", month: "short" })}
             </p>
             <div className="flex items-center gap-2 mt-1">
               <span className="flex items-center gap-1 text-[10px]">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#d9534f]" />
-                <span className="text-[#1e2d3a]/60">Inicio: <span className="font-bold text-[#d9534f]">{hoveredPoint.dolorInicio}</span></span>
+                <span className="h-1.5 w-1.5 rounded-full bg-[#EF4444]" />
+                <span className="text-[#164E63]/60">Inicio: <span className="font-bold text-[#EF4444]">{hoveredPoint.dolorInicio}</span></span>
               </span>
-              <span className="text-[#1e2d3a]/30">→</span>
+              <span className="text-[#164E63]/30">→</span>
               <span className="flex items-center gap-1 text-[10px]">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#3fa87c]" />
-                <span className="text-[#1e2d3a]/60">Fin: <span className="font-bold text-[#3fa87c]">{hoveredPoint.dolorFin}</span></span>
+                <span className="h-1.5 w-1.5 rounded-full bg-[#059669]" />
+                <span className="text-[#164E63]/60">Fin: <span className="font-bold text-[#059669]">{hoveredPoint.dolorFin}</span></span>
               </span>
             </div>
           </div>
@@ -394,16 +394,16 @@ export default function GraficaProgresoDolor({
       {/* ── LEYENDA ── */}
       <div className="flex items-center gap-5 mt-1">
         <div className="flex items-center gap-2">
-          <div className="w-5 h-[3px] bg-[#d9534f] rounded-full" />
-          <span className="text-[11px] text-[#1e2d3a]/50 font-medium">Dolor al inicio</span>
+          <div className="w-5 h-[3px] bg-[#EF4444] rounded-full" />
+          <span className="text-[11px] text-[#164E63]/50 font-medium">Dolor al inicio</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-5 h-[2px] border-t-2 border-dashed border-[#3fa87c]" />
-          <span className="text-[11px] text-[#1e2d3a]/50 font-medium">Dolor al final</span>
+          <div className="w-5 h-[2px] border-t-2 border-dashed border-[#059669]" />
+          <span className="text-[11px] text-[#164E63]/50 font-medium">Dolor al final</span>
         </div>
         <div className="flex items-center gap-2 ml-auto">
-          <div className="w-3 h-3 rounded-sm bg-[#3fa87c]/[0.06] border border-[#3fa87c]/20" />
-          <span className="text-[10px] text-[#1e2d3a]/40">Zona objetivo (≤3)</span>
+          <div className="w-3 h-3 rounded-sm bg-[#059669]/[0.06] border border-[#059669]/20" />
+          <span className="text-[10px] text-[#164E63]/40">Zona objetivo (≤3)</span>
         </div>
       </div>
 

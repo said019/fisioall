@@ -41,7 +41,6 @@ import {
   AlertCircle,
   Upload,
   Receipt,
-  ImageIcon,
 } from "lucide-react";
 import {
   buscarPorTelefono,
@@ -426,9 +425,9 @@ export default function AgendarPage() {
           getMembresiasPaciente(result.paciente.id),
           getTarjetasPaciente(result.paciente.id),
         ]);
-        setCitas(citasData as any);
-        setMembresias(memData as any);
-        setTarjetas(tarjetasData as any);
+        setCitas(citasData);
+        setMembresias(memData);
+        setTarjetas(tarjetasData);
         setVista("profile");
       }
     } catch {
@@ -476,7 +475,7 @@ export default function AgendarPage() {
       if (fisios.length === 0) getFisioterapeutasPublic().then(setFisios);
       getScheduleConfig().then(setScheduleConfig);
     }
-  }, [modalNuevaCita]);
+  }, [modalNuevaCita, fisios.length]);
 
   // ── Auto-seleccionar fisio si solo hay uno para la categoría ──
   useEffect(() => {
@@ -504,7 +503,7 @@ export default function AgendarPage() {
       // Refresh citas
       getCitasPaciente(paciente.id).then(setCitas);
     }
-  }, [formState]);
+  }, [formState, paciente]);
 
   // ── Cancelar cita ──
   function handleCancelar(cita: CitaPaciente) {

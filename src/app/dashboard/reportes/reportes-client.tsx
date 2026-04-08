@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   Download,
   BarChart3,
-  Activity,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -114,7 +113,7 @@ function DolorChart() {
 // ─────────────────────────────────────────────────────────────────────────────
 // PAGE
 // ─────────────────────────────────────────────────────────────────────────────
-export default function ReportesClient({ initialData }: { initialData?: any }) {
+export default function ReportesClient() {
   const [periodo, setPeriodo] = useState("este_mes");
 
   return (

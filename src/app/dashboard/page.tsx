@@ -10,5 +10,6 @@ export default async function DashboardPage() {
     data = undefined;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return <DashboardClient data={data as any} />;
 }

@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useCallback, useEffect, useRef } from "react";
-import { X, Trash2 } from "lucide-react";
+import { X, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+// Badge removed — not used
 import type {
   VistaBody,
   TipoHallazgo,
@@ -24,7 +25,7 @@ function getHeatFill(intensidad: number): string {
 }
 
 function getHeatStroke(intensidad: number): string {
-  if (intensidad <= 2) return "#3fa87c";
+  if (intensidad <= 2) return "#059669";
   if (intensidad <= 4) return "#CA8A04";
   if (intensidad <= 6) return "#EA580C";
   if (intensidad <= 8) return "#DC2626";
@@ -32,7 +33,7 @@ function getHeatStroke(intensidad: number): string {
 }
 
 function evaColor(val: number): string {
-  if (val <= 2) return "#3fa87c";
+  if (val <= 2) return "#059669";
   if (val <= 4) return "#CA8A04";
   if (val <= 6) return "#EA580C";
   if (val <= 8) return "#DC2626";
@@ -50,7 +51,7 @@ const VISTA_LABELS: Record<VistaBody, string> = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ZONAITEM
+// ZONAITEM — renders an SVG shape with heatmap or base style
 // ─────────────────────────────────────────────────────────────────────────────
 interface ZonaItemProps {
   id: string;
@@ -273,6 +274,7 @@ export default function BodyMap({
     lateralidad: Lateralidad;
     notas: string;
   }>({ tipo: "dolor", intensidad: 5, lateralidad: "bilateral", notas: "" });
+  const [listaAbierta, setListaAbierta] = useState(true);
 
   const panelRef = useRef<HTMLDivElement>(null);
   const totalMarcas = Object.keys(estadoMapa).length;
@@ -350,80 +352,42 @@ export default function BodyMap({
       : zonasLateral(handleClickZona, estadoMapa, editable, vistaActual, true, zonaSeleccionada?.zonaId ?? null);
 
   return (
-    <div className="flex flex-col h-full gap-2">
-      {/* ── VISTA TABS — horizontal ── */}
-      <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
-        {(["anterior", "posterior", "lateral_der", "lateral_izq"] as VistaBody[]).map((vista) => {
-          const count = countPorVista(vista);
-          const isActive = vistaActual === vista;
-          return (
-            <button
-              key={vista}
-              onClick={() => { setVistaActual(vista); setZonaSeleccionada(null); }}
-              className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer border ${
-                isActive
-                  ? "bg-[#4a7fa5] border-[#4a7fa5] text-white shadow-sm"
-                  : "bg-white border-[#c8dce8] text-[#1e2d3a]/60 hover:border-[#4a7fa5]/50 hover:text-[#1e2d3a]"
-              }`}
-            >
-              <span>{VISTA_LABELS[vista]}</span>
-              {count > 0 && (
-                <span className={`text-[9px] font-bold px-1 rounded-full min-w-[16px] text-center leading-[16px] ${
-                  isActive ? "bg-white/25 text-white" : "bg-[#4a7fa5] text-white"
-                }`}>
-                  {count}
-                </span>
-              )}
-            </button>
-          );
-        })}
-
-        {/* Hallazgos chips inline */}
-        {totalMarcas > 0 && (
-          <div className="ml-auto flex items-center gap-1 overflow-x-auto max-w-[40%]">
-            {Object.entries(estadoMapa).slice(0, 4).map(([key, marca]) => (
-              <div
-                key={key}
-                className="flex items-center gap-1 py-0.5 px-2 rounded-full text-[10px] font-semibold cursor-pointer border shrink-0"
-                style={{
-                  background: `${marca.colorHex}18`,
-                  borderColor: `${marca.colorHex}55`,
-                  color: marca.colorHex,
-                }}
-                onClick={() => {
-                  setVistaActual(marca.vista);
-                  handleClickZona(marca.zonaId, marca.zonaLabel);
-                }}
+    <div className="flex flex-col gap-4">
+      {/* ── VISTA SELECTOR + SVG ── */}
+      <div className="flex gap-3 items-start">
+        {/* Vista tabs — vertical */}
+        <div className="flex flex-col gap-1.5 shrink-0 pt-1">
+          {(["anterior", "posterior", "lateral_der", "lateral_izq"] as VistaBody[]).map((vista) => {
+            const count = countPorVista(vista);
+            const isActive = vistaActual === vista;
+            return (
+              <button
+                key={vista}
+                onClick={() => { setVistaActual(vista); setZonaSeleccionada(null); }}
+                className={`relative flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer border min-w-[90px] ${
+                  isActive
+                    ? "bg-[#0891B2] border-[#0891B2] text-white shadow-md shadow-[#0891B2]/30"
+                    : "bg-white border-cyan-100 text-[#164E63]/60 hover:border-[#0891B2]/50 hover:text-[#164E63] hover:bg-[#ECFEFF]"
+                }`}
               >
-                <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{ background: marca.colorHex }} />
-                <span className="text-[#1e2d3a] truncate max-w-[60px]">{marca.zonaLabel}</span>
-                {editable && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); eliminarMarca(key); }}
-                    className="cursor-pointer hover:text-red-500 text-[#1e2d3a]/30"
-                  >
-                    <X className="h-2.5 w-2.5" />
-                  </button>
+                <span>{VISTA_LABELS[vista]}</span>
+                {count > 0 && (
+                  <span className={`text-[10px] font-bold px-1.5 py-0 rounded-full min-w-[18px] text-center ${
+                    isActive ? "bg-white/25 text-white" : "bg-[#0891B2] text-white"
+                  }`}>
+                    {count}
+                  </span>
                 )}
-              </div>
-            ))}
-            {totalMarcas > 4 && (
-              <span className="text-[10px] text-[#1e2d3a]/40 font-semibold shrink-0">
-                +{totalMarcas - 4}
-              </span>
-            )}
-          </div>
-        )}
-      </div>
+              </button>
+            );
+          })}
+        </div>
 
-      {/* ── SVG + PANEL — fills remaining height ── */}
-      <div className="flex-1 min-h-0 flex flex-col md:flex-row md:items-start gap-3 relative">
-        {/* SVG — scales to fill available height, min-height on mobile */}
-        <div className="min-h-[350px] md:h-full flex items-center justify-center flex-1">
+        {/* SVG — columna central, ancho fijo para que nunca se encoja */}
+        <div className="shrink-0 w-[240px] sm:w-[280px]">
           <svg
             viewBox="0 0 260 560"
-            className="h-full max-h-full w-auto select-none drop-shadow-sm"
-            style={{ maxWidth: "280px", minHeight: "320px" }}
+            className="w-full h-auto select-none drop-shadow-sm"
             aria-label={`Mapa corporal – vista ${VISTA_LABELS[vistaActual]}`}
           >
             <defs>
@@ -437,49 +401,49 @@ export default function BodyMap({
           </svg>
         </div>
 
-        {/* PANEL — absolutely positioned on the right, overlaying */}
+        {/* PANEL — columna derecha, mismo alto que el SVG */}
         {zonaSeleccionada && editable && (
           <div
             ref={panelRef}
-            className="w-full md:absolute md:right-0 md:top-0 md:z-10 md:w-64 max-h-[300px] md:max-h-full overflow-y-auto"
+            className="shrink-0 w-64 self-start"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="bg-white border border-[#a8cfe0] rounded-2xl shadow-xl shadow-cyan-900/10 overflow-hidden">
+            <div className="bg-white border border-cyan-200 rounded-2xl shadow-xl shadow-cyan-900/10 overflow-hidden">
               {/* Header */}
-              <div className="flex items-center justify-between px-3 py-2 border-b border-[#c8dce8] bg-gradient-to-r from-[#f0f4f7] to-white">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-cyan-100 bg-gradient-to-r from-[#ECFEFF] to-white">
                 <div>
-                  <p className="text-xs font-bold text-[#1e2d3a]">
+                  <p className="text-sm font-bold text-[#164E63]">
                     {zonaSeleccionada.zonaLabel}
                   </p>
-                  <p className="text-[9px] text-[#1e2d3a]/40">
+                  <p className="text-[10px] text-[#164E63]/40">
                     Vista {VISTA_LABELS[vistaActual]}
                   </p>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1.5">
                   {estadoMapa[`${zonaSeleccionada.zonaId}_${vistaActual}`] && (
                     <button
                       onClick={() => eliminarMarca()}
-                      className="cursor-pointer p-1 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-all"
+                      className="cursor-pointer p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-all"
                     >
-                      <Trash2 className="h-3 w-3" />
+                      <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   )}
                   <button
                     onClick={() => setZonaSeleccionada(null)}
-                    className="cursor-pointer p-1 rounded-lg text-[#1e2d3a]/30 hover:text-[#1e2d3a]/70 hover:bg-[#e4ecf2] transition-all"
+                    className="cursor-pointer p-1.5 rounded-lg text-[#164E63]/30 hover:text-[#164E63]/70 hover:bg-cyan-50 transition-all"
                   >
-                    <X className="h-3.5 w-3.5" />
+                    <X className="h-4 w-4" />
                   </button>
                 </div>
               </div>
 
-              <div className="px-3 py-2.5 space-y-2.5">
+              <div className="px-4 py-3 space-y-3">
                 {/* EVA slider */}
-                <div className="space-y-1">
+                <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <p className="text-[10px] font-semibold text-[#1e2d3a]/60">Intensidad (EVA)</p>
+                    <p className="text-xs font-semibold text-[#164E63]/60">Intensidad (EVA)</p>
                     <span
-                      className="text-lg font-black tabular-nums"
+                      className="text-2xl font-black tabular-nums"
                       style={{ color: evaColor(formulario.intensidad) }}
                     >
                       {formulario.intensidad}
@@ -494,25 +458,25 @@ export default function BodyMap({
                     onChange={(e) =>
                       setFormulario((p) => ({ ...p, intensidad: Number(e.target.value) }))
                     }
-                    className="w-full h-2.5 rounded-full cursor-pointer appearance-none"
+                    className="w-full h-3 rounded-full cursor-pointer appearance-none"
                     style={{
                       background: `linear-gradient(to right,
-                        #3fa87c 0%, #16a34a 20%,
+                        #059669 0%, #16a34a 20%,
                         #eab308 30%, #f97316 50%,
-                        #d9534f 70%, #b91c1c 100%)`,
+                        #ef4444 70%, #b91c1c 100%)`,
                       accentColor: evaColor(formulario.intensidad),
                     }}
                   />
-                  <div className="flex justify-between text-[9px] text-[#1e2d3a]/40">
+                  <div className="flex justify-between text-[10px] text-[#164E63]/40">
                     <span>Sin dolor</span>
                     <span>Máximo</span>
                   </div>
                 </div>
 
                 {/* Tipo */}
-                <div className="space-y-1">
-                  <p className="text-[10px] font-semibold text-[#1e2d3a]/60">Tipo</p>
-                  <div className="grid grid-cols-2 gap-1">
+                <div className="space-y-1.5">
+                  <p className="text-xs font-semibold text-[#164E63]/60">Tipo</p>
+                  <div className="grid grid-cols-2 gap-1.5">
                     {(Object.keys(TIPO_LABELS) as TipoHallazgo[]).map((tipo) => {
                       const color = TIPO_COLORS[tipo];
                       const active = formulario.tipo === tipo;
@@ -520,10 +484,10 @@ export default function BodyMap({
                         <button
                           key={tipo}
                           onClick={() => setFormulario((p) => ({ ...p, tipo }))}
-                          className="text-[9px] font-bold py-1.5 px-1.5 rounded-lg border transition-all duration-200 cursor-pointer text-center"
+                          className="text-[10px] font-bold py-2 px-2 rounded-xl border transition-all duration-200 cursor-pointer text-center"
                           style={
                             active
-                              ? { background: `${color}22`, borderColor: color, color, boxShadow: `0 0 0 1px ${color}` }
+                              ? { background: `${color}22`, borderColor: color, color, boxShadow: `0 0 0 1.5px ${color}` }
                               : { background: "white", borderColor: "#e2e8f0", color: "#475569" }
                           }
                         >
@@ -535,17 +499,17 @@ export default function BodyMap({
                 </div>
 
                 {/* Lateralidad */}
-                <div className="space-y-1">
-                  <p className="text-[10px] font-semibold text-[#1e2d3a]/60">Lateralidad</p>
-                  <div className="flex gap-1">
+                <div className="space-y-1.5">
+                  <p className="text-xs font-semibold text-[#164E63]/60">Lateralidad</p>
+                  <div className="flex gap-1.5">
                     {(["bilateral", "izquierdo", "derecho"] as Lateralidad[]).map((lat) => (
                       <button
                         key={lat}
                         onClick={() => setFormulario((p) => ({ ...p, lateralidad: lat }))}
-                        className={`flex-1 text-[9px] font-bold py-1.5 rounded-lg border transition-all duration-200 cursor-pointer ${
+                        className={`flex-1 text-[10px] font-bold py-2 rounded-xl border transition-all duration-200 cursor-pointer ${
                           formulario.lateralidad === lat
-                            ? "bg-[#4a7fa5] border-[#4a7fa5] text-white shadow-sm"
-                            : "bg-white border-[#c8dce8] text-[#1e2d3a]/60 hover:border-[#4a7fa5]/50"
+                            ? "bg-[#0891B2] border-[#0891B2] text-white shadow-sm"
+                            : "bg-white border-cyan-100 text-[#164E63]/60 hover:border-[#0891B2]/50"
                         }`}
                       >
                         {LATERALIDAD_LABELS[lat]}
@@ -555,21 +519,21 @@ export default function BodyMap({
                 </div>
 
                 {/* Notas */}
-                <div className="space-y-0.5">
-                  <p className="text-[10px] font-semibold text-[#1e2d3a]/60">Notas clínicas</p>
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-[#164E63]/60">Notas clínicas</p>
                   <textarea
                     value={formulario.notas}
                     onChange={(e) => setFormulario((p) => ({ ...p, notas: e.target.value }))}
                     placeholder="Notas clínicas..."
-                    rows={2}
-                    className="w-full text-[10px] border border-[#a8cfe0] rounded-lg px-2 py-1.5 resize-none focus:outline-none focus:border-[#4a7fa5] text-[#1e2d3a] placeholder:text-[#1e2d3a]/30"
+                    rows={3}
+                    className="w-full text-xs border border-cyan-200 rounded-xl px-3 py-2 resize-none focus:outline-none focus:border-[#0891B2] text-[#164E63] placeholder:text-[#164E63]/30"
                   />
                 </div>
 
                 {/* Guardar */}
                 <Button
                   onClick={guardarMarca}
-                  className="w-full bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white text-[10px] cursor-pointer font-bold h-8 rounded-lg transition-all duration-200"
+                  className="w-full bg-[#059669] hover:bg-[#059669]/90 text-white text-xs cursor-pointer font-bold h-10 rounded-xl transition-all duration-200"
                 >
                   Guardar hallazgo
                 </Button>
@@ -579,9 +543,66 @@ export default function BodyMap({
         )}
       </div>
 
-      {/* ── EVA LEYENDA — compact inline ── */}
-      <div className="flex items-center gap-2 shrink-0">
-        <span className="text-[9px] text-[#1e2d3a]/40 font-semibold">EVA:</span>
+      {/* ── HALLAZGOS REGISTRADOS ── */}
+      {totalMarcas > 0 && (
+        <div className="border border-cyan-100 rounded-xl overflow-hidden bg-white">
+          <button
+            onClick={() => setListaAbierta((p) => !p)}
+            className="w-full flex items-center justify-between px-4 py-2.5 cursor-pointer hover:bg-[#ECFEFF]/60 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-[#0891B2] animate-pulse" />
+              <p className="text-xs font-bold text-[#164E63]">
+                {totalMarcas} hallazgo{totalMarcas !== 1 ? "s" : ""} registrado{totalMarcas !== 1 ? "s" : ""}
+              </p>
+            </div>
+            {listaAbierta ? (
+              <ChevronUp className="h-4 w-4 text-[#164E63]/40" />
+            ) : (
+              <ChevronDown className="h-4 w-4 text-[#164E63]/40" />
+            )}
+          </button>
+
+          {listaAbierta && (
+            <div className="px-3 pb-3 flex flex-wrap gap-1.5">
+              {Object.entries(estadoMapa).map(([key, marca]) => (
+                <div
+                  key={key}
+                  className="flex items-center gap-1.5 py-1 px-2.5 rounded-full text-xs font-semibold cursor-pointer hover:scale-105 transition-all duration-150 border"
+                  style={{
+                    background: `${marca.colorHex}18`,
+                    borderColor: `${marca.colorHex}55`,
+                    color: marca.colorHex,
+                  }}
+                  onClick={() => {
+                    setVistaActual(marca.vista);
+                    handleClickZona(marca.zonaId, marca.zonaLabel);
+                  }}
+                >
+                  <span
+                    className="h-2 w-2 rounded-full shrink-0"
+                    style={{ background: marca.colorHex }}
+                  />
+                  <span className="text-[#164E63] font-semibold">{marca.zonaLabel}</span>
+                  <span className="font-black">·{marca.intensidad}</span>
+                  {editable && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); eliminarMarca(key); }}
+                      className="ml-0.5 cursor-pointer hover:text-red-500 transition-colors text-[#164E63]/30"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── EVA LEYENDA ── */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-[10px] text-[#164E63]/40 font-semibold">EVA:</span>
         {[
           { label: "0-2", color: "rgba(16,185,129,0.75)" },
           { label: "3-4", color: "rgba(234,179,8,0.80)" },
@@ -589,9 +610,9 @@ export default function BodyMap({
           { label: "7-8", color: "rgba(239,68,68,0.87)" },
           { label: "9-10", color: "rgba(185,28,28,0.92)" },
         ].map((item) => (
-          <div key={item.label} className="flex items-center gap-0.5">
-            <span className="h-2.5 w-2.5 rounded-sm border border-black/10" style={{ background: item.color }} />
-            <span className="text-[9px] text-[#1e2d3a]/50">{item.label}</span>
+          <div key={item.label} className="flex items-center gap-1">
+            <span className="h-3 w-3 rounded-sm border border-black/10" style={{ background: item.color }} />
+            <span className="text-[10px] text-[#164E63]/50">{item.label}</span>
           </div>
         ))}
       </div>
