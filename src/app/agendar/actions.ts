@@ -428,6 +428,7 @@ export async function agendarCitaPublica(prevState: unknown, formData: FormData)
         comprobanteUrl: comprobanteUrl || null,
         concepto: "Anticipo obligatorio",
         registradoPor: fisioId,
+        fechaPago: new Date(),
       },
     });
 

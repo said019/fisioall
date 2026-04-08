@@ -61,6 +61,7 @@ export async function getPagos(periodo?: string) {
       ? `${p.registrador.nombre} ${p.registrador.apellido}`
       : null,
     fechaPago: p.fechaPago?.toISOString() ?? null,
+    comprobanteUrl: p.comprobanteUrl ?? null,
     membresiaNombre: p.membresia?.paquete.nombre ?? null,
   }));
 }

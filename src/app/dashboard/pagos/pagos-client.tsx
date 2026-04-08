@@ -75,6 +75,7 @@ interface Pago {
   notas?: string;
   registradoPor: string;
   fechaPago: string;
+  comprobanteUrl?: string | null;
   membresiaNombre?: string;
 }
 
@@ -140,8 +141,11 @@ export default function PagosClient({ initialPagos }: { initialPagos?: Pago[] })
     return `$${monto.toLocaleString("es-MX")}`;
   }
 
-  function formatFecha(fecha: string): string {
-    const d = new Date(fecha + "T12:00:00");
+  function formatFecha(fecha: string | null | undefined): string {
+    if (!fecha) return "—";
+    // Handle both "2026-02-28" and "2026-02-28T18:00:00.000Z" formats
+    const d = fecha.includes("T") ? new Date(fecha) : new Date(fecha + "T12:00:00");
+    if (isNaN(d.getTime())) return "—";
     return d.toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" });
   }
 
@@ -360,11 +364,38 @@ export default function PagosClient({ initialPagos }: { initialPagos?: Pago[] })
                     ))}
                   </div>
                 </div>
+                {modalDetalle.comprobanteUrl && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold text-[#1e2d3a]/50">Comprobante</p>
+                    <a
+                      href={modalDetalle.comprobanteUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block rounded-xl overflow-hidden border border-[#c8dce8] hover:border-[#4a7fa5] transition-colors"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={modalDetalle.comprobanteUrl}
+                        alt="Comprobante de pago"
+                        className="w-full max-h-48 object-contain bg-[#f0f4f7]"
+                      />
+                    </a>
+                  </div>
+                )}
+
                 <DialogFooter className="gap-2 mt-4">
                   <Button variant="outline" onClick={() => setModalDetalle(null)} className="cursor-pointer">Cerrar</Button>
-                  <Button variant="outline" className="cursor-pointer text-[#1e2d3a]">
-                    <Download className="h-4 w-4 mr-1.5" /> Recibo
-                  </Button>
+                  {modalDetalle.comprobanteUrl ? (
+                    <a href={modalDetalle.comprobanteUrl} target="_blank" rel="noopener noreferrer">
+                      <Button variant="outline" className="cursor-pointer text-[#1e2d3a]">
+                        <Eye className="h-4 w-4 mr-1.5" /> Ver Comprobante
+                      </Button>
+                    </a>
+                  ) : (
+                    <Button variant="outline" className="cursor-pointer text-[#1e2d3a]">
+                      <Download className="h-4 w-4 mr-1.5" /> Recibo
+                    </Button>
+                  )}
                 </DialogFooter>
               </>
             );
