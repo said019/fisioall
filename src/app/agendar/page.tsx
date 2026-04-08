@@ -546,9 +546,13 @@ export default function AgendarPage() {
           <div className="max-w-lg mx-auto px-4 py-4 flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2">
               <ArrowLeft className="h-4 w-4 text-[#4a7fa5]" />
-              <span className="text-lg font-semibold text-[#4a7fa5]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
-                Kaya Kalp
-              </span>
+              <Image
+                src="/images/logo-kaya-kalp.webp"
+                alt="Kaya Kalp"
+                width={120}
+                height={40}
+                className="h-8 w-auto"
+              />
             </Link>
           </div>
         </header>
@@ -628,9 +632,7 @@ export default function AgendarPage() {
               <ArrowLeft className="h-4 w-4" />
               Volver
             </button>
-            <span className="text-lg font-semibold text-[#4a7fa5]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
-              Kaya Kalp
-            </span>
+            <Image src="/images/logo-kaya-kalp.webp" alt="Kaya Kalp" width={120} height={40} className="h-8 w-auto" />
             <div className="w-16" />
           </div>
         </header>
@@ -723,9 +725,7 @@ export default function AgendarPage() {
             <ArrowLeft className="h-4 w-4" />
             Salir
           </button>
-          <span className="text-sm font-semibold text-[#4a7fa5]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
-            Kaya Kalp
-          </span>
+          <Image src="/images/logo-kaya-kalp.webp" alt="Kaya Kalp" width={100} height={36} className="h-7 w-auto" />
           <div className="w-12" />
         </div>
       </header>
