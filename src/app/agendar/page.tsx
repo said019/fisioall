@@ -459,23 +459,31 @@ export default function AgendarPage() {
     }
   }
 
-  // ── Cargar horarios cuando se elige fecha ──
+  // ── Especialidad derivada de la categoría seleccionada ──
+  const especialidadSeleccionada = CATEGORIAS.find((c) => c.id === categoriaId)?.especialidad;
+
+  // ── Cargar horarios cuando se elige fecha, fisio o categoría ──
   useEffect(() => {
     if (!fechaCita) return;
     setLoadingSlots(true);
     setHoraSeleccionada("");
-    getHorariosDisponibles(fechaCita)
+    getHorariosDisponibles(fechaCita, fisioId || undefined, especialidadSeleccionada, Number(duracion) || 60)
       .then(setSlots)
       .finally(() => setLoadingSlots(false));
-  }, [fechaCita]);
+  }, [fechaCita, fisioId, especialidadSeleccionada, duracion]);
 
-  // ── Cargar fisioterapeutas y config de horarios al abrir modal ──
+  // ── Cargar fisioterapeutas al abrir modal ──
   useEffect(() => {
     if (modalNuevaCita) {
       if (fisios.length === 0) getFisioterapeutasPublic().then(setFisios);
-      getScheduleConfig().then(setScheduleConfig);
     }
   }, [modalNuevaCita, fisios.length]);
+
+  // ── Actualizar días inactivos del calendario según fisio/categoría ──
+  useEffect(() => {
+    if (!modalNuevaCita) return;
+    getScheduleConfig(fisioId || undefined, especialidadSeleccionada).then(setScheduleConfig);
+  }, [modalNuevaCita, fisioId, especialidadSeleccionada]);
 
   // ── Auto-seleccionar fisio si solo hay uno para la categoría ──
   useEffect(() => {
@@ -1006,6 +1014,9 @@ export default function AgendarPage() {
                       setTipoSesion("");
                       setDuracion("45");
                       setFisioId("");
+                      setFechaCita("");
+                      setHoraSeleccionada("");
+                      setSlots([]);
                     }}
                     className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                       categoriaId === cat.id

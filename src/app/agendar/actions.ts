@@ -154,27 +154,52 @@ export async function getMembresiasPaciente(pacienteId: string) {
 }
 
 // ─── OBTENER CONFIG DE HORARIOS (para el calendario público) ─────────────
-export async function getScheduleConfig() {
+// Calcula los días inactivos basándose en los HorarioUsuario reales.
+// Si se pasa un fisioId, solo revisa los días de ese terapeuta.
+// Si se pasa una especialidad (sin fisioId), une los días de todos los
+// terapeutas con esa especialidad. Un día está activo si AL MENOS un
+// terapeuta tiene franjas ese día.
+export async function getScheduleConfig(fisioId?: string, especialidad?: string) {
   const tenantId = await getTenantId();
+
+  // Días bloqueados del tenant
   const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
   const cfg = (tenant?.configuracion ?? {}) as Record<string, unknown>;
-
-  const horarios = (cfg.horarios as { diaKey: string; activo: boolean; inicio: string; fin: string }[]) ?? [];
   const diasBloqueados = (cfg.diasBloqueados as { fecha: string; motivo: string }[]) ?? [];
 
-  // Días de la semana inactivos (0=domingo, 1=lunes, ..., 6=sábado)
+  // Determinar qué usuarios considerar
+  let usuarioIds: string[] = [];
+  if (fisioId) {
+    usuarioIds = [fisioId];
+  } else if (especialidad) {
+    const fisios = await prisma.usuario.findMany({
+      where: { tenantId, activo: true, especialidades: { has: especialidad } },
+      select: { id: true },
+    });
+    usuarioIds = fisios.map((f) => f.id);
+  } else {
+    const fisios = await prisma.usuario.findMany({
+      where: { tenantId, activo: true },
+      select: { id: true },
+    });
+    usuarioIds = fisios.map((f) => f.id);
+  }
+
+  // Obtener todos los HorarioUsuario activos de esos usuarios
+  const horarios = await prisma.horarioUsuario.findMany({
+    where: { tenantId, usuarioId: { in: usuarioIds }, activo: true },
+    select: { diaKey: true },
+  });
+
   const diasSemanaMap: Record<string, number> = {
     domingo: 0, lunes: 1, martes: 2, miercoles: 3, jueves: 4, viernes: 5, sabado: 6,
   };
-  const diasInactivos = horarios
-    .filter((h) => !h.activo)
-    .map((h) => diasSemanaMap[h.diaKey])
-    .filter((n) => n !== undefined);
 
-  // Si no hay config, solo domingo está inactivo por default
-  if (horarios.length === 0) {
-    diasInactivos.push(0);
-  }
+  // Días que tienen al menos un horario activo
+  const diasActivos = new Set(horarios.map((h) => diasSemanaMap[h.diaKey]).filter((n) => n !== undefined));
+
+  // Todos los días de la semana que NO tienen horario → inactivos
+  const diasInactivos = [0, 1, 2, 3, 4, 5, 6].filter((d) => !diasActivos.has(d));
 
   return {
     diasInactivos,
@@ -183,56 +208,89 @@ export async function getScheduleConfig() {
 }
 
 // ─── HORARIOS DISPONIBLES PARA UN DÍA ─────────────────────────────────────
-export async function getHorariosDisponibles(fecha: string) {
+// Genera slots basándose en los HorarioUsuario (franjas) de los terapeutas.
+// Las franjas ya tienen las horas de comida excluidas implícitamente:
+//   Pao: L 16-19, M-J 10-12 y 16-19, V 10-13
+//   Jenni: L-V 9-14 y 15-17 (comida 14-15 está en el gap)
+//   Gaby: L-V 9-13 y 15-19 (comida 13-15 está en el gap)
+//
+// Si fisioId se pasa → solo muestra slots de ese terapeuta.
+// Si no, pero hay especialidad → une las franjas de todos los terapeutas con esa especialidad.
+export async function getHorariosDisponibles(
+  fecha: string,
+  fisioId?: string,
+  especialidad?: string,
+  duracionMin: number = 60,
+) {
   const tenantId = await getTenantId();
   const dia = new Date(fecha);
-  const inicio = new Date(dia.getFullYear(), dia.getMonth(), dia.getDate());
-  const fin = new Date(inicio.getTime() + 24 * 60 * 60 * 1000);
+  const inicioDia = new Date(dia.getFullYear(), dia.getMonth(), dia.getDate());
+  const finDia = new Date(inicioDia.getTime() + 24 * 60 * 60 * 1000);
 
-  // Leer configuración del tenant
-  const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
-  const cfg = (tenant?.configuracion ?? {}) as Record<string, unknown>;
-
-  // Horarios por día desde config
   const diasSemana = ["domingo", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado"];
   const diaKey = diasSemana[dia.getDay()];
-  const horariosConfig = (cfg.horarios as { diaKey: string; activo: boolean; inicio: string; fin: string }[]) ?? [];
-  const horarioDia = horariosConfig.find((h) => h.diaKey === diaKey);
-
-  // Si el día no está activo, retornar vacío
-  if (horarioDia && !horarioDia.activo) return [];
-
-  // Verificar si es un día bloqueado
-  const diasBloqueados = (cfg.diasBloqueados as { fecha: string; motivo: string }[]) ?? [];
   const fechaISO = `${dia.getFullYear()}-${String(dia.getMonth() + 1).padStart(2, "0")}-${String(dia.getDate()).padStart(2, "0")}`;
+
+  // Verificar días bloqueados
+  const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
+  const cfg = (tenant?.configuracion ?? {}) as Record<string, unknown>;
+  const diasBloqueados = (cfg.diasBloqueados as { fecha: string; motivo: string }[]) ?? [];
   if (diasBloqueados.some((d) => d.fecha === fechaISO)) return [];
 
-  // Rango de atención del día (default 09:00-19:00)
-  const atencionInicio = horarioDia ? parseInt(horarioDia.inicio.split(":")[0]) * 60 + parseInt(horarioDia.inicio.split(":")[1]) : 9 * 60;
-  const atencionFin = horarioDia ? parseInt(horarioDia.fin.split(":")[0]) * 60 + parseInt(horarioDia.fin.split(":")[1]) : 19 * 60;
+  // Determinar usuarios a considerar
+  let usuarioIds: string[] = [];
+  if (fisioId) {
+    usuarioIds = [fisioId];
+  } else if (especialidad) {
+    const fisios = await prisma.usuario.findMany({
+      where: { tenantId, activo: true, especialidades: { has: especialidad } },
+      select: { id: true },
+    });
+    usuarioIds = fisios.map((f) => f.id);
+  } else {
+    const fisios = await prisma.usuario.findMany({
+      where: { tenantId, activo: true },
+      select: { id: true },
+    });
+    usuarioIds = fisios.map((f) => f.id);
+  }
 
-  // Hora de comida (default: activo 14:00-15:00)
-  const comida = (cfg.comida as { activo: boolean; inicio: string; fin: string }) ?? { activo: true, inicio: "14:00", fin: "15:00" };
-  if (comida.inicio === undefined) { comida.inicio = "14:00"; comida.fin = "15:00"; comida.activo = true; }
-  const comidaInicio = comida.activo ? parseInt(comida.inicio.split(":")[0]) * 60 + parseInt(comida.inicio.split(":")[1]) : -1;
-  const comidaFin = comida.activo ? parseInt(comida.fin.split(":")[0]) * 60 + parseInt(comida.fin.split(":")[1]) : -1;
+  if (usuarioIds.length === 0) return [];
 
-  // Intervalo de slots (default 30 min)
-  const intervalo = (cfg.intervaloSlots as number) ?? 30;
+  // Obtener franjas de todos los terapeutas para este día
+  const horarios = await prisma.horarioUsuario.findMany({
+    where: { tenantId, usuarioId: { in: usuarioIds }, diaKey, activo: true },
+    select: { usuarioId: true, franjas: true },
+  });
 
-  // Hora actual en Ciudad de México para filtrar slots pasados
+  if (horarios.length === 0) return [];
+
+  // Recolectar todas las franjas (unión de todos los terapeutas)
+  type Franja = { inicio: string; fin: string };
+  const todasFranjas: Franja[] = [];
+  for (const h of horarios) {
+    const franjas = h.franjas as Franja[];
+    todasFranjas.push(...franjas);
+  }
+
+  // Hora actual en CDMX para filtrar slots pasados
   const ahoraMx = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Mexico_City" }));
   const hoyStr = `${ahoraMx.getFullYear()}-${String(ahoraMx.getMonth() + 1).padStart(2, "0")}-${String(ahoraMx.getDate()).padStart(2, "0")}`;
   const esHoy = fechaISO === hoyStr;
   const minutosActuales = esHoy ? ahoraMx.getHours() * 60 + ahoraMx.getMinutes() : -1;
 
-  // Citas ya ocupadas ese día
+  // Citas ya ocupadas ese día (solo del terapeuta específico, o todas)
+  const citasWhere: Record<string, unknown> = {
+    tenantId,
+    estado: { notIn: ["cancelada", "no_show"] },
+    fechaHoraInicio: { gte: inicioDia, lt: finDia },
+  };
+  if (fisioId) {
+    citasWhere.fisioterapeutaId = fisioId;
+  }
+
   const citasOcupadas = await prisma.cita.findMany({
-    where: {
-      tenantId,
-      estado: { notIn: ["cancelada", "no_show"] },
-      fechaHoraInicio: { gte: inicio, lt: fin },
-    },
+    where: citasWhere,
     select: { fechaHoraInicio: true, fechaHoraFin: true },
   });
 
@@ -241,38 +299,50 @@ export async function getHorariosDisponibles(fecha: string) {
     fin: c.fechaHoraFin.getHours() * 60 + c.fechaHoraFin.getMinutes(),
   }));
 
-  // Also fetch Google Calendar events to block those slots
+  // Google Calendar events
   let gcalOcupadas: { inicio: number; fin: number }[] = [];
   try {
     const { listCalendarEvents } = await import("@/lib/google-calendar");
-    const gcalEvents = await listCalendarEvents(tenantId, inicio, fin);
+    const gcalEvents = await listCalendarEvents(tenantId, inicioDia, finDia);
     gcalOcupadas = gcalEvents.map((e) => ({
       inicio: e.start.getHours() * 60 + e.start.getMinutes(),
       fin: e.end.getHours() * 60 + e.end.getMinutes(),
     }));
   } catch {
-    // Google Calendar not connected or error — continue without it
+    // Google Calendar not connected — continue
   }
 
   const todasOcupadas = [...horasOcupadas, ...gcalOcupadas];
 
-  // Generar slots según config
-  const slots: { hora: string; disponible: boolean }[] = [];
-  for (let m = atencionInicio; m < atencionFin; m += intervalo) {
-    // Saltar hora de comida
-    if (comida.activo && m >= comidaInicio && m < comidaFin) continue;
+  // Generar slots a partir de las franjas reales de los terapeutas
+  // Intervalo = duración del servicio, mínimo 30 min
+  const intervalo = Math.max(duracionMin, 30);
+  const slotsSet = new Set<string>();
+  const slotsResult: { hora: string; disponible: boolean }[] = [];
 
-    const h = String(Math.floor(m / 60)).padStart(2, "0");
-    const min = String(m % 60).padStart(2, "0");
-    // Si es hoy, marcar slots pasados como no disponibles
-    const yaPaso = esHoy && m <= minutosActuales;
-    const ocupado = todasOcupadas.some(
-      (o) => m >= o.inicio && m < o.fin
-    );
-    slots.push({ hora: `${h}:${min}`, disponible: !ocupado && !yaPaso });
+  for (const franja of todasFranjas) {
+    const [hIni, mIni] = franja.inicio.split(":").map(Number);
+    const [hFin, mFin] = franja.fin.split(":").map(Number);
+    let minutos = hIni * 60 + mIni;
+    const finMinutos = hFin * 60 + mFin;
+
+    while (minutos + duracionMin <= finMinutos) {
+      const hora = `${String(Math.floor(minutos / 60)).padStart(2, "0")}:${String(minutos % 60).padStart(2, "0")}`;
+
+      if (!slotsSet.has(hora)) {
+        slotsSet.add(hora);
+        const yaPaso = esHoy && minutos <= minutosActuales;
+        const ocupado = todasOcupadas.some((o) => minutos >= o.inicio && minutos < o.fin);
+        slotsResult.push({ hora, disponible: !ocupado && !yaPaso });
+      }
+      minutos += intervalo;
+    }
   }
 
-  return slots;
+  // Ordenar por hora
+  slotsResult.sort((a, b) => a.hora.localeCompare(b.hora));
+
+  return slotsResult;
 }
 
 // ─── OBTENER FISIOTERAPEUTAS ───────────────────────────────────────────────
