@@ -282,10 +282,10 @@ export default function HorariosPanel({ terapeutas }: HorariosPanelProps) {
                   return (
                     <div
                       key={h.diaKey}
-                      className={`flex items-start gap-2 rounded-lg border transition-all ${
+                      className={`flex items-center gap-2 rounded-lg transition-all ${
                         h.activo
-                          ? "border-[#c8dce8] bg-white p-2"
-                          : "border-[#e4ecf2] bg-[#f5f8fa] px-2 py-1.5"
+                          ? "border border-[#c8dce8] bg-white px-2.5 py-1.5"
+                          : "bg-[#f5f8fa] px-2.5 py-1"
                       }`}
                     >
                       {/* Day toggle */}
@@ -303,12 +303,12 @@ export default function HorariosPanel({ terapeutas }: HorariosPanelProps) {
                         />
                       </button>
 
-                      <span className={`w-12 text-xs font-medium shrink-0 ${h.activo ? "text-[#1e2d3a] mt-1" : "text-[#1e2d3a]/40 mt-0.5"}`}>
+                      <span className={`w-14 text-xs font-medium shrink-0 ${h.activo ? "text-[#1e2d3a]" : "text-[#1e2d3a]/40"}`}>
                         {diaLabel}
                       </span>
 
                       {h.activo ? (
-                        <div className="flex-1 space-y-1">
+                        <div className="flex-1 space-y-0.5">
                           {h.franjas.map((f, fi) => (
                             <div key={fi} className="flex items-center gap-1.5">
                               <Select value={f.inicio} onValueChange={(v) => updateFranja(h.diaKey, fi, "inicio", v)}>

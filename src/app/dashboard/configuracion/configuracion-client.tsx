@@ -98,7 +98,7 @@ export default function ConfiguracionClient({ initial, gcalStatus, pacientes, te
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* ── HEADER ── */}
       <div className="flex items-center justify-between">
         <div>
@@ -134,206 +134,191 @@ export default function ConfiguracionClient({ initial, gcalStatus, pacientes, te
       )}
 
       {/* ── GRID: 2 columns on desktop ── */}
-      <div className="grid lg:grid-cols-2 gap-5">
+      <div className="grid lg:grid-cols-2 gap-3">
 
         {/* ══════════════════════════════════════════════════════════════════ */}
-        {/* COL 1: CLÍNICA */}
+        {/* COL 1: IDENTIDAD + CONTACTO (merged) */}
         {/* ══════════════════════════════════════════════════════════════════ */}
-        <div className="space-y-5">
-          {/* ── Identidad ── */}
-          <Card className="border-[#c8dce8] bg-white">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-bold text-[#1e2d3a] flex items-center gap-2">
-                <Building2 className="h-4 w-4 text-[#4a7fa5]" />
-                Identidad de la Clínica
-              </CardTitle>
-              <CardDescription className="text-[11px] text-[#1e2d3a]/50">
-                Nombre y marca que aparecen en tu página, recibos y comunicaciones
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-4">
-                <div className="relative h-16 w-16 rounded-xl bg-[#f0f4f7] border border-[#c8dce8] flex items-center justify-center overflow-hidden shrink-0">
-                  <Image
-                    src="/images/logo-kaya-kalp.webp"
-                    alt="Logo"
-                    width={60}
-                    height={60}
-                    className="h-12 w-12 object-contain"
-                  />
-                  <button className="absolute inset-0 bg-black/0 hover:bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition-all cursor-pointer rounded-xl">
-                    <Camera className="h-4 w-4 text-white" />
-                  </button>
-                </div>
-                <div className="flex-1 space-y-1.5">
-                  <div>
-                    <Label className="text-xs font-semibold text-[#1e2d3a]">Nombre</Label>
-                    <Input
-                      value={config.nombre}
-                      onChange={(e) => updateConfig("nombre", e.target.value)}
-                      className="border-[#c8dce8] text-sm h-9 mt-1"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-xs font-semibold text-[#1e2d3a]">Slogan</Label>
-                <Input
-                  value={config.slogan}
-                  onChange={(e) => updateConfig("slogan", e.target.value)}
-                  placeholder="Ej. Dando vida a tu cuerpo"
-                  className="border-[#c8dce8] text-sm h-9 mt-1"
+        <Card className="border-[#c8dce8] bg-white">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-bold text-[#1e2d3a] flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-[#4a7fa5]" />
+              Clínica y Contacto
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {/* Logo + Nombre + Slogan */}
+            <div className="flex items-center gap-3">
+              <div className="relative h-14 w-14 rounded-xl bg-[#f0f4f7] border border-[#c8dce8] flex items-center justify-center overflow-hidden shrink-0">
+                <Image
+                  src="/images/logo-kaya-kalp.webp"
+                  alt="Logo"
+                  width={48}
+                  height={48}
+                  className="h-10 w-10 object-contain"
                 />
+                <button className="absolute inset-0 bg-black/0 hover:bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition-all cursor-pointer rounded-xl">
+                  <Camera className="h-4 w-4 text-white" />
+                </button>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* ── Contacto ── */}
-          <Card className="border-[#c8dce8] bg-white">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-bold text-[#1e2d3a] flex items-center gap-2">
-                <Phone className="h-4 w-4 text-[#4a7fa5]" />
-                Contacto
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="flex-1 grid grid-cols-2 gap-2">
                 <div>
-                  <Label className="text-xs font-semibold text-[#1e2d3a]">Teléfono</Label>
-                  <div className="relative mt-1">
-                    <Phone className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#1e2d3a]/25" />
+                  <Label className="text-[10px] font-semibold text-[#1e2d3a]/60">Nombre</Label>
+                  <Input
+                    value={config.nombre}
+                    onChange={(e) => updateConfig("nombre", e.target.value)}
+                    className="border-[#c8dce8] text-sm h-8 mt-0.5"
+                  />
+                </div>
+                <div>
+                  <Label className="text-[10px] font-semibold text-[#1e2d3a]/60">Slogan</Label>
+                  <Input
+                    value={config.slogan}
+                    onChange={(e) => updateConfig("slogan", e.target.value)}
+                    placeholder="Ej. Dando vida a tu cuerpo"
+                    className="border-[#c8dce8] text-sm h-8 mt-0.5"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-[#e4ecf2]" />
+
+            {/* Contacto */}
+            <div className="space-y-2">
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <Label className="text-[10px] font-semibold text-[#1e2d3a]/60">Teléfono</Label>
+                  <div className="relative mt-0.5">
+                    <Phone className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-[#1e2d3a]/25" />
                     <Input
                       value={config.telefono}
                       onChange={(e) => updateConfig("telefono", e.target.value)}
-                      className="pl-8 border-[#c8dce8] text-sm h-9"
+                      className="pl-7 border-[#c8dce8] text-sm h-8"
                     />
                   </div>
                 </div>
                 <div>
-                  <Label className="text-xs font-semibold text-[#1e2d3a]">WhatsApp</Label>
-                  <div className="relative mt-1">
-                    <Phone className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#3fa87c]/50" />
+                  <Label className="text-[10px] font-semibold text-[#1e2d3a]/60">WhatsApp</Label>
+                  <div className="relative mt-0.5">
+                    <Phone className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-[#3fa87c]/50" />
                     <Input
                       value={config.whatsapp}
                       onChange={(e) => updateConfig("whatsapp", e.target.value)}
-                      className="pl-8 border-[#c8dce8] text-sm h-9"
+                      className="pl-7 border-[#c8dce8] text-sm h-8"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-[10px] font-semibold text-[#1e2d3a]/60">Email</Label>
+                  <div className="relative mt-0.5">
+                    <Mail className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-[#1e2d3a]/25" />
+                    <Input
+                      value={config.email}
+                      onChange={(e) => updateConfig("email", e.target.value)}
+                      className="pl-7 border-[#c8dce8] text-sm h-8"
                     />
                   </div>
                 </div>
               </div>
 
-              <div>
-                <Label className="text-xs font-semibold text-[#1e2d3a]">Email</Label>
-                <div className="relative mt-1">
-                  <Mail className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#1e2d3a]/25" />
-                  <Input
-                    value={config.email}
-                    onChange={(e) => updateConfig("email", e.target.value)}
-                    className="pl-8 border-[#c8dce8] text-sm h-9"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <Label className="text-xs font-semibold text-[#1e2d3a]">Facebook</Label>
-                  <div className="relative mt-1">
-                    <Facebook className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#1877F2]/50" />
+                  <Label className="text-[10px] font-semibold text-[#1e2d3a]/60">Facebook</Label>
+                  <div className="relative mt-0.5">
+                    <Facebook className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-[#1877F2]/50" />
                     <Input
                       value={config.facebook}
                       onChange={(e) => updateConfig("facebook", e.target.value)}
-                      className="pl-8 border-[#c8dce8] text-sm h-9"
+                      className="pl-7 border-[#c8dce8] text-sm h-8"
                     />
                   </div>
                 </div>
                 <div>
-                  <Label className="text-xs font-semibold text-[#1e2d3a]">Instagram</Label>
-                  <div className="relative mt-1">
-                    <Instagram className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#E4405F]/50" />
+                  <Label className="text-[10px] font-semibold text-[#1e2d3a]/60">Instagram</Label>
+                  <div className="relative mt-0.5">
+                    <Instagram className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-[#E4405F]/50" />
                     <Input
                       value={config.instagram}
                       onChange={(e) => updateConfig("instagram", e.target.value)}
-                      className="pl-8 border-[#c8dce8] text-sm h-9"
+                      className="pl-7 border-[#c8dce8] text-sm h-8"
                     />
                   </div>
                 </div>
                 <div>
-                  <Label className="text-xs font-semibold text-[#1e2d3a]">Sitio Web</Label>
-                  <div className="relative mt-1">
-                    <Globe className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#1e2d3a]/25" />
+                  <Label className="text-[10px] font-semibold text-[#1e2d3a]/60">Sitio Web</Label>
+                  <div className="relative mt-0.5">
+                    <Globe className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-[#1e2d3a]/25" />
                     <Input
                       value={config.sitioWeb}
                       onChange={(e) => updateConfig("sitioWeb", e.target.value)}
-                      className="pl-8 border-[#c8dce8] text-sm h-9"
+                      className="pl-7 border-[#c8dce8] text-sm h-8"
                     />
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </CardContent>
+        </Card>
 
+        {/* ══════════════════════════════════════════════════════════════════ */}
+        {/* COL 2: UBICACIÓN + DÍAS BLOQUEADOS */}
+        {/* ══════════════════════════════════════════════════════════════════ */}
+        <div className="space-y-3">
           {/* ── Ubicación ── */}
           <Card className="border-[#c8dce8] bg-white">
-            <CardHeader className="pb-3">
+            <CardHeader className="pb-2">
               <CardTitle className="text-sm font-bold text-[#1e2d3a] flex items-center gap-2">
                 <MapPin className="h-4 w-4 text-[#4a7fa5]" />
                 Ubicación
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-2">
               <div>
-                <Label className="text-xs font-semibold text-[#1e2d3a]">Dirección</Label>
+                <Label className="text-[10px] font-semibold text-[#1e2d3a]/60">Dirección</Label>
                 <Input
                   value={config.direccion}
                   onChange={(e) => updateConfig("direccion", e.target.value)}
-                  className="border-[#c8dce8] text-sm h-9 mt-1"
+                  className="border-[#c8dce8] text-sm h-8 mt-0.5"
                 />
               </div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <Label className="text-xs font-semibold text-[#1e2d3a]">Ciudad</Label>
+                  <Label className="text-[10px] font-semibold text-[#1e2d3a]/60">Ciudad</Label>
                   <Input
                     value={config.ciudad}
                     onChange={(e) => updateConfig("ciudad", e.target.value)}
-                    className="border-[#c8dce8] text-sm h-9 mt-1"
+                    className="border-[#c8dce8] text-sm h-8 mt-0.5"
                   />
                 </div>
                 <div>
-                  <Label className="text-xs font-semibold text-[#1e2d3a]">Estado</Label>
+                  <Label className="text-[10px] font-semibold text-[#1e2d3a]/60">Estado</Label>
                   <Input
                     value={config.estado}
                     onChange={(e) => updateConfig("estado", e.target.value)}
-                    className="border-[#c8dce8] text-sm h-9 mt-1"
+                    className="border-[#c8dce8] text-sm h-8 mt-0.5"
                   />
                 </div>
                 <div>
-                  <Label className="text-xs font-semibold text-[#1e2d3a]">C.P.</Label>
+                  <Label className="text-[10px] font-semibold text-[#1e2d3a]/60">C.P.</Label>
                   <Input
                     value={config.codigoPostal}
                     onChange={(e) => updateConfig("codigoPostal", e.target.value)}
-                    className="border-[#c8dce8] text-sm h-9 mt-1"
+                    className="border-[#c8dce8] text-sm h-8 mt-0.5"
                   />
                 </div>
               </div>
               <div>
-                <Label className="text-xs font-semibold text-[#1e2d3a]">Google Maps URL</Label>
+                <Label className="text-[10px] font-semibold text-[#1e2d3a]/60">Google Maps URL</Label>
                 <Input
                   value={config.googleMapsUrl}
                   onChange={(e) => updateConfig("googleMapsUrl", e.target.value)}
                   placeholder="https://maps.google.com/..."
-                  className="border-[#c8dce8] text-sm h-9 mt-1"
+                  className="border-[#c8dce8] text-sm h-8 mt-0.5"
                 />
-                <p className="text-[10px] text-[#1e2d3a]/35 mt-1">Se muestra en tu landing como enlace de ubicación</p>
               </div>
             </CardContent>
           </Card>
-        </div>
-
-        {/* ══════════════════════════════════════════════════════════════════ */}
-        {/* COL 2: DÍAS BLOQUEADOS */}
-        {/* ══════════════════════════════════════════════════════════════════ */}
-        <div className="space-y-5">
           {/* ── Días Bloqueados ── */}
           <Card className="border-[#c8dce8] bg-white">
             <CardHeader className="pb-3">
@@ -355,7 +340,7 @@ export default function ConfiguracionClient({ initial, gcalStatus, pacientes, te
                       type="date"
                       value={nuevoBloqueo.fecha}
                       onChange={(e) => setNuevoBloqueo((p) => ({ ...p, fecha: e.target.value }))}
-                      className="border-[#c8dce8] text-sm h-9 mt-1"
+                      className="border-[#c8dce8] text-sm h-8 mt-0.5"
                     />
                   </div>
                   <div className="flex-1">
@@ -364,13 +349,13 @@ export default function ConfiguracionClient({ initial, gcalStatus, pacientes, te
                       value={nuevoBloqueo.motivo}
                       onChange={(e) => setNuevoBloqueo((p) => ({ ...p, motivo: e.target.value }))}
                       placeholder="Ej. Vacaciones, día festivo"
-                      className="border-[#c8dce8] text-sm h-9 mt-1"
+                      className="border-[#c8dce8] text-sm h-8 mt-0.5"
                     />
                   </div>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="cursor-pointer h-9 px-3 border-[#c8dce8] text-[#4a7fa5] hover:bg-[#4a7fa5]/10"
+                    className="cursor-pointer h-8 px-2.5 border-[#c8dce8] text-[#4a7fa5] hover:bg-[#4a7fa5]/10"
                     disabled={!nuevoBloqueo.fecha}
                     onClick={() => {
                       if (!nuevoBloqueo.fecha) return;
@@ -435,7 +420,7 @@ export default function ConfiguracionClient({ initial, gcalStatus, pacientes, te
           <Unplug className="h-4 w-4 text-[#4a7fa5]" />
           Integraciones
         </h2>
-        <div className="grid lg:grid-cols-2 gap-5">
+        <div className="grid lg:grid-cols-2 gap-3">
           {/* ── Google Calendar ── */}
           <Card className="border-[#c8dce8] bg-white">
             <CardHeader className="pb-3">
