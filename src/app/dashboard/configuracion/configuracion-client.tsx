@@ -4,7 +4,6 @@ import { useState } from "react";
 import Image from "next/image";
 import {
   Building2,
-  Clock,
   Save,
   Camera,
   MapPin,
@@ -12,7 +11,6 @@ import {
   Mail,
   CheckCircle2,
   Globe,
-  UtensilsCrossed,
   Facebook,
   Instagram,
   AlertCircle,
@@ -27,20 +25,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   guardarConfiguracion,
   disconnectGoogleCalendar,
   type ConfigClinicaData,
-  type HorarioDiaData,
-  type ConfigComidaData,
   type DiaBloqueadoData,
   type ConfigCompleta,
 } from "./actions";
@@ -50,25 +38,7 @@ import HorariosPanel from "./horarios-panel";
 // ─────────────────────────────────────────────────────────────────────────────
 // TIPOS
 // ─────────────────────────────────────────────────────────────────────────────
-interface HorarioDia extends HorarioDiaData {
-  dia: string;
-}
-
 type ConfigClinica = ConfigClinicaData;
-type ConfigComida = ConfigComidaData;
-
-const DIA_LABELS: Record<string, string> = {
-  lunes: "Lunes", martes: "Martes", miercoles: "Miércoles",
-  jueves: "Jueves", viernes: "Viernes", sabado: "Sábado", domingo: "Domingo",
-};
-
-const HORAS = [
-  "07:00", "07:30", "08:00", "08:30", "09:00", "09:30",
-  "10:00", "10:30", "11:00", "11:30", "12:00", "12:30",
-  "13:00", "13:30", "14:00", "14:30", "15:00", "15:30",
-  "16:00", "16:30", "17:00", "17:30", "18:00", "18:30",
-  "19:00", "19:30", "20:00",
-];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // COMPONENT
@@ -94,10 +64,6 @@ interface ConfiguracionClientProps {
 
 export default function ConfiguracionClient({ initial, gcalStatus, pacientes, terapeutas = [] }: ConfiguracionClientProps) {
   const [config, setConfig] = useState<ConfigClinica>(initial.clinica);
-  const [horarios, setHorarios] = useState<HorarioDia[]>(
-    initial.horarios.map((h) => ({ ...h, dia: DIA_LABELS[h.diaKey] ?? h.diaKey }))
-  );
-  const [comida, setComida] = useState<ConfigComida>(initial.comida);
   const [diasBloqueados, setDiasBloqueados] = useState<DiaBloqueadoData[]>(initial.diasBloqueados);
   const [nuevoBloqueo, setNuevoBloqueo] = useState({ fecha: "", motivo: "" });
   const [guardado, setGuardado] = useState(false);
@@ -108,36 +74,14 @@ export default function ConfiguracionClient({ initial, gcalStatus, pacientes, te
     setConfig((prev) => ({ ...prev, [key]: value }));
   };
 
-  const toggleDia = (diaKey: string) => {
-    setHorarios((prev) =>
-      prev.map((h) => (h.diaKey === diaKey ? { ...h, activo: !h.activo } : h))
-    );
-  };
-
-  const updateHorario = (diaKey: string, field: "inicio" | "fin", value: string) => {
-    setHorarios((prev) =>
-      prev.map((h) => (h.diaKey === diaKey ? { ...h, [field]: value } : h))
-    );
-  };
-
-  const calcHoras = (inicio: string, fin: string): number => {
-    const [hi, mi] = inicio.split(":").map(Number);
-    const [hf, mf] = fin.split(":").map(Number);
-    return hf - hi + (mf - mi) / 60;
-  };
-
-  const totalHorasSemana = horarios
-    .filter((h) => h.activo)
-    .reduce((sum, h) => sum + calcHoras(h.inicio, h.fin) - (comida.activo ? calcHoras(comida.inicio, comida.fin) : 0), 0);
-
   const handleGuardar = async () => {
     setGuardando(true);
     setError(null);
     try {
       const result = await guardarConfiguracion({
         clinica: config,
-        horarios: horarios.map(({ diaKey, activo, inicio, fin }) => ({ diaKey, activo, inicio, fin })),
-        comida,
+        horarios: initial.horarios,
+        comida: initial.comida,
         diasBloqueados,
       });
       if ("error" in result) {
@@ -387,201 +331,22 @@ export default function ConfiguracionClient({ initial, gcalStatus, pacientes, te
         </div>
 
         {/* ══════════════════════════════════════════════════════════════════ */}
-        {/* COL 2: HORARIOS + CITAS */}
+        {/* COL 2: DÍAS BLOQUEADOS */}
         {/* ══════════════════════════════════════════════════════════════════ */}
         <div className="space-y-5">
-          {/* ── Horario semanal ── */}
-          <Card className="border-[#c8dce8] bg-white">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-sm font-bold text-[#1e2d3a] flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-[#4a7fa5]" />
-                    Horario de Atención
-                  </CardTitle>
-                  <CardDescription className="text-[11px] text-[#1e2d3a]/50">
-                    Horario general de la clínica — define cuándo se pueden agendar citas
-                  </CardDescription>
-                </div>
-                <Badge variant="outline" className="text-[10px] bg-[#4a7fa5]/10 text-[#4a7fa5] border-[#4a7fa5]/20">
-                  {Math.round(totalHorasSemana)}h / semana
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-1">
-              {horarios.map((h) => (
-                <div
-                  key={h.diaKey}
-                  className={`flex items-center gap-3 rounded-lg transition-all ${
-                    h.activo ? "bg-[#f0f4f7]/60 px-3 py-2" : "opacity-40 px-3 py-1.5"
-                  }`}
-                >
-                  <button
-                    onClick={() => toggleDia(h.diaKey)}
-                    className={`h-5 w-9 rounded-full transition-all flex items-center px-0.5 cursor-pointer shrink-0 ${
-                      h.activo ? "bg-[#3fa87c]" : "bg-gray-300"
-                    }`}
-                    aria-label={`${h.activo ? "Desactivar" : "Activar"} ${h.dia}`}
-                  >
-                    <div className={`h-4 w-4 rounded-full bg-white shadow transition-all ${h.activo ? "translate-x-4" : "translate-x-0"}`} />
-                  </button>
-
-                  <span className={`text-xs font-semibold w-20 shrink-0 ${h.activo ? "text-[#1e2d3a]" : "text-[#1e2d3a]/40"}`}>
-                    {h.dia}
-                  </span>
-
-                  {h.activo ? (
-                    <div className="flex items-center gap-1.5 flex-1">
-                      <Select value={h.inicio} onValueChange={(v) => updateHorario(h.diaKey, "inicio", v)}>
-                        <SelectTrigger className="w-[80px] border-[#c8dce8] text-[11px] h-7 cursor-pointer">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {HORAS.map((t) => (
-                            <SelectItem key={t} value={t} className="text-xs cursor-pointer">{t}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <span className="text-[10px] text-[#1e2d3a]/30">—</span>
-                      <Select value={h.fin} onValueChange={(v) => updateHorario(h.diaKey, "fin", v)}>
-                        <SelectTrigger className="w-[80px] border-[#c8dce8] text-[11px] h-7 cursor-pointer">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {HORAS.map((t) => (
-                            <SelectItem key={t} value={t} className="text-xs cursor-pointer">{t}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <span className="text-[10px] text-[#1e2d3a]/30 ml-1">
-                        {calcHoras(h.inicio, h.fin)}h
-                      </span>
-                    </div>
-                  ) : (
-                    <span className="text-[11px] text-[#1e2d3a]/25 flex-1">Cerrado</span>
-                  )}
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          {/* ── Hora de Comida ── */}
-          <Card className={`border-[#c8dce8] bg-white transition-opacity ${!comida.activo ? "opacity-60" : ""}`}>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-bold text-[#1e2d3a] flex items-center gap-2">
-                  <UtensilsCrossed className="h-4 w-4 text-[#e89b3f]" />
-                  Hora de Comida
-                </CardTitle>
-                <button
-                  onClick={() => setComida((prev) => ({ ...prev, activo: !prev.activo }))}
-                  className={`h-5 w-9 rounded-full transition-all flex items-center px-0.5 cursor-pointer shrink-0 ${
-                    comida.activo ? "bg-[#3fa87c]" : "bg-gray-300"
-                  }`}
-                  aria-label="Toggle hora de comida"
-                >
-                  <div className={`h-4 w-4 rounded-full bg-white shadow transition-all ${comida.activo ? "translate-x-4" : "translate-x-0"}`} />
-                </button>
-              </div>
-              <CardDescription className="text-[11px] text-[#1e2d3a]/50">
-                Este horario se bloquea automáticamente para no agendar citas
-              </CardDescription>
-            </CardHeader>
-            {comida.activo && (
-              <CardContent>
-                <div className="flex items-center gap-3 bg-[#e89b3f]/5 border border-[#e89b3f]/15 rounded-lg px-4 py-3">
-                  <UtensilsCrossed className="h-4 w-4 text-[#e89b3f] shrink-0" />
-                  <div className="flex items-center gap-2 flex-1">
-                    <Select value={comida.inicio} onValueChange={(v) => setComida((p) => ({ ...p, inicio: v }))}>
-                      <SelectTrigger className="w-[90px] border-[#e89b3f]/20 text-xs h-8 bg-white cursor-pointer">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {HORAS.map((t) => (
-                          <SelectItem key={t} value={t} className="text-xs cursor-pointer">{t}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <span className="text-xs text-[#1e2d3a]/30">a</span>
-                    <Select value={comida.fin} onValueChange={(v) => setComida((p) => ({ ...p, fin: v }))}>
-                      <SelectTrigger className="w-[90px] border-[#e89b3f]/20 text-xs h-8 bg-white cursor-pointer">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {HORAS.map((t) => (
-                          <SelectItem key={t} value={t} className="text-xs cursor-pointer">{t}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <span className="text-[10px] text-[#e89b3f] font-semibold shrink-0">
-                    {calcHoras(comida.inicio, comida.fin)}h
-                  </span>
-                </div>
-                <div className="flex items-start gap-2 mt-2.5">
-                  <AlertCircle className="h-3 w-3 text-[#1e2d3a]/25 mt-0.5 shrink-0" />
-                  <p className="text-[10px] text-[#1e2d3a]/35 leading-relaxed">
-                    Los pacientes no podrán agendar citas durante este horario. Aplica a todos los días laborables.
-                  </p>
-                </div>
-              </CardContent>
-            )}
-          </Card>
-
-          {/* ── Días Bloqueados + Config Citas (fusionados) ── */}
+          {/* ── Días Bloqueados ── */}
           <Card className="border-[#c8dce8] bg-white">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-bold text-[#1e2d3a] flex items-center gap-2">
-                <Clock className="h-4 w-4 text-[#4a7fa5]" />
-                Configuración de Citas
+                <CalendarOff className="h-4 w-4 text-[#d9534f]" />
+                Días Bloqueados
               </CardTitle>
               <CardDescription className="text-[11px] text-[#1e2d3a]/50">
-                Duración, intervalos y días bloqueados para el agendamiento
+                Vacaciones, festivos y cierres — no se podrán agendar citas estos días
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-5">
-              {/* Duración + Intervalo */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-xs font-semibold text-[#1e2d3a]">Duración default</Label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Input
-                      type="number"
-                      value={config.duracionDefault}
-                      onChange={(e) => updateConfig("duracionDefault", Number(e.target.value))}
-                      className="border-[#c8dce8] text-sm h-9 w-20"
-                    />
-                    <span className="text-xs text-[#1e2d3a]/40">minutos</span>
-                  </div>
-                </div>
-                <div>
-                  <Label className="text-xs font-semibold text-[#1e2d3a]">Intervalo de slots</Label>
-                  <Select
-                    value={config.intervaloSlots.toString()}
-                    onValueChange={(v) => updateConfig("intervaloSlots", Number(v))}
-                  >
-                    <SelectTrigger className="border-[#c8dce8] text-sm h-9 mt-1 cursor-pointer">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="15" className="cursor-pointer text-xs">Cada 15 min</SelectItem>
-                      <SelectItem value="30" className="cursor-pointer text-xs">Cada 30 min</SelectItem>
-                      <SelectItem value="60" className="cursor-pointer text-xs">Cada 60 min</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Separator */}
-              <div className="border-t border-[#c8dce8]/60" />
-
-              {/* Días Bloqueados */}
+            <CardContent className="space-y-4">
               <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <CalendarOff className="h-3.5 w-3.5 text-[#d9534f]" />
-                  <span className="text-xs font-bold text-[#1e2d3a]">Días Bloqueados</span>
-                  <span className="text-[10px] text-[#1e2d3a]/40">— vacaciones, festivos, cierres</span>
-                </div>
 
                 <div className="flex items-end gap-2">
                   <div className="flex-1">
