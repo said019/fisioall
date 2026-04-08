@@ -730,6 +730,8 @@ export default function AgendarPage() {
         </div>
       </header>
 
+      {/* ── PROFILE CONTENT (hidden when booking) ── */}
+      {!modalNuevaCita && (
       <main className="max-w-lg mx-auto px-4 py-6 space-y-5">
         {/* ── Profile card ── */}
         {paciente && (
@@ -971,69 +973,72 @@ export default function AgendarPage() {
           </div>
         )}
       </main>
+      )}
 
-      {/* ── MODAL: NUEVA CITA ── */}
-      <Dialog open={modalNuevaCita} onOpenChange={setModalNuevaCita}>
-        <DialogContent className="max-w-[26rem] border-[#c8dce8] p-0 gap-0 overflow-hidden">
-          {/* Header con gradiente */}
-          <div className="bg-gradient-to-r from-[#4a7fa5] to-[#3fa87c] px-5 py-4">
-            <DialogHeader>
-              <DialogTitle className="text-white font-bold text-base">Agendar Cita</DialogTitle>
-              <DialogDescription className="text-white/70 text-xs">
-                Elige servicio, fecha y horario
-              </DialogDescription>
-            </DialogHeader>
-          </div>
+      {/* ── INLINE BOOKING: TWO-PANEL LAYOUT ── */}
+      {modalNuevaCita && (
+      <main className="flex-1 w-full">
+        <form action={formAction} className="flex flex-col lg:flex-row min-h-[calc(100vh-57px)]">
+          <input type="hidden" name="pacienteId" value={paciente?.id || ""} />
+          <input type="hidden" name="horaInicio" value={horaSeleccionada} />
+          <input type="hidden" name="duracion" value={duracion} />
+          <input type="hidden" name="fisioterapeutaId" value={fisioId} />
+          <input type="hidden" name="fecha" value={fechaCita} />
+          <input type="hidden" name="tipoSesion" value={tipoSesion} />
+          <input type="hidden" name="comprobanteUrl" value={comprobanteUrl} />
 
-          <form action={formAction} className="px-5 py-4 space-y-5 max-h-[70vh] overflow-y-auto">
-            <input type="hidden" name="pacienteId" value={paciente?.id || ""} />
-            <input type="hidden" name="horaInicio" value={horaSeleccionada} />
-            <input type="hidden" name="duracion" value={duracion} />
-            <input type="hidden" name="fisioterapeutaId" value={fisioId} />
-            <input type="hidden" name="fecha" value={fechaCita} />
-            <input type="hidden" name="tipoSesion" value={tipoSesion} />
-            <input type="hidden" name="comprobanteUrl" value={comprobanteUrl} />
-
-            {/* ── PASO 1: Categoría ── */}
-            <div className="space-y-2.5">
-              <div className="flex items-center gap-2">
-                <div className="h-6 w-6 rounded-full bg-[#4a7fa5] flex items-center justify-center">
-                  <Star className="h-3 w-3 text-white" />
-                </div>
-                <Label className="text-sm font-semibold text-[#1e2d3a]">Servicio</Label>
+          {/* ════════════════════════════════════════════════════════════════════
+              LEFT PANEL — Categories + Services (60%)
+              ════════════════════════════════════════════════════════════════════ */}
+          <div className="w-full lg:w-[60%] bg-white p-6 lg:p-10 overflow-y-auto">
+            {/* Back button + Title */}
+            <div className="flex items-center gap-4 mb-8">
+              <button
+                type="button"
+                onClick={() => setModalNuevaCita(false)}
+                className="h-10 w-10 rounded-full bg-[#f0f4f7] hover:bg-[#e4ecf2] flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <ArrowLeft className="h-5 w-5 text-[#1e2d3a]" />
+              </button>
+              <div>
+                <h1 className="text-2xl font-bold text-[#1e2d3a]">Agendar Cita</h1>
+                <p className="text-sm text-[#5a7080] mt-0.5">Elige servicio, fecha y horario</p>
               </div>
+            </div>
 
-              {/* Category pills */}
-              <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
-                {CATEGORIAS.map((cat) => (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => {
-                      setCategoriaId(cat.id);
-                      setTipoSesion("");
-                      setDuracion("45");
-                      setFisioId("");
-                      setFechaCita("");
-                      setHoraSeleccionada("");
-                      setSlots([]);
-                    }}
-                    className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                      categoriaId === cat.id
-                        ? "text-white shadow-md"
-                        : "bg-[#f0f4f7] text-[#5a7080] hover:bg-[#e4ecf2]"
-                    }`}
-                    style={categoriaId === cat.id ? { backgroundColor: cat.color, boxShadow: `0 4px 12px ${cat.color}40` } : undefined}
-                  >
-                    {cat.label}
-                  </button>
-                ))}
-              </div>
+            {/* Category pills */}
+            <div className="flex flex-wrap gap-2.5 mb-6">
+              {CATEGORIAS.map((cat) => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => {
+                    setCategoriaId(cat.id);
+                    setTipoSesion("");
+                    setDuracion("45");
+                    setFisioId("");
+                    setFechaCita("");
+                    setHoraSeleccionada("");
+                    setSlots([]);
+                  }}
+                  className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all cursor-pointer ${
+                    categoriaId === cat.id
+                      ? "text-white shadow-lg"
+                      : "bg-[#f0f4f7] text-[#5a7080] hover:bg-[#e4ecf2]"
+                  }`}
+                  style={categoriaId === cat.id ? { backgroundColor: cat.color, boxShadow: `0 4px 16px ${cat.color}40` } : undefined}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
 
-              {/* Service list for selected category */}
-              {categoriaActiva && (
-                <div className="space-y-1.5 max-h-40 overflow-y-auto">
-                  {categoriaActiva.servicios.map((srv) => (
+            {/* Service cards for selected category */}
+            {categoriaActiva ? (
+              <div className="space-y-3">
+                {categoriaActiva.servicios.map((srv) => {
+                  const isSelected = tipoSesion === srv.nombre;
+                  return (
                     <button
                       key={srv.nombre}
                       type="button"
@@ -1041,40 +1046,57 @@ export default function AgendarPage() {
                         setTipoSesion(srv.nombre);
                         setDuracion(String(srv.duracion));
                       }}
-                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left transition-all cursor-pointer ${
-                        tipoSesion === srv.nombre
-                          ? "bg-[#4a7fa5]/8 border-2 border-[#4a7fa5]/30"
-                          : "bg-[#f8fafb] border-2 border-transparent hover:border-[#c8dce8]"
+                      className={`w-full flex items-center gap-4 p-4 rounded-2xl text-left transition-all cursor-pointer border-2 ${
+                        isSelected
+                          ? "bg-[#4a7fa5]/8 border-[#4a7fa5]/30 shadow-md shadow-[#4a7fa5]/10"
+                          : "bg-[#f8fafb] border-transparent hover:border-[#c8dce8] hover:shadow-sm"
                       }`}
                     >
-                      <div>
-                        <p className={`text-xs font-semibold ${tipoSesion === srv.nombre ? "text-[#4a7fa5]" : "text-[#1e2d3a]"}`}>
+                      <div className={`h-11 w-11 rounded-xl flex items-center justify-center shrink-0 ${
+                        isSelected ? "bg-[#4a7fa5]/15" : "bg-[#e4ecf2]"
+                      }`}>
+                        <Star className={`h-5 w-5 ${isSelected ? "text-[#4a7fa5]" : "text-[#8fa8ba]"}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm font-semibold ${isSelected ? "text-[#4a7fa5]" : "text-[#1e2d3a]"}`}>
                           {srv.nombre}
                         </p>
-                        <p className="text-[10px] text-[#8fa8ba] mt-0.5">{srv.duracion} min</p>
+                        <p className="text-xs text-[#8fa8ba] mt-0.5">
+                          <Clock className="inline h-3 w-3 mr-1 -mt-0.5" />{srv.duracion} min
+                        </p>
                       </div>
-                      <span className={`text-xs font-bold ${tipoSesion === srv.nombre ? "text-[#4a7fa5]" : "text-[#5a7080]"}`}>
+                      <span className={`text-base font-bold shrink-0 ${isSelected ? "text-[#4a7fa5]" : "text-[#5a7080]"}`}>
                         ${srv.precio}
                       </span>
                     </button>
-                  ))}
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-16">
+                <div className="mx-auto h-16 w-16 rounded-2xl bg-[#4a7fa5]/8 flex items-center justify-center mb-4">
+                  <Star className="h-8 w-8 text-[#4a7fa5]/40" />
                 </div>
-              )}
-            </div>
+                <p className="text-sm text-[#5a7080]">Selecciona una categoria para ver los servicios disponibles</p>
+              </div>
+            )}
+          </div>
 
-            {/* ── Divider ── */}
-            {tipoSesion && <div className="border-t border-[#e4ecf2]" />}
+          {/* ════════════════════════════════════════════════════════════════════
+              RIGHT PANEL — Calendar, Slots, Therapist, Anticipo, CTA (40%)
+              ════════════════════════════════════════════════════════════════════ */}
+          <div className="w-full lg:w-[40%] bg-[#f8fafb] border-l border-[#e4ecf2] p-6 lg:p-8 overflow-y-auto space-y-6">
 
-            {/* ── PASO 2: Calendario ── */}
-            {tipoSesion && (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="h-6 w-6 rounded-full bg-[#4a7fa5] flex items-center justify-center">
-                    <CalendarDays className="h-3 w-3 text-white" />
+            {/* ── Calendar ── */}
+            {tipoSesion ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-7 w-7 rounded-full bg-[#4a7fa5] flex items-center justify-center">
+                    <CalendarDays className="h-3.5 w-3.5 text-white" />
                   </div>
                   <Label className="text-sm font-semibold text-[#1e2d3a]">Fecha</Label>
                 </div>
-                <div className="bg-[#f8fafb] rounded-xl p-3 border border-[#e4ecf2]">
+                <div className="bg-white rounded-2xl p-4 border border-[#e4ecf2] shadow-sm">
                   <MiniCalendario
                     selected={fechaCita}
                     onSelect={(f) => {
@@ -1086,42 +1108,47 @@ export default function AgendarPage() {
                   />
                 </div>
               </div>
+            ) : (
+              <div className="text-center py-12">
+                <CalendarDays className="h-10 w-10 text-[#1e2d3a]/10 mx-auto mb-3" />
+                <p className="text-sm text-[#8fa8ba]">Elige un servicio para continuar</p>
+              </div>
             )}
 
-            {/* ── PASO 3: Horarios ── */}
+            {/* ── Time slots ── */}
             {fechaCita && tipoSesion && (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="h-6 w-6 rounded-full bg-[#4a7fa5] flex items-center justify-center">
-                    <Clock className="h-3 w-3 text-white" />
+              <div className="space-y-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-7 w-7 rounded-full bg-[#4a7fa5] flex items-center justify-center">
+                    <Clock className="h-3.5 w-3.5 text-white" />
                   </div>
                   <Label className="text-sm font-semibold text-[#1e2d3a]">Horario</Label>
                 </div>
 
                 {loadingSlots ? (
-                  <div className="flex items-center gap-2 py-6 justify-center bg-[#f8fafb] rounded-xl">
+                  <div className="flex items-center gap-2 py-8 justify-center bg-white rounded-2xl border border-[#e4ecf2]">
                     <Loader2 className="h-4 w-4 animate-spin text-[#4a7fa5]" />
                     <span className="text-xs text-[#5a7080]">Cargando horarios...</span>
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="bg-white rounded-2xl p-4 border border-[#e4ecf2] shadow-sm space-y-4">
                     {/* Mañana */}
                     {slots.filter((s) => parseInt(s.hora) < 13).length > 0 && (
                       <div>
-                        <p className="text-[10px] font-semibold text-[#8fa8ba] uppercase tracking-wider mb-1.5">Mañana</p>
-                        <div className="grid grid-cols-5 gap-1.5">
+                        <p className="text-[10px] font-semibold text-[#8fa8ba] uppercase tracking-wider mb-2">Mañana</p>
+                        <div className="grid grid-cols-4 gap-2">
                           {slots.filter((s) => parseInt(s.hora) < 13).map((s) => (
                             <button
                               key={s.hora}
                               type="button"
                               disabled={!s.disponible}
                               onClick={() => setHoraSeleccionada(s.hora)}
-                              className={`py-2 px-1 text-xs font-medium rounded-lg transition-all ${
+                              className={`py-2.5 px-1.5 text-xs font-medium rounded-xl transition-all ${
                                 !s.disponible
                                   ? "bg-[#f0f2f4] text-[#c8cdd2] cursor-not-allowed"
                                   : horaSeleccionada === s.hora
-                                  ? "bg-[#4a7fa5] text-white shadow-md shadow-[#4a7fa5]/25 scale-[1.02]"
-                                  : "bg-white border border-[#dde5ec] text-[#1e2d3a] hover:border-[#4a7fa5] hover:bg-[#4a7fa5]/5 cursor-pointer"
+                                  ? "bg-[#4a7fa5] text-white shadow-md shadow-[#4a7fa5]/25 scale-[1.03]"
+                                  : "bg-[#f0f4f7] border border-[#dde5ec] text-[#1e2d3a] hover:border-[#4a7fa5] hover:bg-[#4a7fa5]/5 cursor-pointer"
                               }`}
                             >
                               {s.hora}
@@ -1134,20 +1161,20 @@ export default function AgendarPage() {
                     {/* Tarde */}
                     {slots.filter((s) => parseInt(s.hora) >= 13).length > 0 && (
                       <div>
-                        <p className="text-[10px] font-semibold text-[#8fa8ba] uppercase tracking-wider mb-1.5">Tarde</p>
-                        <div className="grid grid-cols-5 gap-1.5">
+                        <p className="text-[10px] font-semibold text-[#8fa8ba] uppercase tracking-wider mb-2">Tarde</p>
+                        <div className="grid grid-cols-4 gap-2">
                           {slots.filter((s) => parseInt(s.hora) >= 13).map((s) => (
                             <button
                               key={s.hora}
                               type="button"
                               disabled={!s.disponible}
                               onClick={() => setHoraSeleccionada(s.hora)}
-                              className={`py-2 px-1 text-xs font-medium rounded-lg transition-all ${
+                              className={`py-2.5 px-1.5 text-xs font-medium rounded-xl transition-all ${
                                 !s.disponible
                                   ? "bg-[#f0f2f4] text-[#c8cdd2] cursor-not-allowed"
                                   : horaSeleccionada === s.hora
-                                  ? "bg-[#4a7fa5] text-white shadow-md shadow-[#4a7fa5]/25 scale-[1.02]"
-                                  : "bg-white border border-[#dde5ec] text-[#1e2d3a] hover:border-[#4a7fa5] hover:bg-[#4a7fa5]/5 cursor-pointer"
+                                  ? "bg-[#4a7fa5] text-white shadow-md shadow-[#4a7fa5]/25 scale-[1.03]"
+                                  : "bg-[#f0f4f7] border border-[#dde5ec] text-[#1e2d3a] hover:border-[#4a7fa5] hover:bg-[#4a7fa5]/5 cursor-pointer"
                               }`}
                             >
                               {s.hora}
@@ -1158,8 +1185,8 @@ export default function AgendarPage() {
                     )}
 
                     {slots.every((s) => !s.disponible) && (
-                      <div className="text-center py-4 bg-[#f8fafb] rounded-xl">
-                        <p className="text-xs text-[#8fa8ba]">No hay horarios disponibles este día</p>
+                      <div className="text-center py-4">
+                        <p className="text-xs text-[#8fa8ba]">No hay horarios disponibles este dia</p>
                       </div>
                     )}
                   </div>
@@ -1167,22 +1194,22 @@ export default function AgendarPage() {
               </div>
             )}
 
-            {/* ── Terapeuta (auto-filtrado por categoría) ── */}
+            {/* ── Therapist selector ── */}
             {horaSeleccionada && fisiosFiltrados.length > 0 && (
-              <div className="space-y-1.5">
-                <Label className="text-[11px] text-[#5a7080]">
+              <div className="space-y-2">
+                <Label className="text-xs text-[#5a7080] font-medium">
                   Terapeuta {fisiosFiltrados.length === 1 ? "" : "(opcional)"}
                 </Label>
                 {fisiosFiltrados.length === 1 ? (
-                  <div className="bg-[#f8fafb] border border-[#e4ecf2] rounded-xl px-3 py-2.5 flex items-center gap-2">
-                    <div className="h-7 w-7 rounded-full bg-[#4a7fa5]/15 flex items-center justify-center">
-                      <User className="h-3.5 w-3.5 text-[#4a7fa5]" />
+                  <div className="bg-white border border-[#e4ecf2] rounded-2xl px-4 py-3 flex items-center gap-3 shadow-sm">
+                    <div className="h-8 w-8 rounded-full bg-[#4a7fa5]/15 flex items-center justify-center">
+                      <User className="h-4 w-4 text-[#4a7fa5]" />
                     </div>
                     <span className="text-sm font-medium text-[#1e2d3a]">{fisiosFiltrados[0].nombre}</span>
                   </div>
                 ) : (
                   <Select value={fisioId} onValueChange={setFisioId}>
-                    <SelectTrigger className="h-10 text-sm border-[#c8dce8] rounded-xl cursor-pointer bg-[#f8fafb] hover:bg-white transition-colors">
+                    <SelectTrigger className="h-11 text-sm border-[#c8dce8] rounded-2xl cursor-pointer bg-white hover:bg-[#f0f4f7] transition-colors shadow-sm">
                       <SelectValue placeholder="Sin preferencia" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1195,33 +1222,32 @@ export default function AgendarPage() {
               </div>
             )}
 
-            {/* ── PASO 5: Anticipo ── */}
+            {/* ── Anticipo section ── */}
             {horaSeleccionada && fechaCita && tipoSesion && (
               <div className="space-y-3">
-                <div className="border-t border-[#e4ecf2]" />
-                <div className="flex items-center gap-2">
-                  <div className="h-6 w-6 rounded-full bg-[#e89b3f] flex items-center justify-center">
-                    <Receipt className="h-3 w-3 text-white" />
+                <div className="flex items-center gap-2.5">
+                  <div className="h-7 w-7 rounded-full bg-[#e89b3f] flex items-center justify-center">
+                    <Receipt className="h-3.5 w-3.5 text-white" />
                   </div>
                   <Label className="text-sm font-semibold text-[#1e2d3a]">Anticipo</Label>
                 </div>
 
-                <div className="bg-[#e89b3f]/5 border border-[#e89b3f]/20 rounded-xl p-4 space-y-3">
+                <div className="bg-white rounded-2xl border border-[#e89b3f]/20 p-5 space-y-4 shadow-sm">
                   <div className="flex items-start gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-[#e89b3f]/10 flex items-center justify-center shrink-0">
+                    <div className="h-10 w-10 rounded-xl bg-[#e89b3f]/10 flex items-center justify-center shrink-0">
                       <CreditCard className="h-5 w-5 text-[#e89b3f]" />
                     </div>
                     <div>
                       <p className="text-sm font-bold text-[#1e2d3a]">$200 MXN</p>
                       <p className="text-[10px] text-[#5a7080] mt-0.5 leading-relaxed">
                         Para confirmar tu cita, realiza una transferencia de <strong>$200 MXN</strong> y sube tu comprobante.
-                        El resto se paga el día de tu cita.
+                        El resto se paga el dia de tu cita.
                       </p>
                     </div>
                   </div>
 
                   {/* Datos bancarios */}
-                  <div className="bg-white rounded-lg p-3 border border-[#e4ecf2] space-y-1.5">
+                  <div className="bg-[#f8fafb] rounded-xl p-3.5 border border-[#e4ecf2] space-y-1.5">
                     <p className="text-[10px] font-bold text-[#8fa8ba] uppercase tracking-wider">Datos para transferencia</p>
                     <div className="grid grid-cols-2 gap-1 text-xs">
                       <span className="text-[#8fa8ba]">Banco:</span>
@@ -1255,7 +1281,7 @@ export default function AgendarPage() {
                       </div>
                     </div>
                   ) : (
-                    <label className="flex flex-col items-center gap-2 border-2 border-dashed border-[#c8dce8] rounded-xl p-4 cursor-pointer hover:border-[#4a7fa5] hover:bg-[#4a7fa5]/3 transition-all">
+                    <label className="flex flex-col items-center gap-2 border-2 border-dashed border-[#c8dce8] rounded-xl p-5 cursor-pointer hover:border-[#4a7fa5] hover:bg-[#4a7fa5]/3 transition-all">
                       {uploadingComprobante ? (
                         <Loader2 className="h-6 w-6 text-[#4a7fa5] animate-spin" />
                       ) : (
@@ -1266,7 +1292,7 @@ export default function AgendarPage() {
                           {uploadingComprobante ? "Subiendo..." : "Subir comprobante de pago"}
                         </p>
                         <p className="text-[10px] text-[#8fa8ba] mt-0.5">
-                          JPG, PNG, WebP o PDF · Máx. 5 MB
+                          JPG, PNG, WebP o PDF -- Max. 5 MB
                         </p>
                       </div>
                       <input
@@ -1290,7 +1316,7 @@ export default function AgendarPage() {
                               alert(data.error || "Error al subir archivo");
                             }
                           } catch {
-                            alert("Error de conexión al subir archivo");
+                            alert("Error de conexion al subir archivo");
                           } finally {
                             setUploadingComprobante(false);
                             e.target.value = "";
@@ -1305,7 +1331,7 @@ export default function AgendarPage() {
 
             {/* Error */}
             {formState?.error && (
-              <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+              <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
                 <p className="text-xs text-red-600 font-medium flex items-center gap-1.5">
                   <AlertCircle className="h-3.5 w-3.5 shrink-0" /> {formState.error}
                 </p>
@@ -1314,56 +1340,71 @@ export default function AgendarPage() {
 
             {/* Success */}
             {formState?.success && (
-              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3">
+              <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
                 <p className="text-xs text-emerald-600 font-medium flex items-center gap-1.5">
                   <CheckCircle2 className="h-3.5 w-3.5" /> Cita agendada correctamente
                 </p>
               </div>
             )}
 
-            {/* ── Resumen + Botones ── */}
-            <div className="pt-1 space-y-3">
-              {horaSeleccionada && fechaCita && tipoSesion && (
-                <div className="bg-[#4a7fa5]/5 border border-[#4a7fa5]/15 rounded-xl p-3 flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-lg bg-[#4a7fa5]/10 flex items-center justify-center shrink-0">
-                    <CheckCircle2 className="h-4 w-4 text-[#4a7fa5]" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-[#1e2d3a]">
-                      {new Date(fechaCita + "T12:00:00").toLocaleDateString("es-MX", { weekday: "short", day: "numeric", month: "short" })} · {horaSeleccionada}
-                    </p>
-                    <p className="text-[10px] text-[#5a7080]">
-                      {tipoSesion} · {duracion} min
-                    </p>
+            {/* ── Summary + CTA ── */}
+            {horaSeleccionada && fechaCita && tipoSesion && (
+              <div className="space-y-4">
+                {/* Summary card */}
+                <div className="bg-white border border-[#4a7fa5]/15 rounded-2xl p-4 shadow-sm">
+                  <p className="text-[10px] font-bold text-[#8fa8ba] uppercase tracking-wider mb-2.5">Resumen de tu cita</p>
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-[#4a7fa5]/10 flex items-center justify-center shrink-0">
+                      <CheckCircle2 className="h-5 w-5 text-[#4a7fa5]" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-[#1e2d3a]">
+                        {new Date(fechaCita + "T12:00:00").toLocaleDateString("es-MX", { weekday: "short", day: "numeric", month: "short" })} · {horaSeleccionada}
+                      </p>
+                      <p className="text-xs text-[#5a7080] mt-0.5">
+                        {tipoSesion} · {duracion} min
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-lg font-bold text-[#4a7fa5]">
+                        ${categoriaActiva?.servicios.find((s) => s.nombre === tipoSesion)?.precio ?? ""}
+                      </p>
+                      <p className="text-[10px] text-[#8fa8ba]">Total</p>
+                    </div>
                   </div>
                 </div>
-              )}
 
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setModalNuevaCita(false)}
-                  className="flex-1 h-11 border-[#c8dce8] cursor-pointer text-sm rounded-xl"
-                >
-                  Cancelar
-                </Button>
+                {/* CTA Button */}
                 <Button
                   type="submit"
                   disabled={isPending || !horaSeleccionada || !fechaCita || !tipoSesion || !comprobanteUrl}
-                  className="flex-1 h-11 bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white cursor-pointer transition-all duration-200 text-sm rounded-xl font-semibold"
+                  className="w-full h-13 bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white cursor-pointer transition-all duration-200 text-base rounded-2xl font-semibold shadow-lg shadow-[#3fa87c]/25"
                 >
                   {isPending ? (
-                    <><Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> Agendando...</>
+                    <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Agendando...</>
                   ) : (
-                    <><CalendarDays className="mr-1.5 h-4 w-4" /> Confirmar Cita</>
+                    <><CalendarDays className="mr-2 h-5 w-5" /> Confirmar Cita</>
                   )}
                 </Button>
               </div>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+            )}
+
+            {/* Cancel link at bottom of right panel */}
+            {!(horaSeleccionada && fechaCita && tipoSesion) && tipoSesion && (
+              <div className="pt-4">
+                <button
+                  type="button"
+                  onClick={() => setModalNuevaCita(false)}
+                  className="text-sm text-[#5a7080] hover:text-[#1e2d3a] transition-colors cursor-pointer"
+                >
+                  Cancelar y volver al perfil
+                </button>
+              </div>
+            )}
+          </div>
+        </form>
+      </main>
+      )}
 
       {/* ── MODAL: CANCELAR CITA ── */}
       <Dialog open={!!modalCancelar} onOpenChange={() => setModalCancelar(null)}>
