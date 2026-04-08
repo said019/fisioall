@@ -84,7 +84,7 @@ type Membresia = {
   paquete: string;
   sesionesUsadas: number;
   sesionesTotal: number;
-  estado: string;
+  estado: string | null;
 };
 
 type TarjetaLealtad = {
