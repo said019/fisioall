@@ -21,6 +21,7 @@ export async function getDashboardData() {
     ingresosMes,
     citasHoyData,
     equipoData,
+    anticiposPendientesData,
   ] = await Promise.all([
     // Count today's appointments
     prisma.cita.count({
@@ -83,6 +84,22 @@ export async function getDashboardData() {
         },
       },
     }),
+
+    // Pending anticipos to verify
+    prisma.pago.findMany({
+      where: {
+        tenantId,
+        concepto: "Anticipo obligatorio",
+        comprobanteUrl: { not: null },
+        cita: { estado: { in: ["confirmada", "agendada", "pendiente_anticipo"] } },
+      },
+      include: {
+        paciente: { select: { nombre: true, apellido: true, telefono: true } },
+        cita: { select: { id: true, fechaHoraInicio: true, tipoSesion: true, estado: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+    }),
   ]);
 
   return {
@@ -112,6 +129,29 @@ export async function getDashboardData() {
       rol: u.rol,
       citasHoy: u._count.citasAtendidas,
       ultimoLogin: u.ultimoLogin?.toISOString() ?? null,
+    })),
+    anticiposPendientes: anticiposPendientesData.map((a) => ({
+      id: a.id,
+      paciente: `${a.paciente.nombre} ${a.paciente.apellido}`,
+      telefono: a.paciente.telefono,
+      monto: Number(a.monto),
+      comprobanteUrl: a.comprobanteUrl,
+      fechaPago: a.fechaPago?.toISOString() ?? a.createdAt?.toISOString() ?? new Date().toISOString(),
+      cita: a.cita
+        ? {
+            id: a.cita.id,
+            fecha: a.cita.fechaHoraInicio.toLocaleDateString("es-MX", {
+              day: "2-digit",
+              month: "short",
+            }),
+            hora: a.cita.fechaHoraInicio.toLocaleTimeString("es-MX", {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            tipoSesion: a.cita.tipoSesion ?? "Sesión",
+            estado: a.cita.estado,
+          }
+        : null,
     })),
   };
 }

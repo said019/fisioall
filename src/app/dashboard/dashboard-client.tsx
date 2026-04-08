@@ -20,6 +20,9 @@ import {
   CalendarCheck,
   Stethoscope,
   Dumbbell,
+  Receipt,
+  ExternalLink,
+  Clock,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -183,6 +186,21 @@ export interface DashboardData {
     rol: string;
     citasHoy: number;
   }[];
+  anticiposPendientes?: {
+    id: string;
+    paciente: string;
+    telefono: string | null;
+    monto: number;
+    comprobanteUrl: string | null;
+    fechaPago: string;
+    cita: {
+      id: string;
+      fecha: string;
+      hora: string;
+      tipoSesion: string;
+      estado: string;
+    } | null;
+  }[];
 }
 
 export default function DashboardClient({ data }: { data?: DashboardData }) {
@@ -288,6 +306,58 @@ export default function DashboardClient({ data }: { data?: DashboardData }) {
           </CardContent>
         </Card>
       </div>
+
+      {/* ── 2.5 ANTICIPOS POR VERIFICAR ───────────────────────────────── */}
+      {data?.anticiposPendientes && data.anticiposPendientes.length > 0 && (
+        <Card className="border-[#e89b3f]/30 bg-[#e89b3f]/5">
+          <CardHeader className="pb-3 flex flex-row items-center justify-between">
+            <CardTitle className="text-sm font-bold text-[#1e2d3a] flex items-center gap-2">
+              <div className="h-7 w-7 rounded-lg bg-[#e89b3f]/15 flex items-center justify-center">
+                <Receipt className="h-3.5 w-3.5 text-[#e89b3f]" />
+              </div>
+              Anticipos por Verificar
+            </CardTitle>
+            <Badge variant="outline" className="text-[10px] bg-[#e89b3f]/10 text-[#e89b3f] border-[#e89b3f]/30">
+              {data.anticiposPendientes.length} pendiente{data.anticiposPendientes.length !== 1 ? "s" : ""}
+            </Badge>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {data.anticiposPendientes.map((a) => (
+              <div
+                key={a.id}
+                className="flex items-center gap-3 p-3 rounded-xl bg-white border border-[#e89b3f]/20 hover:border-[#e89b3f]/40 transition-all duration-200"
+              >
+                <div className="h-9 w-9 rounded-lg bg-[#e89b3f]/10 flex items-center justify-center shrink-0">
+                  <CreditCard className="h-4 w-4 text-[#e89b3f]" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-[#1e2d3a] truncate">{a.paciente}</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    {a.cita && (
+                      <span className="text-[10px] text-[#1e2d3a]/50 flex items-center gap-0.5">
+                        <Clock className="h-2.5 w-2.5" />
+                        {a.cita.fecha} · {a.cita.hora} · {a.cita.tipoSesion}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <p className="text-sm font-bold text-[#e89b3f] shrink-0">${a.monto}</p>
+                {a.comprobanteUrl && (
+                  <a
+                    href={a.comprobanteUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="shrink-0 h-8 w-8 rounded-lg bg-[#4a7fa5]/10 flex items-center justify-center hover:bg-[#4a7fa5]/20 transition-colors"
+                    title="Ver comprobante"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5 text-[#4a7fa5]" />
+                  </a>
+                )}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {/* ── 3. GRID PRINCIPAL ──────────────────────────────────────────── */}
       <div className="grid lg:grid-cols-12 gap-4">

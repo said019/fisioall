@@ -425,6 +425,7 @@ export async function agendarCitaPublica(prevState: unknown, formData: FormData)
         monto: 200,
         metodo: comprobanteUrl ? "transferencia" : "otro",
         estado: comprobanteUrl ? "pagado" : "pendiente",
+        comprobanteUrl: comprobanteUrl || null,
         concepto: "Anticipo obligatorio",
         registradoPor: fisioId,
       },

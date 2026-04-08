@@ -81,7 +81,7 @@ function SidebarContent({
             alt="Kaya Kalp"
             width={280}
             height={100}
-            className="h-14 w-auto brightness-0 invert opacity-80"
+            className="h-20 w-auto brightness-0 invert opacity-80"
             priority
           />
         </Link>
@@ -278,15 +278,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               />
             </div>
 
-            <Button
-              variant="ghost"
-              size="icon"
-              className="cursor-pointer relative h-9 w-9 hover:bg-[#e4ecf2]"
-              aria-label="Notificaciones"
-            >
-              <Bell className="h-4 w-4 text-[#5a7080]" />
-              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[#e89b3f]" aria-hidden="true" />
-            </Button>
+            <Link href="/dashboard/notificaciones">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="cursor-pointer relative h-9 w-9 hover:bg-[#e4ecf2]"
+                aria-label="Notificaciones"
+              >
+                <Bell className="h-4 w-4 text-[#5a7080]" />
+                <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[#e89b3f]" aria-hidden="true" />
+              </Button>
+            </Link>
 
             <Avatar className="h-9 w-9 border-2 border-[#c8dce8] cursor-pointer" aria-label="Perfil de usuario">
               <AvatarFallback className="bg-[#4a7fa5] text-white text-sm font-bold">
