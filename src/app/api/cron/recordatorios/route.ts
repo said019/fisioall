@@ -23,7 +23,7 @@ export async function GET(req: Request) {
       recordatorioEnviado: { not: true },
     },
     include: {
-      paciente: { select: { nombre: true, apellido: true, telefono: true } },
+      paciente: { select: { nombre: true, telefono: true } },
       fisioterapeuta: { select: { nombre: true, apellido: true } },
     },
   });
@@ -44,19 +44,29 @@ export async function GET(req: Request) {
       hour: "2-digit",
       minute: "2-digit",
     });
+    const hoyLabel = new Date().toLocaleDateString("es-MX", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+    });
 
     const mensaje = [
       `Hola ${cita.paciente.nombre} 👋`,
       ``,
-      `Te recordamos tu cita de mañana en *Kaya Kalp*:`,
+      `Te recordamos tu cita de *mañana* en *Kaya Kalp*:`,
       `📅 ${fecha}`,
       `🕐 ${hora} hrs`,
       `👩‍⚕️ ${cita.fisioterapeuta.nombre} ${cita.fisioterapeuta.apellido}`,
       cita.tipoSesion ? `📋 ${cita.tipoSesion}` : null,
       cita.sala ? `🏠 ${cita.sala}` : null,
       ``,
-      `Si necesitas reagendar, contáctanos con anticipación.`,
-      `¡Te esperamos! 💙`,
+      `*Responde con:*`,
+      `1️⃣ *1* — Confirmar mi cita ✅`,
+      `2️⃣ *2* — Cancelar mi cita ❌`,
+      `3️⃣ *3* — Reagendar mi cita 🔄`,
+      ``,
+      `⏰ Puedes cancelar o reagendar *sin perder tu anticipo* antes de las *8:00 PM de hoy (${hoyLabel})*.`,
+      `Después de esa hora, el anticipo de $200 no es reembolsable.`,
     ]
       .filter(Boolean)
       .join("\n");

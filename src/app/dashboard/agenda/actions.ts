@@ -21,7 +21,7 @@ export async function getCitasSemana(fechaInicio: string, fechaFin: string) {
         select: { nombre: true, apellido: true, telefono: true },
       },
       fisioterapeuta: {
-        select: { nombre: true, apellido: true },
+        select: { nombre: true, apellido: true, colorAgenda: true },
       },
       membresia: {
         select: { sesionesUsadas: true, sesionesTotal: true },
@@ -37,6 +37,7 @@ export async function getCitasSemana(fechaInicio: string, fechaFin: string) {
     iniciales: `${c.paciente.nombre[0]}${c.paciente.apellido[0]}`.toUpperCase(),
     telefono: c.paciente.telefono,
     fisioterapeuta: `${c.fisioterapeuta.nombre} ${c.fisioterapeuta.apellido}`,
+    colorFisio: c.fisioterapeuta.colorAgenda ?? "#4a7fa5",
     motivo: c.tipoSesion ?? "Sesión",
     fechaHoraInicio: c.fechaHoraInicio.toISOString(),
     fechaHoraFin: c.fechaHoraFin.toISOString(),
@@ -190,7 +191,7 @@ export async function getFisioterapeutas() {
 
   const fisios = await prisma.usuario.findMany({
     where: { tenantId, activo: true },
-    select: { id: true, nombre: true, apellido: true, rol: true },
+    select: { id: true, nombre: true, apellido: true, rol: true, colorAgenda: true },
     orderBy: { nombre: "asc" },
   });
 
@@ -199,6 +200,7 @@ export async function getFisioterapeutas() {
     nombre: `${f.nombre} ${f.apellido}`,
     iniciales: `${f.nombre[0]}${f.apellido[0]}`.toUpperCase(),
     rol: f.rol,
+    colorAgenda: f.colorAgenda ?? "#4a7fa5",
   }));
 }
 

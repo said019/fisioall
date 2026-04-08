@@ -47,6 +47,7 @@ import {
   getSlotsDisponibles,
   getCitasSemana,
 } from "./actions";
+import CobrarPanel from "../pagos/cobrar-panel";
 
 // ── TYPES ──────────────────────────────────────────────────────────────────
 type Cita = {
@@ -61,6 +62,7 @@ type Cita = {
   dayIndex: number;
   sesion: string;
   sala: string;
+  colorFisio: string;
 };
 
 type PacienteOption = {
@@ -74,6 +76,7 @@ type FisioOption = {
   id: string;
   nombre: string;
   iniciales: string;
+  colorAgenda?: string;
 };
 
 type DBCita = {
@@ -83,6 +86,7 @@ type DBCita = {
   iniciales: string;
   telefono: string;
   fisioterapeuta: string;
+  colorFisio: string;
   motivo: string;
   fechaHoraInicio: string;
   fechaHoraFin: string;
@@ -158,6 +162,7 @@ function mapDBCitas(dbCitas: DBCita[], monday: Date): Cita[] {
       dayIndex: dayIdx,
       sesion: c.sesion ?? "—",
       sala: c.sala ?? "—",
+      colorFisio: c.colorFisio ?? "#4a7fa5",
     };
   });
 }
@@ -206,6 +211,7 @@ export default function AgendaClient({
   );
   const [diaActivo, setDiaActivo] = useState(todayIndex >= 0 ? todayIndex : 0);
   const [citaSeleccionada, setCitaSeleccionada] = useState<Cita | null>(null);
+  const [modalCobrar, setModalCobrar] = useState(false);
   const [modalNuevaCita, setModalNuevaCita] = useState(false);
   const [loadingWeek, setLoadingWeek] = useState(false);
 
@@ -366,7 +372,24 @@ export default function AgendaClient({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold text-[#1e2d3a]">{weekLabel(monday)}</h2>
-          <p className="text-sm text-[#1e2d3a]/50">{totalSemana} citas programadas esta semana</p>
+          <div className="flex items-center gap-3 mt-0.5">
+            <p className="text-sm text-[#1e2d3a]/50">{totalSemana} citas esta semana</p>
+            {fisioterapeutas && fisioterapeutas.length > 0 && (
+              <div className="flex items-center gap-3">
+                {fisioterapeutas.map((f) => (
+                  <div key={f.id} className="flex items-center gap-1.5">
+                    <span
+                      className="h-2.5 w-2.5 rounded-full"
+                      style={{ backgroundColor: f.colorAgenda ?? "#4a7fa5" }}
+                    />
+                    <span className="text-xs text-[#1e2d3a]/50">
+                      {f.nombre.split(" ")[0]}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -522,9 +545,15 @@ export default function AgendaClient({
                         <span className="text-xs font-bold text-[#1e2d3a]">{cita.hora}</span>
                         <span className="text-[10px] text-[#1e2d3a]/30">{cita.duracion}min</span>
                       </div>
-                      <div className={`w-1 h-9 rounded-full shrink-0 ${conf.border} border-l-[3px]`} />
+                      <div
+                        className="w-1 h-9 rounded-full shrink-0"
+                        style={{ backgroundColor: cita.colorFisio, opacity: 0.8 }}
+                      />
                       <Avatar className="h-8 w-8 border border-[#c8dce8] shrink-0">
-                        <AvatarFallback className="bg-[#4a7fa5]/10 text-[#4a7fa5] text-[10px] font-bold">
+                        <AvatarFallback
+                          style={{ backgroundColor: `${cita.colorFisio}25`, color: cita.colorFisio }}
+                          className="text-[10px] font-bold"
+                        >
                           {cita.initials}
                         </AvatarFallback>
                       </Avatar>
@@ -548,7 +577,7 @@ export default function AgendaClient({
       </div>
 
       {/* ── MODAL: DETALLE CITA ── */}
-      <Dialog open={!!citaSeleccionada} onOpenChange={() => setCitaSeleccionada(null)}>
+      <Dialog open={!!citaSeleccionada} onOpenChange={() => { setCitaSeleccionada(null); setModalCobrar(false); }}>
         {citaSeleccionada && (() => {
           const diaInfo = diasSemana[citaSeleccionada.dayIndex];
           const conf = estadoConfig[citaSeleccionada.estado] ?? estadoConfig.agendada;
@@ -648,28 +677,60 @@ export default function AgendaClient({
                   </div>
                 )}
 
-                <div className="flex gap-2 pt-1">
+                {/* Cobrar sesión — solo para confirmada/en_curso */}
+                {(citaSeleccionada.estado === "confirmada" || citaSeleccionada.estado === "en_curso") && !modalCobrar && (
                   <Button
-                    onClick={() => handleStatusChange(citaSeleccionada.id, "completada")}
-                    disabled={statusPending || citaSeleccionada.estado === "completada"}
-                    className="flex-1 bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white cursor-pointer text-xs h-9"
+                    onClick={() => setModalCobrar(true)}
+                    className="w-full bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white cursor-pointer text-xs h-9 gap-1.5"
                   >
-                    {statusPending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />}
-                    Completar
+                    <DollarSign className="h-3.5 w-3.5" />
+                    Cobrar Sesión
                   </Button>
-                  <Button variant="outline" className="flex-1 border-[#a8cfe0] hover:bg-[#e4ecf2] cursor-pointer text-xs h-9">
-                    <RefreshCw className="mr-1.5 h-3.5 w-3.5 text-[#4a7fa5]" />
-                    Reagendar
-                  </Button>
-                  <Button
-                    onClick={() => handleStatusChange(citaSeleccionada.id, "cancelada")}
-                    disabled={statusPending || citaSeleccionada.estado === "cancelada"}
-                    variant="outline"
-                    className="border-[#d9534f]/20 text-[#d9534f] hover:bg-[#d9534f]/5 cursor-pointer text-xs h-9 px-2.5"
-                  >
-                    <XCircle className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
+                )}
+
+                {modalCobrar && citaSeleccionada.pacienteId && (
+                  <CobrarPanel
+                    citaId={citaSeleccionada.id}
+                    pacienteId={citaSeleccionada.pacienteId}
+                    precioSesion={450}
+                    pacienteNombre={citaSeleccionada.paciente}
+                    tipoSesion={citaSeleccionada.motivo}
+                    onSuccess={async () => {
+                      setModalCobrar(false);
+                      setCitaSeleccionada(null);
+                      const sat = new Date(monday);
+                      sat.setDate(monday.getDate() + 5);
+                      sat.setHours(23, 59, 59, 999);
+                      const db = await getCitasSemana(monday.toISOString(), sat.toISOString());
+                      if (db) setCitasData(mapDBCitas(db, monday));
+                    }}
+                  />
+                )}
+
+                {!modalCobrar && (
+                  <div className="flex gap-2 pt-1">
+                    <Button
+                      onClick={() => handleStatusChange(citaSeleccionada.id, "completada")}
+                      disabled={statusPending || citaSeleccionada.estado === "completada"}
+                      className="flex-1 bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white cursor-pointer text-xs h-9"
+                    >
+                      {statusPending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />}
+                      Completar
+                    </Button>
+                    <Button variant="outline" className="flex-1 border-[#a8cfe0] hover:bg-[#e4ecf2] cursor-pointer text-xs h-9">
+                      <RefreshCw className="mr-1.5 h-3.5 w-3.5 text-[#4a7fa5]" />
+                      Reagendar
+                    </Button>
+                    <Button
+                      onClick={() => handleStatusChange(citaSeleccionada.id, "cancelada")}
+                      disabled={statusPending || citaSeleccionada.estado === "cancelada"}
+                      variant="outline"
+                      className="border-[#d9534f]/20 text-[#d9534f] hover:bg-[#d9534f]/5 cursor-pointer text-xs h-9 px-2.5"
+                    >
+                      <XCircle className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                )}
               </div>
             </DialogContent>
           );

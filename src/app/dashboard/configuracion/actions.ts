@@ -225,7 +225,7 @@ export async function getHorariosTerapeutas() {
     prisma.cubiculoUsuario.findMany({ where: { tenantId: tenant.id } }),
     prisma.usuario.findMany({
       where: { tenantId: tenant.id, activo: true },
-      select: { id: true, nombre: true, apellido: true, rol: true },
+      select: { id: true, nombre: true, apellido: true, rol: true, colorAgenda: true },
     }),
   ]);
 
@@ -283,5 +283,19 @@ export async function guardarHorariosTerapeutas(data: {
 
   revalidatePath("/dashboard/configuracion");
   revalidatePath("/dashboard/agenda");
+  return { ok: true };
+}
+
+export async function actualizarColorUsuario(usuarioId: string, color: string) {
+  const tenant = await prisma.tenant.findUnique({ where: { slug: TENANT_SLUG } });
+  if (!tenant) return { error: "Tenant no encontrado" };
+
+  await prisma.usuario.update({
+    where: { id: usuarioId, tenantId: tenant.id },
+    data: { colorAgenda: color },
+  });
+
+  revalidatePath("/dashboard/agenda");
+  revalidatePath("/dashboard/configuracion");
   return { ok: true };
 }

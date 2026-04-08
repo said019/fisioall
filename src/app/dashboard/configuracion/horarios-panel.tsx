@@ -20,7 +20,7 @@ import {
   Clock,
   Loader2,
 } from "lucide-react";
-import { guardarHorariosTerapeutas } from "./actions";
+import { guardarHorariosTerapeutas, actualizarColorUsuario } from "./actions";
 
 // ── TYPES ───────────────────────────────────────────────────────────────────
 interface Franja {
@@ -269,6 +269,18 @@ export default function HorariosPanel({ terapeutas }: HorariosPanelProps) {
 
         {selectedTerapeuta && (
           <>
+            {/* ── Color in agenda ── */}
+            <div className="flex items-center gap-3">
+              <Label className="text-xs font-semibold text-[#1e2d3a]/70">Color en agenda</Label>
+              <input
+                type="color"
+                defaultValue={(selectedTerapeuta as Terapeuta & { colorAgenda?: string }).colorAgenda ?? "#4a7fa5"}
+                key={selectedId}
+                onBlur={(e) => actualizarColorUsuario(selectedId, e.target.value)}
+                className="h-8 w-10 cursor-pointer rounded border border-[#c8dce8] p-0.5"
+              />
+            </div>
+
             {/* ── Schedule per day ── */}
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-[#1e2d3a]/70 flex items-center gap-1.5">

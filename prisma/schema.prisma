@@ -173,6 +173,7 @@ model Usuario {
   tokenRecuperacion     String?   @map("token_recuperacion")
   tokenExp              DateTime? @map("token_exp") @db.Timestamptz
   refreshToken          String?   @map("refresh_token")
+  colorAgenda           String    @default("#4a7fa5") @map("color_agenda") @db.VarChar(9)
   configuracion         Json?     @default("{}")
   createdAt             DateTime? @default(now()) @map("created_at") @db.Timestamptz
   updatedAt             DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
@@ -258,6 +259,7 @@ model Paciente {
   activo                      Boolean?    @default(true)
   fechaPrimeraCita            DateTime?   @map("fecha_primera_cita") @db.Date
   totalSesiones               Int?        @default(0) @map("total_sesiones")
+  anticipoSaldo               Decimal     @default(0) @map("anticipo_saldo") @db.Decimal(10, 2)
   
   walletPassUrl               String?     @map("wallet_pass_url")
   walletPassId                String?     @map("wallet_pass_id") @db.VarChar(100)
@@ -459,7 +461,12 @@ model Cita {
   anticipoVenceAt       DateTime?         @map("anticipo_vence_at") @db.Timestamptz
   
   googleEventId         String?           @map("google_event_id") @db.VarChar(200)
-  
+
+  // Reagendamiento
+  reagendarToken        String?           @map("reagendar_token")
+  reagendarTokenAt      DateTime?         @map("reagendar_token_at") @db.Timestamptz
+  sinCargoReagendar     Boolean           @default(false) @map("sin_cargo_reagendar")
+
   notasPrevias          String?           @map("notas_previas")
   createdBy             String?           @map("created_by") @db.Uuid
   
@@ -558,7 +565,9 @@ model Pago {
   comprobanteUrl      String?         @map("comprobante_url")
   concepto            String
   notas               String?
-  
+  aplicaAnticipo      Boolean         @default(false) @map("aplica_anticipo")
+  montoAnticipo       Decimal?        @map("monto_anticipo") @db.Decimal(10, 2)
+
   registradoPor       String?         @map("registrado_por") @db.Uuid
   fechaPago           DateTime?       @default(now()) @map("fecha_pago") @db.Timestamptz
   createdAt           DateTime?       @default(now()) @map("created_at") @db.Timestamptz
