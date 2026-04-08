@@ -400,7 +400,7 @@ export default function ConfiguracionClient({ initial, gcalStatus, pacientes, te
                     Horario de Atención
                   </CardTitle>
                   <CardDescription className="text-[11px] text-[#1e2d3a]/50">
-                    Horarios disponibles para agendar citas
+                    Horario general de la clínica — define cuándo se pueden agendar citas
                   </CardDescription>
                 </div>
                 <Badge variant="outline" className="text-[10px] bg-[#4a7fa5]/10 text-[#4a7fa5] border-[#4a7fa5]/20">
@@ -408,12 +408,12 @@ export default function ConfiguracionClient({ initial, gcalStatus, pacientes, te
                 </Badge>
               </div>
             </CardHeader>
-            <CardContent className="space-y-1.5">
+            <CardContent className="space-y-1">
               {horarios.map((h) => (
                 <div
                   key={h.diaKey}
-                  className={`flex items-center gap-3 rounded-lg px-3 py-2.5 transition-all ${
-                    h.activo ? "bg-[#f0f4f7]/60" : "opacity-40"
+                  className={`flex items-center gap-3 rounded-lg transition-all ${
+                    h.activo ? "bg-[#f0f4f7]/60 px-3 py-2" : "opacity-40 px-3 py-1.5"
                   }`}
                 >
                   <button

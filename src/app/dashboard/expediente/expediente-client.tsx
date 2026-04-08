@@ -143,7 +143,17 @@ function HistorialSesiones({
   citaActualId: string | null;
 }) {
   const [abierto, setAbierto] = useState(false);
-  const visibles = abierto ? historial : historial.slice(0, 3);
+  const [filtroTipo, setFiltroTipo] = useState<string>("todos");
+
+  // Get unique session types for filter tabs
+  const tiposUnicos = Array.from(new Set(historial.map((h) => h.tipoSesion)));
+  const tieneMuchosTipos = tiposUnicos.length > 1;
+
+  const filtrado = filtroTipo === "todos"
+    ? historial
+    : historial.filter((h) => h.tipoSesion === filtroTipo);
+
+  const visibles = abierto ? filtrado : filtrado.slice(0, 4);
 
   return (
     <Card className="border-[#c8dce8] bg-white">
@@ -151,9 +161,9 @@ function HistorialSesiones({
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-bold text-[#1e2d3a] flex items-center gap-1.5">
             <CalendarDays className="h-3.5 w-3.5 text-[#4a7fa5]" />
-            Historial de Sesiones ({historial.length})
+            Historial de Sesiones ({filtrado.length}{filtroTipo !== "todos" ? ` de ${historial.length}` : ""})
           </CardTitle>
-          {historial.length > 3 && (
+          {filtrado.length > 4 && (
             <Button
               variant="ghost"
               size="sm"
@@ -169,7 +179,39 @@ function HistorialSesiones({
           )}
         </div>
       </CardHeader>
-      <CardContent className="pt-0">
+      <CardContent className="pt-0 space-y-2">
+        {/* Filter by tipo de sesión (only show if patient has more than 1 type) */}
+        {tieneMuchosTipos && (
+          <div className="flex gap-1.5 flex-wrap">
+            <button
+              onClick={() => { setFiltroTipo("todos"); setAbierto(false); }}
+              className={`px-2.5 py-1 rounded-md text-[10px] font-medium border cursor-pointer transition-all ${
+                filtroTipo === "todos"
+                  ? "bg-[#4a7fa5] text-white border-[#4a7fa5]"
+                  : "bg-white border-[#c8dce8] text-[#1e2d3a]/60 hover:border-[#4a7fa5]"
+              }`}
+            >
+              Todas ({historial.length})
+            </button>
+            {tiposUnicos.map((tipo) => {
+              const count = historial.filter((h) => h.tipoSesion === tipo).length;
+              return (
+                <button
+                  key={tipo}
+                  onClick={() => { setFiltroTipo(tipo); setAbierto(false); }}
+                  className={`px-2.5 py-1 rounded-md text-[10px] font-medium border cursor-pointer transition-all ${
+                    filtroTipo === tipo
+                      ? "bg-[#4a7fa5] text-white border-[#4a7fa5]"
+                      : "bg-white border-[#c8dce8] text-[#1e2d3a]/60 hover:border-[#4a7fa5]"
+                  }`}
+                >
+                  {tipo} ({count})
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         <div className="space-y-1.5">
           {visibles.map((h) => {
             const esActual = h.id === citaActualId;
@@ -215,6 +257,11 @@ function HistorialSesiones({
               </Link>
             );
           })}
+          {filtrado.length === 0 && (
+            <p className="text-[11px] text-[#1e2d3a]/30 text-center py-3">
+              No hay sesiones de este tipo
+            </p>
+          )}
         </div>
       </CardContent>
     </Card>

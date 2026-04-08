@@ -220,10 +220,15 @@ export default function HorariosPanel({ terapeutas }: HorariosPanelProps) {
     <Card className="border-[#c8dce8] bg-white">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-bold text-[#1e2d3a] flex items-center gap-2">
-            <Users className="h-4 w-4 text-[#4a7fa5]" />
-            Horarios del Equipo
-          </CardTitle>
+          <div>
+            <CardTitle className="text-sm font-bold text-[#1e2d3a] flex items-center gap-2">
+              <Users className="h-4 w-4 text-[#4a7fa5]" />
+              Horarios del Equipo
+            </CardTitle>
+            <p className="text-[11px] text-[#1e2d3a]/50 mt-0.5">
+              Horario individual de cada terapeuta — puede ser diferente al horario general de la clínica
+            </p>
+          </div>
           <Button
             onClick={handleSave}
             disabled={isPending}
@@ -245,7 +250,7 @@ export default function HorariosPanel({ terapeutas }: HorariosPanelProps) {
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-5">
+      <CardContent className="space-y-4">
         {/* ── Therapist selector ── */}
         <div className="flex gap-2">
           {terapeutas.map((t) => (
@@ -267,40 +272,40 @@ export default function HorariosPanel({ terapeutas }: HorariosPanelProps) {
         {selectedTerapeuta && (
           <>
             {/* ── Schedule per day ── */}
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-[#1e2d3a]/70 flex items-center gap-1.5">
                 <Clock className="h-3.5 w-3.5" />
                 Horario semanal
               </Label>
 
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 {horarios.map((h) => {
                   const diaLabel = DIAS.find((d) => d.key === h.diaKey)?.label ?? h.diaKey;
                   return (
                     <div
                       key={h.diaKey}
-                      className={`flex items-start gap-2 p-2 rounded-lg border transition-all ${
+                      className={`flex items-start gap-2 rounded-lg border transition-all ${
                         h.activo
-                          ? "border-[#c8dce8] bg-white"
-                          : "border-[#e4ecf2] bg-[#f5f8fa]"
+                          ? "border-[#c8dce8] bg-white p-2"
+                          : "border-[#e4ecf2] bg-[#f5f8fa] px-2 py-1.5"
                       }`}
                     >
                       {/* Day toggle */}
                       <button
                         type="button"
                         onClick={() => toggleDia(h.diaKey)}
-                        className={`mt-1 w-9 h-5 rounded-full transition-all cursor-pointer relative shrink-0 ${
+                        className={`mt-0.5 w-8 h-[18px] rounded-full transition-all cursor-pointer relative shrink-0 ${
                           h.activo ? "bg-[#3fa87c]" : "bg-[#c8dce8]"
                         }`}
                       >
                         <span
-                          className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${
-                            h.activo ? "left-[18px]" : "left-0.5"
+                          className={`absolute top-[2px] h-[14px] w-[14px] rounded-full bg-white shadow transition-all ${
+                            h.activo ? "left-[16px]" : "left-[2px]"
                           }`}
                         />
                       </button>
 
-                      <span className={`w-12 text-xs font-medium mt-1.5 shrink-0 ${h.activo ? "text-[#1e2d3a]" : "text-[#1e2d3a]/40"}`}>
+                      <span className={`w-12 text-xs font-medium shrink-0 ${h.activo ? "text-[#1e2d3a] mt-1" : "text-[#1e2d3a]/40 mt-0.5"}`}>
                         {diaLabel}
                       </span>
 
@@ -349,7 +354,7 @@ export default function HorariosPanel({ terapeutas }: HorariosPanelProps) {
                           </button>
                         </div>
                       ) : (
-                        <span className="text-[10px] text-[#1e2d3a]/30 mt-1.5 italic">Inactivo</span>
+                        <span className="text-[10px] text-[#1e2d3a]/30 mt-0.5 italic">Inactivo</span>
                       )}
                     </div>
                   );
@@ -358,16 +363,16 @@ export default function HorariosPanel({ terapeutas }: HorariosPanelProps) {
             </div>
 
             {/* ── Cubicle preferences ── */}
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-[#1e2d3a]/70">
                 Cubículos por tipo de sesión
               </Label>
 
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 {cubiculos.map((c) => {
                   const tipoLabel = TIPOS_SESION.find((t) => t.key === c.tipoSesion)?.label ?? c.tipoSesion;
                   return (
-                    <div key={c.tipoSesion} className="flex items-center gap-3 p-2 rounded-lg border border-[#c8dce8] bg-white">
+                    <div key={c.tipoSesion} className="flex items-center gap-3 px-2 py-1.5 rounded-lg border border-[#c8dce8] bg-white">
                       <span className="text-xs font-medium text-[#1e2d3a] w-28 shrink-0">{tipoLabel}</span>
 
                       <div className="flex items-center gap-2">
@@ -390,7 +395,7 @@ export default function HorariosPanel({ terapeutas }: HorariosPanelProps) {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] text-[#1e2d3a]/50">Fallback</span>
+                        <span className="text-[10px] text-[#1e2d3a]/50">Alternativo</span>
                         <Select
                           value={c.cubiculoPref[1] != null ? String(c.cubiculoPref[1]) : "none"}
                           onValueChange={(v) =>
