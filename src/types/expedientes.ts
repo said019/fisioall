@@ -84,12 +84,16 @@ export const TIPO_BADGE: Record<TipoExpediente, { label: string; color: string }
 
 export function getTipoExpediente(tipoSesion: string): TipoExpediente {
   const s = tipoSesion.toLowerCase();
-  if (s.includes("suelo pélvico") || s.includes("suelo pelvico")) return "suelo_pelvico";
+  if (
+    s.includes("suelo pélvico") || s.includes("suelo pelvico") ||
+    s.includes("prenatal") || s.includes("postparto")
+  ) return "suelo_pelvico";
   if (
     s.includes("facial") || s.includes("limpieza") ||
     s.includes("cosme") || s.includes("peeling") ||
     s.includes("dermaplaning") || s.includes("anti-edad") ||
-    s.includes("hidratante") || s.includes("radiofrecuencia facial")
+    s.includes("hidratante") || s.includes("radiofrecuencia facial") ||
+    s.includes("corporal") || s.includes("epilaci")
   ) return "cosme";
   return "fisioterapia";
 }

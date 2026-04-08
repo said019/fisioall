@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import { pacienteSchema } from "@/lib/validations";
 import { revalidatePath } from "next/cache";
+import { getTipoExpediente, type TipoExpediente } from "@/types/expedientes";
 
 // ─── FETCH ALL PATIENTS ──────────────────────────────────────────────────────
 export async function getPacientes() {
@@ -57,6 +58,13 @@ export async function getPacientes() {
       edad = Math.floor((now.getTime() - p.fechaNacimiento.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
     }
 
+    // Derive expediente types from citas' tipoSesion
+    const tiposSet = new Set<TipoExpediente>();
+    for (const c of p.citas) {
+      if (c.tipoSesion) tiposSet.add(getTipoExpediente(c.tipoSesion));
+    }
+    const tiposExpediente = Array.from(tiposSet);
+
     return {
       id: p.id,
       nombre: p.nombre,
@@ -76,6 +84,7 @@ export async function getPacientes() {
       color: COLORES[idx % COLORES.length],
       ciudad: p.ocupacion ?? null,
       totalSesiones: p.totalSesiones ?? 0,
+      tiposExpediente,
       citas: p.citas.map((c) => ({
         id: c.id,
         tipoSesion: c.tipoSesion ?? "Sesión",

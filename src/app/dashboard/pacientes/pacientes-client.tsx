@@ -70,6 +70,8 @@ interface CitaResumen {
   esFutura: boolean;
 }
 
+type TipoExpediente = "fisioterapia" | "suelo_pelvico" | "cosme";
+
 interface Paciente {
   id: string;
   nombre: string;
@@ -89,8 +91,15 @@ interface Paciente {
   color: string;
   ciudad: string | null;
   totalSesiones?: number;
+  tiposExpediente?: TipoExpediente[];
   citas?: CitaResumen[];
 }
+
+const TIPO_EXPEDIENTE_CONFIG: Record<TipoExpediente, { label: string; color: string; bg: string; border: string }> = {
+  fisioterapia:  { label: "Fisioterapia",  color: "text-[#4a7fa5]", bg: "bg-[#4a7fa5]/10", border: "border-[#4a7fa5]/30" },
+  suelo_pelvico: { label: "Suelo Pélvico", color: "text-[#0d9488]", bg: "bg-[#0d9488]/10", border: "border-[#0d9488]/30" },
+  cosme:         { label: "Cosmetología",  color: "text-[#854f0b]", bg: "bg-[#e89b3f]/10", border: "border-[#e89b3f]/30" },
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // EMPTY STATE HELPER
@@ -165,7 +174,17 @@ function PerfilPaciente({ paciente, onClose }: { paciente: Paciente; onClose: ()
               <span className="text-lg font-bold text-white">{paciente.iniciales}</span>
             </div>
             <div className="flex-1 min-w-0">
-              <h2 className="text-lg font-bold text-[#1e2d3a]">{paciente.nombre} {paciente.apellido}</h2>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-lg font-bold text-[#1e2d3a]">{paciente.nombre} {paciente.apellido}</h2>
+                {paciente.tiposExpediente?.map((tipo) => {
+                  const cfg = TIPO_EXPEDIENTE_CONFIG[tipo];
+                  return (
+                    <Badge key={tipo} variant="outline" className={`text-[9px] font-semibold px-1.5 py-0 ${cfg.bg} ${cfg.color} ${cfg.border}`}>
+                      {cfg.label}
+                    </Badge>
+                  );
+                })}
+              </div>
               <p className="text-sm text-[#1e2d3a]/50">{paciente.edad ? `${paciente.edad} años` : ""}{paciente.ciudad ? ` · ${paciente.ciudad}` : ""}</p>
               <div className="flex items-center gap-3 mt-2">
                 <div className="flex items-center gap-2">
@@ -347,6 +366,7 @@ export default function PacientesClient({ initialPacientes }: { initialPacientes
   const [vistaActiva, setVistaActiva] = useState<"grid" | "lista">("grid");
   const [pacienteActivo, setPacienteActivo] = useState<Paciente | null>(null);
   const [filtroEstado, setFiltroEstado] = useState<"todos" | "alerta">("todos");
+  const [filtroTipo, setFiltroTipo] = useState<"todos" | TipoExpediente>("todos");
   const [modalNuevoPaciente, setModalNuevoPaciente] = useState(false);
 
   // Form state para nuevo paciente
@@ -388,7 +408,8 @@ export default function PacientesClient({ initialPacientes }: { initialPacientes
     const matchBusqueda =
       `${p.nombre} ${p.apellido} ${p.diagnostico ?? ""}`.toLowerCase().includes(busqueda.toLowerCase());
     const matchAlerta = filtroEstado === "todos" || p.sesionesRestantes <= 2;
-    return matchBusqueda && matchAlerta;
+    const matchTipo = filtroTipo === "todos" || (p.tiposExpediente?.includes(filtroTipo) ?? false);
+    return matchBusqueda && matchAlerta && matchTipo;
   });
 
   return (
@@ -589,6 +610,40 @@ export default function PacientesClient({ initialPacientes }: { initialPacientes
           </button>
         </div>
 
+        {/* Filtro por tipo de expediente */}
+        <div className="flex items-center gap-1 bg-[#f0f4f7] border border-[#c8dce8] rounded-lg p-1">
+          <button
+            onClick={() => setFiltroTipo("todos")}
+            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all duration-200 cursor-pointer ${
+              filtroTipo === "todos"
+                ? "bg-white text-[#1e2d3a] shadow-sm"
+                : "text-[#1e2d3a]/50 hover:text-[#1e2d3a]"
+            }`}
+          >
+            Todos
+          </button>
+          {(["fisioterapia", "suelo_pelvico", "cosme"] as TipoExpediente[]).map((tipo) => {
+            const cfg = TIPO_EXPEDIENTE_CONFIG[tipo];
+            const count = pacientesSource.filter((p) => p.tiposExpediente?.includes(tipo)).length;
+            return (
+              <button
+                key={tipo}
+                onClick={() => setFiltroTipo(tipo)}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${
+                  filtroTipo === tipo
+                    ? `${cfg.bg} ${cfg.color} shadow-sm`
+                    : "text-[#1e2d3a]/50 hover:text-[#1e2d3a]"
+                }`}
+              >
+                {cfg.label}
+                <span className={`text-[10px] ${filtroTipo === tipo ? "opacity-70" : "opacity-40"}`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
         {/* Toggle Vista */}
         <div className="flex items-center gap-1 bg-[#f0f4f7] border border-[#c8dce8] rounded-lg p-1 ml-auto">
           <button
@@ -643,6 +698,20 @@ export default function PacientesClient({ initialPacientes }: { initialPacientes
                     {alerta && <AlertCircle className="h-4 w-4 text-orange-500 shrink-0 mt-0.5" />}
                   </div>
 
+                  {/* Tipo expediente badges */}
+                  {paciente.tiposExpediente && paciente.tiposExpediente.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {paciente.tiposExpediente.map((tipo) => {
+                        const cfg = TIPO_EXPEDIENTE_CONFIG[tipo];
+                        return (
+                          <Badge key={tipo} variant="outline" className={`text-[9px] font-semibold px-1.5 py-0 ${cfg.bg} ${cfg.color} ${cfg.border}`}>
+                            {cfg.label}
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  )}
+
                   {/* Diagnóstico */}
                   <p className="text-xs text-[#1e2d3a]/60 leading-snug line-clamp-2">{paciente.diagnostico ?? "Sin diagnóstico"}</p>
 
@@ -696,9 +765,19 @@ export default function PacientesClient({ initialPacientes }: { initialPacientes
 
                   {/* Nombre + diagnóstico */}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-[#1e2d3a] truncate">
-                      {paciente.nombre} {paciente.apellido}
-                    </p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-sm font-semibold text-[#1e2d3a] truncate">
+                        {paciente.nombre} {paciente.apellido}
+                      </p>
+                      {paciente.tiposExpediente?.map((tipo) => {
+                        const cfg = TIPO_EXPEDIENTE_CONFIG[tipo];
+                        return (
+                          <Badge key={tipo} variant="outline" className={`text-[8px] font-semibold px-1 py-0 ${cfg.bg} ${cfg.color} ${cfg.border} shrink-0`}>
+                            {cfg.label}
+                          </Badge>
+                        );
+                      })}
+                    </div>
                     <p className="text-[10px] text-[#1e2d3a]/50 truncate">{paciente.diagnostico ?? "Sin diagnóstico"}</p>
                   </div>
 

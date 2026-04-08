@@ -138,6 +138,18 @@ const CATEGORIAS: CategoriaServicio[] = [
     ],
   },
   {
+    id: "suelo_pelvico",
+    label: "Suelo Pélvico",
+    color: "#0d9488",
+    especialidad: "Suelo Pélvico",
+    servicios: [
+      { nombre: "Valoración Suelo Pélvico", duracion: 60, precio: 500 },
+      { nombre: "Rehabilitación Suelo Pélvico", duracion: 45, precio: 450 },
+      { nombre: "Terapia Prenatal", duracion: 45, precio: 450 },
+      { nombre: "Terapia Postparto", duracion: 45, precio: 450 },
+    ],
+  },
+  {
     id: "corporales",
     label: "Corporales",
     color: "#e89b3f",
