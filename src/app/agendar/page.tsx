@@ -99,7 +99,7 @@ type TarjetaLealtad = {
 type Slot = { hora: string; disponible: boolean };
 type Fisio = { id: string; nombre: string; especialidades: string[] };
 
-type ServicioItem = { nombre: string; duracion: number; precio: number };
+type ServicioItem = { nombre: string; duracion: number; precio: number; descripcion?: string };
 type CategoriaServicio = {
   id: string;
   label: string;
@@ -115,12 +115,12 @@ const CATEGORIAS: CategoriaServicio[] = [
     color: "#4a7fa5",
     especialidad: "Fisioterapia",
     servicios: [
-      { nombre: "Normal / Antiestrés", duracion: 45, precio: 400 },
-      { nombre: "Descarga de Esfuerzo", duracion: 45, precio: 470 },
-      { nombre: "Drenaje Linfático", duracion: 45, precio: 520 },
-      { nombre: "Presoterapia", duracion: 45, precio: 420 },
-      { nombre: "Ejercicio Terapéutico", duracion: 45, precio: 350 },
-      { nombre: "Valoración", duracion: 45, precio: 450 },
+      { nombre: "Normal / Antiestrés", duracion: 45, precio: 400, descripcion: "Terapia manual enfocada en tren superior, complementada con aparatología" },
+      { nombre: "Descarga de Esfuerzo", duracion: 45, precio: 470, descripcion: "Enfoque manual en cuerpo completo para eliminar fatiga y cansancio" },
+      { nombre: "Drenaje Linfático", duracion: 45, precio: 520, descripcion: "Manipulaciones suaves para mejorar circulación y sistema linfático" },
+      { nombre: "Presoterapia", duracion: 45, precio: 420, descripcion: "Aparato para retorno venoso y drenaje por zonas del cuerpo" },
+      { nombre: "Ejercicio Terapéutico", duracion: 45, precio: 350, descripcion: "Rehabilitación personalizada de lesiones deportivas o post-quirúrgicas" },
+      { nombre: "Valoración", duracion: 45, precio: 450, descripcion: "Evaluación para diagnóstico acertado y propuesta de tratamiento" },
     ],
   },
   {
@@ -129,12 +129,11 @@ const CATEGORIAS: CategoriaServicio[] = [
     color: "#b07aa8",
     especialidad: "Tratamientos Faciales",
     servicios: [
-      { nombre: "Masaje Facial Revitalizante", duracion: 60, precio: 450 },
-      { nombre: "Limpieza Facial Básica", duracion: 60, precio: 350 },
-      { nombre: "Limpieza Facial Profunda", duracion: 60, precio: 450 },
-      { nombre: "Hidratación Profunda", duracion: 60, precio: 500 },
-      { nombre: "Rejuvenecimiento Facial", duracion: 60, precio: 550 },
-      { nombre: "Hilos de Colágeno", duracion: 60, precio: 800 },
+      { nombre: "Masaje Facial Revitalizante", duracion: 60, precio: 450, descripcion: "Limpieza básica y masaje que tonifica la piel y promueve el colágeno" },
+      { nombre: "Limpieza Facial Básica", duracion: 60, precio: 350, descripcion: "Limpieza, exfoliación, tonificación, mascarilla y protección" },
+      { nombre: "Limpieza Facial Profunda", duracion: 60, precio: 450, descripcion: "Incluye extracción, alta frecuencia, vaporización y humectación" },
+      { nombre: "Hidratación Profunda", duracion: 60, precio: 500, descripcion: "Hidrofacial, nutrición, máscara LED y tonificación profunda" },
+      { nombre: "Rejuvenecimiento Facial", duracion: 60, precio: 550, descripcion: "Microdermoabrasión, hidroplástica y efecto lifting antiarrugas" },
     ],
   },
   {
@@ -143,10 +142,7 @@ const CATEGORIAS: CategoriaServicio[] = [
     color: "#0d9488",
     especialidad: "Suelo Pélvico",
     servicios: [
-      { nombre: "Valoración Suelo Pélvico", duracion: 60, precio: 500 },
-      { nombre: "Rehabilitación Suelo Pélvico", duracion: 45, precio: 450 },
-      { nombre: "Terapia Prenatal", duracion: 45, precio: 450 },
-      { nombre: "Terapia Postparto", duracion: 45, precio: 450 },
+      { nombre: "Sesión Suelo Pélvico", duracion: 50, precio: 550, descripcion: "Tratamiento de disfunciones, incontinencia, prolapsos y obstetricia" },
     ],
   },
   {
@@ -155,7 +151,7 @@ const CATEGORIAS: CategoriaServicio[] = [
     color: "#e89b3f",
     especialidad: "Tratamientos Corporales",
     servicios: [
-      { nombre: "Tratamiento Corporal", duracion: 60, precio: 600 },
+      { nombre: "Tratamiento Corporal", duracion: 60, precio: 600, descripcion: "Cavitador, radiofrecuencia, lipoláser y vacum terapia para grasa localizada" },
     ],
   },
   {
@@ -1073,6 +1069,9 @@ export default function AgendarPage() {
                         <p className={`text-sm font-semibold ${isSelected ? "text-[#4a7fa5]" : "text-[#1e2d3a]"}`}>
                           {srv.nombre}
                         </p>
+                        {srv.descripcion && (
+                          <p className="text-[11px] text-[#5a7080]/70 mt-0.5 line-clamp-1">{srv.descripcion}</p>
+                        )}
                         <p className="text-xs text-[#8fa8ba] mt-0.5">
                           <Clock className="inline h-3 w-3 mr-1 -mt-0.5" />{srv.duracion} min
                         </p>
