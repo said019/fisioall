@@ -308,7 +308,15 @@ function PerfilPaciente({ paciente, onClose }: { paciente: Paciente; onClose: ()
                   <p className="text-xs font-bold text-[#1e2d3a] uppercase tracking-wide">Citas</p>
                   <div className="space-y-2">
                     {paciente.citas.slice(0, 5).map((cita) => (
-                      <div key={cita.id} className="flex items-center gap-3 bg-[#f0f4f7]/50 rounded-lg p-2.5">
+                      <Link
+                        key={cita.id}
+                        href={`/dashboard/expediente?citaId=${cita.id}`}
+                        className={`flex items-center gap-3 rounded-lg p-2.5 transition-colors ${
+                          cita.estado === "cancelada"
+                            ? "bg-[#f0f4f7]/50 opacity-60 pointer-events-none"
+                            : "bg-[#f0f4f7]/50 hover:bg-[#e4ecf2] cursor-pointer"
+                        }`}
+                      >
                         <div className={`h-7 w-7 rounded-lg flex items-center justify-center shrink-0 ${cita.esFutura ? "bg-[#4a7fa5]/10" : "bg-[#e4ecf2]"}`}>
                           <CalendarDays className={`h-3.5 w-3.5 ${cita.esFutura ? "text-[#4a7fa5]" : "text-[#1e2d3a]/30"}`} />
                         </div>
@@ -324,7 +332,10 @@ function PerfilPaciente({ paciente, onClose }: { paciente: Paciente; onClose: ()
                         }`}>
                           {cita.estado === "completada" ? "Completada" : cita.estado === "cancelada" ? "Cancelada" : cita.esFutura ? "Agendada" : cita.estado}
                         </Badge>
-                      </div>
+                        {cita.estado !== "cancelada" && (
+                          <ChevronRight className="h-3.5 w-3.5 text-[#1e2d3a]/30 shrink-0" />
+                        )}
+                      </Link>
                     ))}
                   </div>
                 </div>
