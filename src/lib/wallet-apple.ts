@@ -1,6 +1,6 @@
 import { createHash } from "crypto";
-import { readFileSync, existsSync } from "fs";
-import { resolve } from "path";
+import { readFileSync, existsSync, writeFileSync, mkdirSync } from "fs";
+import { resolve, join } from "path";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const JSZip = require("jszip");
 
@@ -29,23 +29,54 @@ interface Paciente {
 }
 
 // ---------------------------------------------------------------------------
-// Environment helpers
+// Environment helpers — supports file paths OR base64-encoded env vars
 // ---------------------------------------------------------------------------
 
 function getEnv(key: string): string | undefined {
   return process.env[key];
 }
 
+let _certsReady = false;
+
 /**
- * Returns true when all required Apple Wallet env vars are set AND the
- * certificate files exist on disk.
+ * If APPLE_PASS_CERT_BASE64 / _KEY_BASE64 / _WWDR_BASE64 env vars exist,
+ * decode them to /tmp/apple-certs/ and set the path env vars so the rest
+ * of the code can use them transparently.  This runs at most once.
  */
-// Support both local env var names and Railway env var names
+function ensureCertsFromBase64() {
+  if (_certsReady) return;
+  _certsReady = true;
+
+  const certB64 = getEnv("APPLE_PASS_CERT_BASE64");
+  const keyB64 = getEnv("APPLE_PASS_KEY_BASE64");
+  const wwdrB64 = getEnv("APPLE_WWDR_BASE64");
+
+  if (!certB64 || !keyB64 || !wwdrB64) return;
+
+  const dir = join("/tmp", "apple-certs");
+  mkdirSync(dir, { recursive: true });
+
+  const certPath = join(dir, "pass.pem");
+  const keyPath = join(dir, "pass.key");
+  const wwdrPath = join(dir, "wwdr.pem");
+
+  writeFileSync(certPath, Buffer.from(certB64, "base64"));
+  writeFileSync(keyPath, Buffer.from(keyB64, "base64"));
+  writeFileSync(wwdrPath, Buffer.from(wwdrB64, "base64"));
+
+  // Set path env vars so the rest of the code picks them up
+  process.env.APPLE_PASS_CERT = certPath;
+  process.env.APPLE_PASS_KEY = keyPath;
+  process.env.APPLE_WWDR = wwdrPath;
+}
+
 function getCertPath() { return getEnv("APPLE_CERT_PATH") ?? getEnv("APPLE_PASS_CERT"); }
 function getKeyPath() { return getEnv("APPLE_KEY_PATH") ?? getEnv("APPLE_PASS_KEY"); }
 function getWwdrPath() { return getEnv("APPLE_WWDR_PATH") ?? getEnv("APPLE_WWDR"); }
 
 export function isAppleWalletConfigured(): boolean {
+  ensureCertsFromBase64();
+
   const teamId = getEnv("APPLE_TEAM_ID");
   const passTypeId = getEnv("APPLE_PASS_TYPE_ID");
   const certPath = getCertPath();
@@ -291,7 +322,10 @@ export async function generateLoyaltyPass(
     execSync(
       `openssl smime -sign -binary -in "${manifestPath}" ` +
         `-certfile "${wwdrPath}" -signer "${certPath}" ` +
-        `-inkey "${keyPath}" -out "${sigPath}" -outform DER -passin pass:`,
+        `-inkey "${keyPath}" -out "${sigPath}" -outform DER` +
+        (getEnv("APPLE_CERT_PASSWORD")
+          ? ` -passin pass:${getEnv("APPLE_CERT_PASSWORD")}`
+          : ` -passin pass:`),
       { stdio: "pipe" },
     );
 

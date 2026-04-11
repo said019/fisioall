@@ -93,14 +93,6 @@ function buildLoyaltyPayload(
     reviewStatus: "UNDER_REVIEW",
     multipleDevicesAndHoldersAllowedStatus: "MULTIPLE_HOLDERS",
     countryCode: "MX",
-    localizedIssuerName: "Kaya Kalp — Fisioterapia",
-    // Location — San Juan del Río, Querétaro
-    locations: [
-      {
-        latitude: 20.3898,
-        longitude: -99.9968,
-      },
-    ],
   };
 
   const loyaltyObject = {
@@ -196,7 +188,7 @@ export async function generateGoogleWalletSaveUrl(
       aud: "google",
       typ: "savetowallet",
       origins: [KAYA_KALP_BASE_URL],
-      payload,
+      ...payload,
     })
       .setProtectedHeader({ alg: "RS256", typ: "JWT" })
       .setIssuedAt()
