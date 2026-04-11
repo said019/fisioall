@@ -161,6 +161,12 @@ export function generatePassJson(
 
   const sellosRestantes = tarjeta.sellosTotal - tarjeta.sellosUsados;
 
+  // Build stamp visualization: ● for used, ○ for remaining
+  const stamps = Array(tarjeta.sellosTotal)
+    .fill(null)
+    .map((_, i) => (i < tarjeta.sellosUsados ? "●" : "○"))
+    .join(" ");
+
   return {
     formatVersion: 1,
     serialNumber: tarjeta.id,
@@ -168,10 +174,10 @@ export function generatePassJson(
     teamIdentifier: teamId,
     organizationName: KAYA_KALP.organizationName,
     description: KAYA_KALP.description,
-    logoText: KAYA_KALP.logoText,
-    foregroundColor: KAYA_KALP.foregroundColor,
+    // No logoText — only the logo image shows
+    foregroundColor: "rgb(255, 255, 255)",
     backgroundColor: KAYA_KALP.backgroundColor,
-    labelColor: KAYA_KALP.labelColor,
+    labelColor: "rgb(255, 255, 255)",
 
     // Barcode — encode the tarjeta ID so it can be scanned at the clinic
     barcode: {
@@ -207,21 +213,21 @@ export function generatePassJson(
       ],
       primaryFields: [
         {
-          key: "nombre",
-          label: "PACIENTE",
-          value: `${paciente.nombre} ${paciente.apellido}`,
+          key: "stamps",
+          label: "TARJETA DE LEALTAD",
+          value: stamps,
         },
       ],
       secondaryFields: [
         {
+          key: "nombre",
+          label: "PACIENTE",
+          value: `${paciente.nombre} ${paciente.apellido}`,
+        },
+        {
           key: "recompensa",
           label: "RECOMPENSA",
           value: tarjeta.recompensa,
-        },
-        {
-          key: "restantes",
-          label: "SELLOS RESTANTES",
-          value: `${sellosRestantes}`,
         },
       ],
       auxiliaryFields: [
