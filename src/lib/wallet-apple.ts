@@ -3,6 +3,7 @@ import { readFileSync, existsSync, writeFileSync, mkdirSync } from "fs";
 import { resolve, join } from "path";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const JSZip = require("jszip");
+import sharp from "sharp";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -116,7 +117,7 @@ const KAYA_KALP = {
 
 /**
  * Loads wallet pass image assets from public/wallet/.
- * Returns an array of { name, data } entries to include in the .pkpass ZIP.
+ * Excludes strip images — those are generated dynamically with stamps.
  */
 function loadPassImages(): { name: string; data: Buffer }[] {
   const walletDir = resolve(process.cwd(), "public", "wallet");
@@ -126,8 +127,6 @@ function loadPassImages(): { name: string; data: Buffer }[] {
     "icon@3x.png",
     "logo.png",
     "logo@2x.png",
-    "strip.png",
-    "strip@2x.png",
     "thumbnail.png",
     "thumbnail@2x.png",
   ];
@@ -140,6 +139,92 @@ function loadPassImages(): { name: string; data: Buffer }[] {
     }
   }
   return entries;
+}
+
+// ---------------------------------------------------------------------------
+// Dynamic strip image generator — draws stamps on the strip background
+// ---------------------------------------------------------------------------
+
+/**
+ * Generates strip.png and strip@2x.png with stamp circles composited
+ * on top of the base strip background image.
+ */
+async function generateStripImages(
+  sellosUsados: number,
+  sellosTotal: number,
+): Promise<{ name: string; data: Buffer }[]> {
+  const walletDir = resolve(process.cwd(), "public", "wallet");
+
+  const baseStripPath = resolve(walletDir, "strip@2x.png");
+  const stampFilledPath = resolve(walletDir, "stamp-filled@2x.png");
+  const stampEmptyPath = resolve(walletDir, "stamp-empty@2x.png");
+
+  if (!existsSync(stampFilledPath) || !existsSync(stampEmptyPath)) {
+    // Fallback: use static strip images
+    const entries: { name: string; data: Buffer }[] = [];
+    for (const f of ["strip.png", "strip@2x.png"]) {
+      const p = resolve(walletDir, f);
+      if (existsSync(p)) entries.push({ name: f, data: readFileSync(p) });
+    }
+    return entries;
+  }
+
+  // Apple Wallet strip dimensions (from Apple docs)
+  const STRIP_W = 750;
+  const STRIP_H = 240;
+  const STAMP_SIZE = 68;
+  const COLS = 5;
+  const ROWS = Math.ceil(sellosTotal / COLS);
+
+  // Resize stamp images
+  const stampFilled = await sharp(stampFilledPath)
+    .resize(STAMP_SIZE, STAMP_SIZE)
+    .toBuffer();
+  const stampEmpty = await sharp(stampEmptyPath)
+    .resize(STAMP_SIZE, STAMP_SIZE)
+    .toBuffer();
+
+  // Calculate positions — evenly spaced grid, vertically centered
+  const hGap = Math.round((STRIP_W - COLS * STAMP_SIZE) / (COLS + 1));
+  const vGap = Math.round((STRIP_H - ROWS * STAMP_SIZE) / (ROWS + 1));
+
+  const composites: sharp.OverlayOptions[] = [];
+  for (let i = 0; i < sellosTotal && i < COLS * ROWS; i++) {
+    const col = i % COLS;
+    const row = Math.floor(i / COLS);
+    const x = hGap + col * (STAMP_SIZE + hGap);
+    const y = vGap + row * (STAMP_SIZE + vGap);
+
+    composites.push({
+      input: i < sellosUsados ? stampFilled : stampEmpty,
+      left: x,
+      top: y,
+    });
+  }
+
+  // Transparent background — pass backgroundColor (#1e3a4f) shows through
+  const strip2x = await sharp({
+    create: {
+      width: STRIP_W,
+      height: STRIP_H,
+      channels: 4,
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    },
+  })
+    .composite(composites)
+    .png()
+    .toBuffer();
+
+  // Generate @1x strip (375 x 120)
+  const strip1x = await sharp(strip2x)
+    .resize(375, 120)
+    .png()
+    .toBuffer();
+
+  return [
+    { name: "strip.png", data: strip1x as Buffer },
+    { name: "strip@2x.png", data: strip2x as Buffer },
+  ];
 }
 
 // ---------------------------------------------------------------------------
@@ -160,12 +245,6 @@ export function generatePassJson(
     getEnv("APPLE_PASS_TYPE_ID") ?? "pass.com.kayakalp.lealtad";
 
   const sellosRestantes = tarjeta.sellosTotal - tarjeta.sellosUsados;
-
-  // Build stamp visualization: ● for used, ○ for remaining
-  const stamps = Array(tarjeta.sellosTotal)
-    .fill(null)
-    .map((_, i) => (i < tarjeta.sellosUsados ? "●" : "○"))
-    .join(" ");
 
   return {
     formatVersion: 1,
@@ -202,20 +281,13 @@ export function generatePassJson(
       },
     ],
 
-    // Loyalty card (storeCard) style
+    // Loyalty card (storeCard) — strip image shows the stamps
     storeCard: {
       headerFields: [
         {
           key: "sellos",
           label: "SELLOS",
           value: `${tarjeta.sellosUsados} / ${tarjeta.sellosTotal}`,
-        },
-      ],
-      primaryFields: [
-        {
-          key: "stamps",
-          label: "TARJETA DE LEALTAD",
-          value: stamps,
         },
       ],
       secondaryFields: [
@@ -231,6 +303,11 @@ export function generatePassJson(
         },
       ],
       auxiliaryFields: [
+        {
+          key: "restantes",
+          label: "SELLOS RESTANTES",
+          value: `${sellosRestantes}`,
+        },
         {
           key: "estado",
           label: "ESTADO",
@@ -298,11 +375,13 @@ export async function generateLoyaltyPass(
   const passJson = generatePassJson(tarjeta, paciente);
   const passJsonBuffer = Buffer.from(JSON.stringify(passJson), "utf-8");
 
-  // 2. Collect all pass files (pass.json + images)
+  // 2. Collect all pass files (pass.json + static images + dynamic strip)
   const imageFiles = loadPassImages();
+  const stripImages = await generateStripImages(tarjeta.sellosUsados, tarjeta.sellosTotal);
   const files: { name: string; data: Buffer }[] = [
     { name: "pass.json", data: passJsonBuffer },
     ...imageFiles,
+    ...stripImages,
   ];
 
   // 3. Build manifest.json (SHA-1 hash of every file)
