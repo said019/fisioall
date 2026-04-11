@@ -28,6 +28,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import {
   guardarConfiguracion,
   disconnectGoogleCalendar,
+  syncGoogleCalendar,
   type ConfigClinicaData,
   type DiaBloqueadoData,
   type ConfigCompleta,
@@ -441,21 +442,49 @@ export default function ConfiguracionClient({ initial, gcalStatus, pacientes, te
                       <p className="text-xs font-semibold text-[#1e2d3a]">Conectado</p>
                       <p className="text-[10px] text-[#1e2d3a]/50 truncate">{gcalStatus.email}</p>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="cursor-pointer text-xs border-[#d9534f]/30 text-[#d9534f] hover:bg-[#d9534f]/10 gap-1.5"
-                      onClick={async () => {
-                        await disconnectGoogleCalendar();
-                        window.location.reload();
-                      }}
-                    >
-                      <Unplug className="h-3.5 w-3.5" />
-                      Desconectar
-                    </Button>
+                    <div className="flex items-center gap-1.5">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="cursor-pointer text-xs border-[#4a7fa5]/30 text-[#4a7fa5] hover:bg-[#4a7fa5]/10 gap-1.5"
+                        onClick={async () => {
+                          const btn = document.activeElement as HTMLButtonElement;
+                          btn.disabled = true;
+                          btn.textContent = "Sincronizando...";
+                          try {
+                            const result = await syncGoogleCalendar();
+                            if ("error" in result) {
+                              alert(`Error: ${result.error}`);
+                            } else {
+                              alert(`Sincronización completada: ${result.synced} citas sincronizadas${result.errors > 0 ? `, ${result.errors} errores` : ""}`);
+                            }
+                          } catch {
+                            alert("Error al sincronizar");
+                          } finally {
+                            btn.disabled = false;
+                            btn.textContent = "Sincronizar";
+                          }
+                        }}
+                      >
+                        <CalendarSync className="h-3.5 w-3.5" />
+                        Sincronizar
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="cursor-pointer text-xs border-[#d9534f]/30 text-[#d9534f] hover:bg-[#d9534f]/10 gap-1.5"
+                        onClick={async () => {
+                          await disconnectGoogleCalendar();
+                          window.location.reload();
+                        }}
+                      >
+                        <Unplug className="h-3.5 w-3.5" />
+                        Desconectar
+                      </Button>
+                    </div>
                   </div>
                   <p className="text-[10px] text-[#1e2d3a]/35">
-                    Las citas creadas se sincronizan automáticamente. Los eventos de tu calendario bloquean horarios de agendamiento.
+                    Las citas nuevas se sincronizan automáticamente. Usa &quot;Sincronizar&quot; para subir citas existentes que aún no estén en Google Calendar.
                   </p>
                 </div>
               ) : (

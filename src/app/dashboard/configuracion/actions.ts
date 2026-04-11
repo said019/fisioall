@@ -78,8 +78,8 @@ export async function getConfiguracion(): Promise<ConfigCompleta> {
     facebook: (cfg.facebook as string) ?? "",
     instagram: (cfg.instagram as string) ?? "",
     sitioWeb: (cfg.sitioWeb as string) ?? "",
-    duracionDefault: (cfg.duracionDefault as number) ?? 45,
-    intervaloSlots: (cfg.intervaloSlots as number) ?? 30,
+    duracionDefault: (cfg.duracionDefault as number) ?? 60,
+    intervaloSlots: (cfg.intervaloSlots as number) ?? 60,
   };
 
   const horarios: HorarioDiaData[] = (cfg.horarios as HorarioDiaData[]) ?? [
@@ -169,6 +169,17 @@ export async function getGoogleCalendarStatus(): Promise<{
   return { connected: !!token, email: token?.email ?? null };
 }
 
+export async function syncGoogleCalendar(): Promise<{ synced: number; errors: number } | { error: string }> {
+  const tenant = await prisma.tenant.findUnique({ where: { slug: TENANT_SLUG } });
+  if (!tenant) return { error: "Tenant no encontrado" };
+
+  const { syncCitasToGoogle } = await import("@/lib/google-calendar");
+  const result = await syncCitasToGoogle(tenant.id);
+
+  revalidatePath("/dashboard/agenda");
+  return result;
+}
+
 export async function disconnectGoogleCalendar() {
   const tenant = await prisma.tenant.findUnique({ where: { slug: TENANT_SLUG } });
   if (!tenant) return { error: "Tenant no encontrado" };
@@ -205,8 +216,8 @@ export async function getConfigPublica() {
     instagram: (cfg.instagram as string) ?? "",
     sitioWeb: (cfg.sitioWeb as string) ?? "",
     googleMapsUrl: (cfg.googleMapsUrl as string) ?? "",
-    duracionDefault: (cfg.duracionDefault as number) ?? 45,
-    intervaloSlots: (cfg.intervaloSlots as number) ?? 30,
+    duracionDefault: (cfg.duracionDefault as number) ?? 60,
+    intervaloSlots: (cfg.intervaloSlots as number) ?? 60,
     horarios: (cfg.horarios as HorarioDiaData[]) ?? [],
     comida: (cfg.comida as ConfigComidaData) ?? { activo: false, inicio: "14:00", fin: "15:00" },
     diasBloqueados: (cfg.diasBloqueados as DiaBloqueadoData[]) ?? [],

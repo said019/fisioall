@@ -67,7 +67,7 @@ export async function crearCita(prevState: unknown, formData: FormData) {
   const fisioterapeutaId = (formData.get("fisioterapeutaId") as string) || userId;
   const fecha = formData.get("fecha") as string;
   const horaInicio = formData.get("horaInicio") as string;
-  const duracion = Number(formData.get("duracion") || 45);
+  const duracion = Number(formData.get("duracion") || 60);
   const tipoSesion = formData.get("tipoSesion") as string;
   const sala = formData.get("sala") as string;
 
@@ -260,7 +260,7 @@ export async function getSlotsDisponibles(params: {
   duracionMin?: number;
 }) {
   const { tenantId } = await requireAuth();
-  const { fecha, fisioterapeutaId, tipoSesion, duracionMin = 60 } = params;
+  const { fecha, fisioterapeutaId, tipoSesion, duracionMin = 60 } = params; // 60 min = citas cada hora
 
   const fechaObj = new Date(fecha + "T00:00:00");
   const diaKey = ["domingo", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado"][fechaObj.getDay()];

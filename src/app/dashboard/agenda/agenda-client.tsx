@@ -115,10 +115,8 @@ const TIPOS_SESION = [
 ];
 
 const HORAS_DISPONIBLES = [
-  "09:00","09:30","10:00","10:30","11:00","11:30",
-  "12:00","12:30","13:00","13:30","14:00","14:30",
-  "15:00","15:30","16:00","16:30","17:00","17:30",
-  "18:00","18:30","19:00",
+  "09:00","10:00","11:00","12:00","13:00",
+  "14:00","15:00","16:00","17:00","18:00","19:00",
 ];
 
 const DAY_LABELS  = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
@@ -192,12 +190,14 @@ export default function AgendaClient({
   fisioterapeutas,
   weekStartISO,
   todayISO,
+  preselectedPacienteId,
 }: {
   initialCitas?: DBCita[];
   pacientes?: PacienteOption[];
   fisioterapeutas?: FisioOption[];
   weekStartISO: string;
   todayISO: string;
+  preselectedPacienteId?: string | null;
 }) {
   const today = useMemo(() => new Date(todayISO), [todayISO]);
   const [monday, setMonday] = useState(() => getMondayFromISO(weekStartISO));
@@ -219,7 +219,7 @@ export default function AgendaClient({
   const [busquedaPaciente, setBusquedaPaciente] = useState("");
   const [pacienteSeleccionado, setPacienteSeleccionado] = useState<PacienteOption | null>(null);
   const [horaInicio, setHoraInicio] = useState("09:00");
-  const [duracion, setDuracion] = useState("45");
+  const [duracion, setDuracion] = useState("60");
   const [tipoSesion, setTipoSesion] = useState("");
   const [fisioId, setFisioId] = useState("");
   const [sala, setSala] = useState("");
@@ -284,6 +284,19 @@ export default function AgendaClient({
       setLoadingWeek(false);
     }
   }, [monday, today]);
+
+  // Auto-open modal with preselected patient
+  useEffect(() => {
+    if (preselectedPacienteId && pacientes) {
+      const found = pacientes.find((p) => p.id === preselectedPacienteId);
+      if (found) {
+        setPacienteSeleccionado(found);
+        setFechaCita(diasSemana[diaActivo]?.isoDate ?? "");
+        setModalNuevaCita(true);
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // When day changes, update the form date
   useEffect(() => {

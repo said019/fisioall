@@ -1,7 +1,12 @@
 import AgendaClient from "./agenda-client";
 import { getCitasSemana, getFisioterapeutas, getPacientesLite } from "./actions";
 
-export default async function AgendaPage() {
+export default async function AgendaPage(props: {
+  searchParams: Promise<{ pacienteId?: string }>;
+}) {
+  const searchParams = await props.searchParams;
+  const preselectedPacienteId = searchParams.pacienteId ?? null;
+
   // Compute current week Mon-Sat
   const now = new Date();
   const dayOfWeek = now.getDay(); // 0=Sun
@@ -35,6 +40,7 @@ export default async function AgendaPage() {
       fisioterapeutas={fisioterapeutas as any}
       weekStartISO={monday.toISOString()}
       todayISO={now.toISOString()}
+      preselectedPacienteId={preselectedPacienteId}
     />
   );
 }

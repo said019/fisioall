@@ -152,7 +152,7 @@ function PerfilPaciente({ paciente, onClose }: { paciente: Paciente; onClose: ()
             Volver
           </button>
           <div className="flex items-center gap-2">
-            <Link href="/dashboard/agenda">
+            <Link href={`/dashboard/agenda?pacienteId=${paciente.id}`}>
               <Button size="sm" variant="outline" className="cursor-pointer border-[#a8cfe0] text-[#1e2d3a] hover:bg-[#e4ecf2] transition-all duration-200 gap-1.5 text-xs">
                 <CalendarDays className="h-3.5 w-3.5" />
                 Nueva Cita

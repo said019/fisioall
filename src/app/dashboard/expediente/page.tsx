@@ -13,7 +13,7 @@ export default async function ExpedientePage(props: {
   const { citaId, pacienteId } = searchParams;
 
   if (!citaId && !pacienteId) {
-    redirect("/dashboard/agenda");
+    redirect("/dashboard/pacientes");
   }
 
   let data;
@@ -25,7 +25,7 @@ export default async function ExpedientePage(props: {
   }
 
   if (!data) {
-    redirect("/dashboard/agenda");
+    redirect("/dashboard/pacientes");
   }
 
   return (

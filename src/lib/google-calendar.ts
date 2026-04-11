@@ -246,6 +246,60 @@ export async function listCalendarEvents(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Sync — push all future citas without googleEventId to Google Calendar
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function syncCitasToGoogle(tenantId: string): Promise<{ synced: number; errors: number }> {
+  const auth = await getAuthenticatedClient(tenantId);
+  if (!auth) return { synced: 0, errors: 0 };
+
+  const now = new Date();
+
+  // Get all future citas that don't have a Google Calendar event yet
+  const citas = await prisma.cita.findMany({
+    where: {
+      tenantId,
+      fechaHoraInicio: { gte: now },
+      estado: { notIn: ["cancelada", "no_show"] },
+      googleEventId: null,
+    },
+    include: {
+      paciente: { select: { nombre: true, apellido: true, telefono: true } },
+    },
+    orderBy: { fechaHoraInicio: "asc" },
+  });
+
+  let synced = 0;
+  let errors = 0;
+
+  for (const cita of citas) {
+    try {
+      const eventId = await createCalendarEvent(tenantId, {
+        fechaHoraInicio: cita.fechaHoraInicio,
+        fechaHoraFin: cita.fechaHoraFin,
+        pacienteNombre: `${cita.paciente.nombre} ${cita.paciente.apellido}`.trim(),
+        pacienteTelefono: cita.paciente.telefono,
+        tipoSesion: cita.tipoSesion ?? "Sesión",
+      });
+
+      if (eventId) {
+        await prisma.cita.update({
+          where: { id: cita.id },
+          data: { googleEventId: eventId },
+        });
+        synced++;
+      } else {
+        errors++;
+      }
+    } catch {
+      errors++;
+    }
+  }
+
+  return { synced, errors };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Disconnect — revoke token and delete from DB
 // ─────────────────────────────────────────────────────────────────────────────
 
