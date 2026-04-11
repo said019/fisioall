@@ -246,6 +246,9 @@ export function generatePassJson(
 
   const sellosRestantes = tarjeta.sellosTotal - tarjeta.sellosUsados;
 
+  const baseUrl = getEnv("NEXT_PUBLIC_URL") ?? getEnv("SERVER_URL") ?? "";
+  const authToken = getEnv("APPLE_AUTH_TOKEN") ?? "";
+
   return {
     formatVersion: 1,
     serialNumber: tarjeta.id,
@@ -257,6 +260,14 @@ export function generatePassJson(
     foregroundColor: "rgb(255, 255, 255)",
     backgroundColor: KAYA_KALP.backgroundColor,
     labelColor: "rgb(255, 255, 255)",
+
+    // Web Service — enables automatic pass updates via push
+    ...(baseUrl && authToken
+      ? {
+          webServiceURL: baseUrl,
+          authenticationToken: authToken,
+        }
+      : {}),
 
     // Barcode — encode the tarjeta ID so it can be scanned at the clinic
     barcode: {

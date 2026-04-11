@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
+import { notifyPassUpdateWithAlert, notifyPassUpdate } from "@/lib/apple-push";
 
 // ─── FETCH TARJETAS DE LEALTAD ──────────────────────────────────────────────
 export async function getTarjetasLealtad() {
@@ -112,14 +113,21 @@ export async function registrarSello(tarjetaId: string) {
     }
 
     const nuevoTotal = tarjeta.sellosUsados + 1;
+    const completada = nuevoTotal >= tarjeta.sellosTotal;
 
     await prisma.tarjetaLealtad.update({
       where: { id: tarjetaId },
       data: {
         sellosUsados: nuevoTotal,
-        estado: nuevoTotal >= tarjeta.sellosTotal ? "completada" : "activa",
+        estado: completada ? "completada" : "activa",
       },
     });
+
+    // Notify Apple Wallet devices
+    const message = completada
+      ? `¡Felicidades! Completaste tus ${tarjeta.sellosTotal} sellos. Tu recompensa te espera.`
+      : `Sello registrado. Llevas ${nuevoTotal} de ${tarjeta.sellosTotal}.`;
+    notifyPassUpdateWithAlert(tarjetaId, message).catch(console.error);
 
     revalidatePath("/dashboard/tarjetas");
     return { success: true };
@@ -146,6 +154,9 @@ export async function canjearRecompensa(tarjetaId: string) {
       where: { id: tarjetaId },
       data: { estado: "canjeada" },
     });
+
+    // Notify Apple Wallet devices
+    notifyPassUpdate(tarjetaId).catch(console.error);
 
     revalidatePath("/dashboard/tarjetas");
     return { success: true };

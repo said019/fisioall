@@ -925,8 +925,40 @@ model TarjetaLealtad {
 
   tenant          Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   paciente        Paciente              @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
+  appleDevices    AppleDevice[]
 
   @@index([tenantId])
   @@index([pacienteId])
   @@map("tarjetas_lealtad")
+}
+
+// ---------------------------------------------------------------------------
+// Apple Wallet — device registrations for push updates
+// ---------------------------------------------------------------------------
+
+model AppleDevice {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  deviceId      String   @map("device_id")
+  pushToken     String   @map("push_token")
+  passTypeId    String   @map("pass_type_id")
+  serialNumber  String   @map("serial_number") @db.Uuid
+  registeredAt  DateTime @default(now()) @map("registered_at") @db.Timestamptz
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  tarjeta       TarjetaLealtad @relation(fields: [serialNumber], references: [id], onDelete: Cascade)
+
+  @@unique([deviceId, passTypeId, serialNumber])
+  @@index([serialNumber])
+  @@index([deviceId, passTypeId])
+  @@map("apple_devices")
+}
+
+model ApplePassUpdate {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  serialNumber  String   @map("serial_number") @db.Uuid
+  message       String?
+  updatedAt     DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  @@index([serialNumber, updatedAt])
+  @@map("apple_pass_updates")
 }
