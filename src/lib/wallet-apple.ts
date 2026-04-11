@@ -1,7 +1,8 @@
 import { createHash } from "crypto";
 import { readFileSync, existsSync } from "fs";
 import { resolve } from "path";
-import * as JSZip from "jszip";
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const JSZip = require("jszip");
 
 // ---------------------------------------------------------------------------
 // Types
