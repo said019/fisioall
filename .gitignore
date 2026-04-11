@@ -23,6 +23,7 @@ tests/e2e/.auth/
 # Misc
 .DS_Store
 *.pem
+!wallet-assets/**/*.pem
 
 # Debug
 npm-debug.log*
