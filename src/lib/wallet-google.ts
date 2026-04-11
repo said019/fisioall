@@ -91,6 +91,7 @@ function buildLoyaltyPayload(
     },
     hexBackgroundColor: KAYA_KALP_HEX,
     reviewStatus: "UNDER_REVIEW",
+    multipleDevicesAndHoldersAllowedStatus: "MULTIPLE_HOLDERS",
     countryCode: "MX",
     localizedIssuerName: "Kaya Kalp — Fisioterapia",
     // Location — San Juan del Río, Querétaro
