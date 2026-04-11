@@ -221,7 +221,7 @@ export function generatePassJson(
         {
           key: "restantes",
           label: "SELLOS RESTANTES",
-          value: sellosRestantes,
+          value: `${sellosRestantes}`,
         },
       ],
       auxiliaryFields: [
@@ -235,8 +235,7 @@ export function generatePassJson(
               {
                 key: "expira",
                 label: "EXPIRA",
-                value: tarjeta.fechaExpiracion.toISOString().slice(0, 10),
-                dateStyle: "PKDateStyleShort",
+                value: tarjeta.fechaExpiracion.toISOString(),
               },
             ]
           : []),
