@@ -111,39 +111,19 @@ function buildLoyaltyPayload(
       {
         header: "Recompensa",
         body: tarjeta.recompensa,
+        id: "recompensa",
       },
       {
         header: "Sellos restantes",
         body: `${sellosRestantes} de ${tarjeta.sellosTotal}`,
+        id: "restantes",
       },
     ],
-    infoModuleData: {
-      labelValueRows: [
-        {
-          columns: [
-            { label: "Estado", value: tarjeta.estado === "activa" ? "Activa" : tarjeta.estado },
-            {
-              label: "Expira",
-              value: tarjeta.fechaExpiracion
-                ? tarjeta.fechaExpiracion.toISOString().slice(0, 10)
-                : "Sin expiración",
-            },
-          ],
-        },
-      ],
-    },
     barcode: {
       type: "QR_CODE",
       value: tarjeta.id,
       alternateText: tarjeta.id.slice(0, 8),
     },
-    // Location-based notification
-    locations: [
-      {
-        latitude: 20.3898,
-        longitude: -99.9968,
-      },
-    ],
   };
 
   return {
@@ -187,10 +167,10 @@ export async function generateGoogleWalletSaveUrl(
       iss: saEmail,
       aud: "google",
       typ: "savetowallet",
-      origins: [KAYA_KALP_BASE_URL],
+      origins: ["https://kayakalp.com.mx"],
       ...payload,
     })
-      .setProtectedHeader({ alg: "RS256", typ: "JWT" })
+      .setProtectedHeader({ alg: "RS256" })
       .setIssuedAt()
       .sign(privateKey);
 
