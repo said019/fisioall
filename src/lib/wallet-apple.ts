@@ -1,6 +1,7 @@
 import { createHash } from "crypto";
 import { readFileSync, existsSync } from "fs";
 import { resolve } from "path";
+import * as JSZip from "jszip";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -240,99 +241,9 @@ function sha1(data: Buffer): string {
 }
 
 /**
- * Minimal ZIP (PKZIP) archive builder.
- * Apple expects an uncompressed ZIP with specific entries.
- */
-function buildZip(entries: { name: string; data: Buffer }[]): Buffer {
-  const parts: Buffer[] = [];
-  const centralDir: Buffer[] = [];
-  let offset = 0;
-
-  for (const entry of entries) {
-    // Local file header
-    const nameBuffer = Buffer.from(entry.name, "utf-8");
-    const header = Buffer.alloc(30 + nameBuffer.length);
-    header.writeUInt32LE(0x04034b50, 0); // local file header signature
-    header.writeUInt16LE(20, 4); // version needed
-    header.writeUInt16LE(0, 6); // flags
-    header.writeUInt16LE(0, 8); // compression: stored
-    header.writeUInt16LE(0, 10); // mod time
-    header.writeUInt16LE(0, 12); // mod date
-    const crc = crc32(entry.data);
-    header.writeUInt32LE(crc, 14);
-    header.writeUInt32LE(entry.data.length, 18); // compressed size
-    header.writeUInt32LE(entry.data.length, 22); // uncompressed size
-    header.writeUInt16LE(nameBuffer.length, 26); // name length
-    header.writeUInt16LE(0, 28); // extra length
-    nameBuffer.copy(header, 30);
-
-    parts.push(header, entry.data);
-
-    // Central directory entry
-    const cdEntry = Buffer.alloc(46 + nameBuffer.length);
-    cdEntry.writeUInt32LE(0x02014b50, 0);
-    cdEntry.writeUInt16LE(20, 4);
-    cdEntry.writeUInt16LE(20, 6);
-    cdEntry.writeUInt16LE(0, 8);
-    cdEntry.writeUInt16LE(0, 10);
-    cdEntry.writeUInt16LE(0, 12);
-    cdEntry.writeUInt16LE(0, 14);
-    cdEntry.writeUInt32LE(crc, 16);
-    cdEntry.writeUInt32LE(entry.data.length, 20);
-    cdEntry.writeUInt32LE(entry.data.length, 24);
-    cdEntry.writeUInt16LE(nameBuffer.length, 28);
-    cdEntry.writeUInt16LE(0, 30); // extra length
-    cdEntry.writeUInt16LE(0, 32); // comment length
-    cdEntry.writeUInt16LE(0, 34); // disk number
-    cdEntry.writeUInt16LE(0, 36); // internal attrs
-    cdEntry.writeUInt32LE(0, 38); // external attrs
-    cdEntry.writeUInt32LE(offset, 42);
-    nameBuffer.copy(cdEntry, 46);
-    centralDir.push(cdEntry);
-
-    offset += header.length + entry.data.length;
-  }
-
-  const cdBuffer = Buffer.concat(centralDir);
-  const cdOffset = offset;
-
-  // End of central directory
-  const eocd = Buffer.alloc(22);
-  eocd.writeUInt32LE(0x06054b50, 0);
-  eocd.writeUInt16LE(0, 4);
-  eocd.writeUInt16LE(0, 6);
-  eocd.writeUInt16LE(entries.length, 8);
-  eocd.writeUInt16LE(entries.length, 10);
-  eocd.writeUInt32LE(cdBuffer.length, 12);
-  eocd.writeUInt32LE(cdOffset, 16);
-  eocd.writeUInt16LE(0, 20);
-
-  return Buffer.concat([...parts, cdBuffer, eocd]);
-}
-
-/**
- * CRC-32 (used by ZIP format).
- */
-function crc32(buf: Buffer): number {
-  let crc = 0xffffffff;
-  for (let i = 0; i < buf.length; i++) {
-    crc ^= buf[i];
-    for (let j = 0; j < 8; j++) {
-      crc = crc & 1 ? (crc >>> 1) ^ 0xedb88320 : crc >>> 1;
-    }
-  }
-  return (crc ^ 0xffffffff) >>> 0;
-}
-
-/**
  * Generates a signed .pkpass buffer ready to be served to the client.
  *
  * Returns `null` if Apple Wallet is not configured (missing certs / env vars).
- *
- * NOTE: The actual PKCS#7 signing (detached CMS signature) requires the
- * Apple-issued certificate, private key, and Apple WWDR intermediate cert.
- * When those are provided via env vars, this function produces a fully valid
- * .pkpass file. Until then it returns null.
  */
 export async function generateLoyaltyPass(
   tarjeta: TarjetaLealtad,
@@ -350,23 +261,21 @@ export async function generateLoyaltyPass(
   const passJson = generatePassJson(tarjeta, paciente);
   const passJsonBuffer = Buffer.from(JSON.stringify(passJson), "utf-8");
 
-  // 2. Build manifest.json (SHA-1 hash of every file in the pass)
+  // 2. Collect all pass files (pass.json + images)
   const imageFiles = loadPassImages();
   const files: { name: string; data: Buffer }[] = [
     { name: "pass.json", data: passJsonBuffer },
     ...imageFiles,
   ];
 
+  // 3. Build manifest.json (SHA-1 hash of every file)
   const manifest: Record<string, string> = {};
   for (const file of files) {
     manifest[file.name] = sha1(file.data);
   }
   const manifestBuffer = Buffer.from(JSON.stringify(manifest), "utf-8");
 
-  // 3. Create PKCS#7 detached signature of the manifest
-  //    This uses OpenSSL via child_process because Node.js crypto doesn't
-  //    natively support CMS/PKCS#7 detached signatures in the way Apple
-  //    requires. In production you would shell out to `openssl smime`.
+  // 4. Create PKCS#7 detached signature of the manifest via OpenSSL
   let signatureBuffer: Buffer;
   try {
     const { execSync } = await import("child_process");
@@ -387,7 +296,7 @@ export async function generateLoyaltyPass(
 
     signatureBuffer = readFileSync(sigPath);
 
-    // Clean up temp files
+    // Clean up
     unlinkSync(manifestPath);
     unlinkSync(sigPath);
   } catch (error) {
@@ -395,12 +304,18 @@ export async function generateLoyaltyPass(
     return null;
   }
 
-  // 4. Assemble .pkpass (ZIP archive)
-  const zipEntries = [
-    ...files,
-    { name: "manifest.json", data: manifestBuffer },
-    { name: "signature", data: signatureBuffer },
-  ];
+  // 5. Assemble .pkpass using JSZip (STORE compression for Apple compatibility)
+  const zip = new JSZip();
+  for (const file of files) {
+    zip.file(file.name, file.data, { compression: "STORE" });
+  }
+  zip.file("manifest.json", manifestBuffer, { compression: "STORE" });
+  zip.file("signature", signatureBuffer, { compression: "STORE" });
 
-  return buildZip(zipEntries);
+  const pkpassBuffer = await zip.generateAsync({
+    type: "nodebuffer",
+    compression: "STORE",
+  });
+
+  return pkpassBuffer;
 }
