@@ -5,6 +5,10 @@ node_modules
 
 # Testing
 /coverage
+/test-results/
+/playwright-report/
+/blob-report/
+tests/e2e/.auth/
 
 # Next.js
 /.next/
@@ -12,6 +16,9 @@ node_modules
 
 # Production
 /build
+
+# Certificates (sensitive)
+/certs/
 
 # Misc
 .DS_Store
