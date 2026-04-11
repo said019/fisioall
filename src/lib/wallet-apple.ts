@@ -324,7 +324,7 @@ export function generatePassJson(
               {
                 key: "expira",
                 label: "EXPIRA",
-                value: tarjeta.fechaExpiracion.toISOString(),
+                value: tarjeta.fechaExpiracion.toISOString().slice(0, 10),
               },
             ]
           : []),
