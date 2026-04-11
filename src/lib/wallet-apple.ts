@@ -294,7 +294,7 @@ export function generatePassJson(
         {
           key: "nombre",
           label: "PACIENTE",
-          value: `${paciente.nombre} ${paciente.apellido}`,
+          value: paciente.nombre,
         },
         {
           key: "recompensa",
@@ -303,11 +303,6 @@ export function generatePassJson(
         },
       ],
       auxiliaryFields: [
-        {
-          key: "restantes",
-          label: "SELLOS RESTANTES",
-          value: `${sellosRestantes}`,
-        },
         {
           key: "estado",
           label: "ESTADO",
