@@ -38,12 +38,17 @@ function getEnv(key: string): string | undefined {
  * Returns true when all required Apple Wallet env vars are set AND the
  * certificate files exist on disk.
  */
+// Support both local env var names and Railway env var names
+function getCertPath() { return getEnv("APPLE_CERT_PATH") ?? getEnv("APPLE_PASS_CERT"); }
+function getKeyPath() { return getEnv("APPLE_KEY_PATH") ?? getEnv("APPLE_PASS_KEY"); }
+function getWwdrPath() { return getEnv("APPLE_WWDR_PATH") ?? getEnv("APPLE_WWDR"); }
+
 export function isAppleWalletConfigured(): boolean {
   const teamId = getEnv("APPLE_TEAM_ID");
   const passTypeId = getEnv("APPLE_PASS_TYPE_ID");
-  const certPath = getEnv("APPLE_CERT_PATH");
-  const keyPath = getEnv("APPLE_KEY_PATH");
-  const wwdrPath = getEnv("APPLE_WWDR_PATH");
+  const certPath = getCertPath();
+  const keyPath = getKeyPath();
+  const wwdrPath = getWwdrPath();
 
   if (!teamId || !passTypeId || !certPath || !keyPath || !wwdrPath) {
     return false;
@@ -337,9 +342,9 @@ export async function generateLoyaltyPass(
     return null;
   }
 
-  const certPath = resolve(getEnv("APPLE_CERT_PATH")!);
-  const keyPath = resolve(getEnv("APPLE_KEY_PATH")!);
-  const wwdrPath = resolve(getEnv("APPLE_WWDR_PATH")!);
+  const certPath = resolve(getCertPath()!);
+  const keyPath = resolve(getKeyPath()!);
+  const wwdrPath = resolve(getWwdrPath()!);
 
   // 1. Build pass.json
   const passJson = generatePassJson(tarjeta, paciente);
