@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { notifyPassUpdateWithAlert, notifyPassUpdate } from "@/lib/apple-push";
+import { updateGoogleWalletObject, sendGoogleWalletMessage } from "@/lib/wallet-google";
 
 // ─── FETCH TARJETAS DE LEALTAD ──────────────────────────────────────────────
 export async function getTarjetasLealtad() {
@@ -129,6 +130,20 @@ export async function registrarSello(tarjetaId: string) {
       : `Sello registrado. Llevas ${nuevoTotal} de ${tarjeta.sellosTotal}.`;
     notifyPassUpdateWithAlert(tarjetaId, message).catch(console.error);
 
+    // Update Google Wallet pass (real-time via API)
+    const updatedTarjeta = await prisma.tarjetaLealtad.findFirst({
+      where: { id: tarjetaId },
+      include: { paciente: { select: { id: true, nombre: true, apellido: true, telefono: true, tenantId: true } } },
+    });
+    if (updatedTarjeta) {
+      updateGoogleWalletObject(updatedTarjeta, updatedTarjeta.paciente).catch(console.error);
+      sendGoogleWalletMessage(
+        tarjetaId,
+        completada ? "¡Recompensa lista!" : "Sello registrado",
+        message,
+      ).catch(console.error);
+    }
+
     revalidatePath("/dashboard/tarjetas");
     return { success: true };
   } catch (error) {
@@ -157,6 +172,20 @@ export async function canjearRecompensa(tarjetaId: string) {
 
     // Notify Apple Wallet devices
     notifyPassUpdate(tarjetaId).catch(console.error);
+
+    // Update Google Wallet pass
+    const updatedTarjeta = await prisma.tarjetaLealtad.findFirst({
+      where: { id: tarjetaId },
+      include: { paciente: { select: { id: true, nombre: true, apellido: true, telefono: true, tenantId: true } } },
+    });
+    if (updatedTarjeta) {
+      updateGoogleWalletObject(updatedTarjeta, updatedTarjeta.paciente).catch(console.error);
+      sendGoogleWalletMessage(
+        tarjetaId,
+        "Recompensa canjeada",
+        `Tu recompensa "${tarjeta.recompensa}" ha sido canjeada. ¡Gracias por tu lealtad!`,
+      ).catch(console.error);
+    }
 
     revalidatePath("/dashboard/tarjetas");
     return { success: true };
