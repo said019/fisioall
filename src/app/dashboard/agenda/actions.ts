@@ -93,17 +93,27 @@ export async function crearCita(prevState: unknown, formData: FormData) {
       },
     });
 
+    // Fetch patient + therapist info for calendar sync + email
+    const [pac, fisio] = await Promise.all([
+      prisma.paciente.findUnique({
+        where: { id: pacienteId },
+        select: { nombre: true, apellido: true, telefono: true, email: true },
+      }),
+      prisma.usuario.findUnique({
+        where: { id: fisioterapeutaId },
+        select: { nombre: true, apellido: true },
+      }),
+    ]);
+    const pacNombre = `${pac?.nombre ?? ""} ${pac?.apellido ?? ""}`.trim();
+    const fisioNombre = `${fisio?.nombre ?? ""} ${fisio?.apellido ?? ""}`.trim();
+
     // Sync to Google Calendar (best-effort)
     try {
       const { createCalendarEvent } = await import("@/lib/google-calendar");
-      const pac = await prisma.paciente.findUnique({
-        where: { id: pacienteId },
-        select: { nombre: true, apellido: true, telefono: true },
-      });
       const googleEventId = await createCalendarEvent(tenantId, {
         fechaHoraInicio,
         fechaHoraFin,
-        pacienteNombre: `${pac?.nombre ?? ""} ${pac?.apellido ?? ""}`.trim(),
+        pacienteNombre: pacNombre,
         pacienteTelefono: pac?.telefono ?? "",
         tipoSesion: tipoSesion || "Sesión de fisioterapia",
       });
@@ -112,6 +122,23 @@ export async function crearCita(prevState: unknown, formData: FormData) {
       }
     } catch (gcalErr) {
       console.error("[GCal] Sync error on admin create:", gcalErr);
+    }
+
+    // Send branded email with calendar event (best-effort)
+    try {
+      const { sendCitaAgendadaEmail } = await import("@/lib/send-email");
+      await sendCitaAgendadaEmail({
+        pacienteNombre: pacNombre,
+        pacienteEmail: pac?.email ?? "",
+        tipoSesion: tipoSesion || "Sesión de fisioterapia",
+        fisioterapeuta: fisioNombre,
+        fechaHoraInicio,
+        fechaHoraFin,
+        sala: sala || null,
+        citaId: cita.id,
+      });
+    } catch (emailErr) {
+      console.error("[Email] Send on cita create failed:", emailErr);
     }
 
     // Crear pago de anticipo en estado pendiente
@@ -156,19 +183,35 @@ export async function actualizarEstadoCita(
   const { tenantId } = await requireAuth();
 
   try {
-    // Fetch cita first for GCal sync
+    // Fetch cita with relations for GCal sync + emails
     const cita = await prisma.cita.findFirst({
       where: { id: citaId, tenantId },
-      select: { googleEventId: true, tenantId: true },
+      include: {
+        paciente: { select: { nombre: true, apellido: true, email: true } },
+        fisioterapeuta: { select: { nombre: true, apellido: true } },
+      },
     });
+    if (!cita) return { error: "Cita no encontrada" };
 
     await prisma.cita.update({
       where: { id: citaId, tenantId },
       data: { estado },
     });
 
+    // Email data helper
+    const emailData = {
+      pacienteNombre: `${cita.paciente.nombre} ${cita.paciente.apellido}`.trim(),
+      pacienteEmail: cita.paciente.email ?? "",
+      tipoSesion: cita.tipoSesion ?? "Sesión",
+      fisioterapeuta: `${cita.fisioterapeuta.nombre} ${cita.fisioterapeuta.apellido}`.trim(),
+      fechaHoraInicio: cita.fechaHoraInicio,
+      fechaHoraFin: cita.fechaHoraFin,
+      sala: cita.sala,
+      citaId,
+    };
+
     // Delete Google Calendar event on cancel
-    if ((estado === "cancelada" || estado === "no_show") && cita?.googleEventId) {
+    if ((estado === "cancelada" || estado === "no_show") && cita.googleEventId) {
       try {
         const { deleteCalendarEvent } = await import("@/lib/google-calendar");
         await deleteCalendarEvent(cita.tenantId, cita.googleEventId);
@@ -177,11 +220,31 @@ export async function actualizarEstadoCita(
       }
     }
 
-    // Auto-create NPS survey when cita is completed
+    // Send confirmation email when anticipo is confirmed
+    if (estado === "confirmada") {
+      try {
+        const { sendCitaConfirmadaEmail } = await import("@/lib/send-email");
+        await sendCitaConfirmadaEmail(emailData);
+      } catch (emailErr) {
+        console.error("[Email] Confirmada send failed:", emailErr);
+      }
+    }
+
+    // Auto-create NPS survey + send completada email when cita is completed
     if (estado === "completada") {
       try {
         const { crearEncuesta } = await import("@/app/dashboard/encuestas/actions");
-        await crearEncuesta(citaId);
+        const result = await crearEncuesta(citaId);
+        // Send completada email with encuesta link
+        try {
+          const { sendCitaCompletadaEmail } = await import("@/lib/send-email");
+          await sendCitaCompletadaEmail({
+            ...emailData,
+            encuestaToken: result && "token" in result ? (result.token as string) : undefined,
+          });
+        } catch (emailErr) {
+          console.error("[Email] Completada send failed:", emailErr);
+        }
       } catch (encErr) {
         console.error("[Encuesta] Auto-create failed:", encErr);
       }
@@ -239,7 +302,10 @@ export async function confirmarAnticipo(citaId: string, metodo: string) {
 
   const cita = await prisma.cita.findFirst({
     where: { id: citaId, tenantId },
-    select: { anticipoPagoId: true, pacienteId: true },
+    include: {
+      paciente: { select: { id: true, nombre: true, apellido: true, email: true } },
+      fisioterapeuta: { select: { nombre: true, apellido: true } },
+    },
   });
 
   if (!cita?.anticipoPagoId) return { error: "No hay anticipo registrado" };
@@ -257,10 +323,27 @@ export async function confirmarAnticipo(citaId: string, metodo: string) {
       data: { estado: "confirmada", anticipoPagado: true },
     }),
     prisma.paciente.update({
-      where: { id: cita.pacienteId },
+      where: { id: cita.paciente.id },
       data: { anticipoSaldo: { increment: 200 } },
     }),
   ]);
+
+  // Send confirmation email (best-effort)
+  try {
+    const { sendCitaConfirmadaEmail } = await import("@/lib/send-email");
+    await sendCitaConfirmadaEmail({
+      pacienteNombre: `${cita.paciente.nombre} ${cita.paciente.apellido}`.trim(),
+      pacienteEmail: cita.paciente.email ?? "",
+      tipoSesion: cita.tipoSesion ?? "Sesión",
+      fisioterapeuta: `${cita.fisioterapeuta.nombre} ${cita.fisioterapeuta.apellido}`.trim(),
+      fechaHoraInicio: cita.fechaHoraInicio,
+      fechaHoraFin: cita.fechaHoraFin,
+      sala: cita.sala,
+      citaId,
+    });
+  } catch (emailErr) {
+    console.error("[Email] Anticipo confirmado send failed:", emailErr);
+  }
 
   revalidatePath("/dashboard/agenda");
   revalidatePath("/dashboard");
