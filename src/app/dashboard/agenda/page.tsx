@@ -7,11 +7,14 @@ export default async function AgendaPage(props: {
   const searchParams = await props.searchParams;
   const preselectedPacienteId = searchParams.pacienteId ?? null;
 
-  // Compute current week Mon-Sat
+  // Compute current week Mon-Sat in Mexico City timezone
   const now = new Date();
-  const dayOfWeek = now.getDay(); // 0=Sun
+  // Get "today" in Mexico City (handles UTC vs local offset on Vercel)
+  const mxDateStr = now.toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" }); // "YYYY-MM-DD"
+  const mxNow = new Date(mxDateStr + "T12:00:00-06:00");
+  const dayOfWeek = mxNow.getDay(); // 0=Sun
   const diffToMon = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMon);
+  const monday = new Date(mxNow.getFullYear(), mxNow.getMonth(), mxNow.getDate() + diffToMon);
   const saturday = new Date(monday);
   saturday.setDate(monday.getDate() + 5);
   saturday.setHours(23, 59, 59, 999);
@@ -39,7 +42,7 @@ export default async function AgendaPage(props: {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       fisioterapeutas={fisioterapeutas as any}
       weekStartISO={monday.toISOString()}
-      todayISO={now.toISOString()}
+      todayISO={mxNow.toISOString()}
       preselectedPacienteId={preselectedPacienteId}
     />
   );

@@ -109,9 +109,20 @@ const estadoConfig: Record<string, { label: string; bg: string; border: string; 
 };
 
 const TIPOS_SESION = [
-  "Fisioterapia", "Masaje Terapéutico", "Masaje Relajante",
-  "Masaje Descontracturante", "Drenaje Linfático", "Tratamiento Facial",
-  "Tratamiento Corporal", "Suelo Pélvico", "Rehabilitación", "Epilación",
+  // Fisioterapia
+  "Fisioterapia", "Fisioterapia Antiestrés", "Descarga Muscular",
+  "Drenaje Linfático", "Presoterapia", "Ejercicio Terapéutico",
+  "Valoración Fisioterapéutica", "Suelo Pélvico", "Rehabilitación",
+  // Masajes
+  "Masaje Terapéutico", "Masaje Relajante", "Masaje Descontracturante",
+  // Faciales (Gaby)
+  "Masaje Revitalizante Facial", "Limpieza Facial Básica", "Limpieza Facial Profunda",
+  "Hidratación Profunda", "Rejuvenecimiento Facial", "Hilos de Colágeno",
+  // Corporales (Gaby)
+  "Tratamiento Corporal",
+  // Epilación (Gaby)
+  "Epilación Media Pierna Inf", "Epilación Media Pierna Sup", "Epilación Piernas Completas",
+  "Epilación Axila", "Epilación Bigote/Barbilla", "Epilación Barba", "Epilación Bikini",
 ];
 
 const HORAS_DISPONIBLES = [
@@ -221,7 +232,7 @@ export default function AgendaClient({
   const [horaInicio, setHoraInicio] = useState("09:00");
   const [duracion, setDuracion] = useState("60");
   const [tipoSesion, setTipoSesion] = useState("");
-  const [fisioId, setFisioId] = useState("");
+  const [fisioId, setFisioId] = useState(fisioterapeutas?.[0]?.id ?? "");
   const [sala, setSala] = useState("");
   const [fechaCita, setFechaCita] = useState(diasSemana[diaActivo]?.isoDate ?? "");
 
@@ -285,6 +296,13 @@ export default function AgendaClient({
     }
   }, [monday, today]);
 
+  // Ensure therapist is auto-selected when fisioterapeutas load
+  useEffect(() => {
+    if (fisioterapeutas && fisioterapeutas.length > 0 && !fisioId) {
+      setFisioId(fisioterapeutas[0].id);
+    }
+  }, [fisioterapeutas, fisioId]);
+
   // Auto-open modal with preselected patient
   useEffect(() => {
     if (preselectedPacienteId && pacientes) {
@@ -340,9 +358,9 @@ export default function AgendaClient({
     setBusquedaPaciente("");
     setPacienteSeleccionado(null);
     setHoraInicio("09:00");
-    setDuracion("45");
+    setDuracion("60");
     setTipoSesion("");
-    setFisioId("");
+    setFisioId(fisioterapeutas?.[0]?.id ?? "");
     setSala("");
   }
 
@@ -754,8 +772,8 @@ export default function AgendaClient({
       <Dialog open={modalNuevaCita} onOpenChange={setModalNuevaCita}>
         <DialogContent className="max-w-md border-[#c8dce8]">
           <DialogHeader>
-            <DialogTitle className="text-[#1e2d3a] font-bold">Agendar Nueva Cita</DialogTitle>
-            <DialogDescription className="text-[#1e2d3a]/50 text-xs">
+            <DialogTitle className="text-[#1e2d3a] font-bold text-base">Agendar Nueva Cita</DialogTitle>
+            <DialogDescription className="text-[#1e2d3a]/40 text-[11px]">
               {diasSemana[diaActivo]?.label} {diasSemana[diaActivo]?.fecha} — Completa los datos para agendar
             </DialogDescription>
           </DialogHeader>
@@ -953,7 +971,7 @@ export default function AgendaClient({
             <div className="bg-[#e89b3f]/10 border border-[#e89b3f]/30 rounded-lg p-2.5">
               <p className="text-xs text-[#854f0b] font-medium flex items-start gap-2">
                 <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                Anticipo obligatorio de <strong>$200 MXN</strong>. La cita queda pendiente hasta confirmar pago. Sin pago en 24h se cancela.
+                Anticipo obligatorio de <strong>$200 MXN</strong> como garantía de reserva. Este monto queda como saldo a favor del paciente para aplicar en futuros cobros. Sin pago en 24h la cita se cancela.
               </p>
             </div>
 

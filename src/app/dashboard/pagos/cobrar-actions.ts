@@ -15,7 +15,7 @@ export async function confirmarPagoAnticipo(
 
   const pago = await prisma.pago.findFirst({
     where: { id: pagoId, tenantId },
-    select: { citaId: true },
+    select: { citaId: true, pacienteId: true, monto: true },
   });
 
   if (!pago) return { error: "Pago no encontrado" };
@@ -33,6 +33,10 @@ export async function confirmarPagoAnticipo(
           }),
         ]
       : []),
+    prisma.paciente.update({
+      where: { id: pago.pacienteId },
+      data: { anticipoSaldo: { increment: Number(pago.monto) } },
+    }),
   ]);
 
   revalidatePath("/dashboard/agenda");

@@ -76,7 +76,8 @@ export async function crearCita(prevState: unknown, formData: FormData) {
   }
 
   try {
-    const fechaHoraInicio = new Date(`${fecha}T${horaInicio}:00`);
+    // Append Mexico City offset (UTC-6, permanent since DST was abolished in 2022)
+    const fechaHoraInicio = new Date(`${fecha}T${horaInicio}:00-06:00`);
     const fechaHoraFin = new Date(fechaHoraInicio.getTime() + duracion * 60 * 1000);
 
     const cita = await prisma.cita.create({
@@ -176,6 +177,16 @@ export async function actualizarEstadoCita(
       }
     }
 
+    // Auto-create NPS survey when cita is completed
+    if (estado === "completada") {
+      try {
+        const { crearEncuesta } = await import("@/app/dashboard/encuestas/actions");
+        await crearEncuesta(citaId);
+      } catch (encErr) {
+        console.error("[Encuesta] Auto-create failed:", encErr);
+      }
+    }
+
     revalidatePath("/dashboard/agenda");
     revalidatePath("/dashboard");
     return { success: true };
@@ -228,7 +239,7 @@ export async function confirmarAnticipo(citaId: string, metodo: string) {
 
   const cita = await prisma.cita.findFirst({
     where: { id: citaId, tenantId },
-    select: { anticipoPagoId: true },
+    select: { anticipoPagoId: true, pacienteId: true },
   });
 
   if (!cita?.anticipoPagoId) return { error: "No hay anticipo registrado" };
@@ -244,6 +255,10 @@ export async function confirmarAnticipo(citaId: string, metodo: string) {
     prisma.cita.update({
       where: { id: citaId },
       data: { estado: "confirmada", anticipoPagado: true },
+    }),
+    prisma.paciente.update({
+      where: { id: cita.pacienteId },
+      data: { anticipoSaldo: { increment: 200 } },
     }),
   ]);
 
@@ -262,7 +277,7 @@ export async function getSlotsDisponibles(params: {
   const { tenantId } = await requireAuth();
   const { fecha, fisioterapeutaId, tipoSesion, duracionMin = 60 } = params; // 60 min = citas cada hora
 
-  const fechaObj = new Date(fecha + "T00:00:00");
+  const fechaObj = new Date(fecha + "T00:00:00-06:00");
   const diaKey = ["domingo", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado"][fechaObj.getDay()];
 
   // 1. Obtener horario del terapeuta para ese día
@@ -279,9 +294,9 @@ export async function getSlotsDisponibles(params: {
   });
   const cubiculosPref = cubiculoConfig?.cubiculoPref ?? [1];
 
-  // 3. Obtener citas ocupadas ese día
-  const inicioDia = new Date(fecha + "T00:00:00");
-  const finDia = new Date(fecha + "T23:59:59");
+  // 3. Obtener citas ocupadas ese día (Mexico City UTC-6)
+  const inicioDia = new Date(fecha + "T00:00:00-06:00");
+  const finDia = new Date(fecha + "T23:59:59-06:00");
 
   const citasOcupadas = await prisma.cita.findMany({
     where: {
@@ -302,7 +317,7 @@ export async function getSlotsDisponibles(params: {
     const finMinutos = hFin * 60 + mFin;
 
     while (minutos + duracionMin <= finMinutos) {
-      const slotIni = new Date(fecha + "T00:00:00");
+      const slotIni = new Date(fecha + "T00:00:00-06:00");
       slotIni.setMinutes(slotIni.getMinutes() + minutos);
       const slotFin = new Date(slotIni.getTime() + duracionMin * 60 * 1000);
 
