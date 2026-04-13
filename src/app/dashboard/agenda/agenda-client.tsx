@@ -77,6 +77,7 @@ type FisioOption = {
   nombre: string;
   iniciales: string;
   colorAgenda?: string;
+  rol?: string;
 };
 
 type DBCita = {
@@ -124,6 +125,34 @@ const TIPOS_SESION = [
   "Epilación Media Pierna Inf", "Epilación Media Pierna Sup", "Epilación Piernas Completas",
   "Epilación Axila", "Epilación Bigote/Barbilla", "Epilación Barba", "Epilación Bikini",
 ];
+
+// Services that belong to cosmetología (Gaby-only)
+const SERVICIOS_COSMETOLOGIA = new Set([
+  "Masaje Revitalizante Facial", "Limpieza Facial Básica", "Limpieza Facial Profunda",
+  "Hidratación Profunda", "Rejuvenecimiento Facial", "Hilos de Colágeno",
+  "Tratamiento Corporal",
+  "Epilación Media Pierna Inf", "Epilación Media Pierna Sup", "Epilación Piernas Completas",
+  "Epilación Axila", "Epilación Bigote/Barbilla", "Epilación Barba", "Epilación Bikini",
+]);
+
+// Services that belong to fisioterapia (Paola/Jenni only)
+const SERVICIOS_FISIOTERAPIA = new Set([
+  "Fisioterapia", "Fisioterapia Antiestrés", "Descarga Muscular",
+  "Drenaje Linfático", "Presoterapia", "Ejercicio Terapéutico",
+  "Valoración Fisioterapéutica", "Suelo Pélvico", "Rehabilitación",
+  "Masaje Terapéutico", "Masaje Relajante", "Masaje Descontracturante",
+]);
+
+function filterFisiosByServicio(fisios: FisioOption[], servicio: string): FisioOption[] {
+  if (!servicio) return fisios;
+  if (SERVICIOS_COSMETOLOGIA.has(servicio)) {
+    return fisios.filter((f) => f.rol === "cosmiatra" || f.rol === "admin");
+  }
+  if (SERVICIOS_FISIOTERAPIA.has(servicio)) {
+    return fisios.filter((f) => f.rol === "fisioterapeuta" || f.rol === "admin");
+  }
+  return fisios; // unknown service → show all
+}
 
 const HORAS_DISPONIBLES = [
   "09:00","10:00","11:00","12:00","13:00",
@@ -1090,7 +1119,16 @@ export default function AgendaClient({
             {/* Tipo de sesión */}
             <div className="space-y-1">
               <Label className="text-xs font-semibold text-[#1e2d3a]/70">Tipo de Sesión</Label>
-              <Select value={tipoSesion} onValueChange={setTipoSesion}>
+              <Select value={tipoSesion} onValueChange={(v) => {
+                setTipoSesion(v);
+                // Auto-select appropriate therapist for this service
+                if (fisioterapeutas) {
+                  const filtered = filterFisiosByServicio(fisioterapeutas, v);
+                  if (filtered.length > 0 && !filtered.some((f) => f.id === fisioId)) {
+                    setFisioId(filtered[0].id);
+                  }
+                }
+              }}>
                 <SelectTrigger className="h-9 text-sm border-[#a8cfe0] cursor-pointer">
                   <SelectValue placeholder="Seleccionar tipo..." />
                 </SelectTrigger>
@@ -1114,7 +1152,7 @@ export default function AgendaClient({
                         <SelectValue placeholder="Asignar..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {fisioterapeutas.map((f) => (
+                        {filterFisiosByServicio(fisioterapeutas, tipoSesion).map((f) => (
                           <SelectItem key={f.id} value={f.id} className="cursor-pointer">{f.nombre}</SelectItem>
                         ))}
                       </SelectContent>
