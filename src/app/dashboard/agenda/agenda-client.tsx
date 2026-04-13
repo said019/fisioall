@@ -800,12 +800,24 @@ export default function AgendaClient({
           <DialogHeader>
             <DialogTitle className="text-[#1e2d3a] font-bold text-base">Agendar Nueva Cita</DialogTitle>
             <DialogDescription className="text-[#1e2d3a]/40 text-[11px]">
-              {diasSemana[diaActivo]?.label} {diasSemana[diaActivo]?.fecha} — Completa los datos para agendar
+              Completa los datos para agendar
             </DialogDescription>
           </DialogHeader>
           <form action={formAction} className="space-y-3 pt-1">
             <input type="hidden" name="fecha" value={fechaCita} />
             <input type="hidden" name="pacienteId" value={pacienteSeleccionado?.id ?? ""} />
+
+            {/* Fecha selector */}
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold text-[#1e2d3a]/70">Fecha *</Label>
+              <Input
+                type="date"
+                value={fechaCita}
+                onChange={(e) => setFechaCita(e.target.value)}
+                min={new Date().toISOString().split("T")[0]}
+                className="h-9 text-sm border-[#a8cfe0] focus:border-[#4a7fa5] cursor-pointer"
+              />
+            </div>
 
             {/* Paciente selector */}
             <div className="space-y-1.5">
