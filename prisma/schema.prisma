@@ -674,7 +674,8 @@ model EncuestaSesion {
   id                  String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   citaId              String          @map("cita_id") @db.Uuid
   pacienteId          String          @map("paciente_id") @db.Uuid
-  
+  token               String          @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
   npsScore            Int?            @map("nps_score")
   dolorPost           DolorEscala?    @map("dolor_post")
   satisfaccion        Int?
@@ -689,6 +690,7 @@ model EncuestaSesion {
   paciente            Paciente        @relation(fields: [pacienteId], references: [id])
 
   @@index([pacienteId])
+  @@index([token])
   @@map("encuestas_sesion")
 }
 
