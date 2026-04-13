@@ -132,6 +132,7 @@ const HORAS_DISPONIBLES = [
 
 const DAY_LABELS  = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
 const MONTH_NAMES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+const MONTH_NAMES_FULL = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
 // ── HELPERS ────────────────────────────────────────────────────────────────
 function buildWeekDays(monday: Date) {
@@ -189,6 +190,31 @@ function sameDay(a: Date, b: Date) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
+function buildMonthGrid(firstOfMonth: Date) {
+  const year = firstOfMonth.getFullYear();
+  const month = firstOfMonth.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  // 0=Sun → adjust so Mon=0
+  let startDay = new Date(year, month, 1).getDay() - 1;
+  if (startDay < 0) startDay = 6;
+
+  const weeks: (number | null)[][] = [];
+  let week: (number | null)[] = Array(startDay).fill(null);
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    week.push(d);
+    if (week.length === 7) {
+      weeks.push(week);
+      week = [];
+    }
+  }
+  if (week.length > 0) {
+    while (week.length < 7) week.push(null);
+    weeks.push(week);
+  }
+  return weeks;
+}
+
 function getMondayFromISO(iso: string) {
   const d = new Date(iso);
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -225,6 +251,9 @@ export default function AgendaClient({
   const [modalCobrar, setModalCobrar] = useState(false);
   const [modalNuevaCita, setModalNuevaCita] = useState(false);
   const [loadingWeek, setLoadingWeek] = useState(false);
+  const [vista, setVista] = useState<"semana" | "mes">("semana");
+  const [mesActual, setMesActual] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
+  const [citasMes, setCitasMes] = useState<DBCita[]>([]);
 
   // ── Form state for nueva cita ──
   const [busquedaPaciente, setBusquedaPaciente] = useState("");
@@ -315,6 +344,16 @@ export default function AgendaClient({
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Fetch month citas when switching to month view or changing month
+  useEffect(() => {
+    if (vista !== "mes") return;
+    const start = new Date(mesActual.getFullYear(), mesActual.getMonth(), 1);
+    const end = new Date(mesActual.getFullYear(), mesActual.getMonth() + 1, 0, 23, 59, 59, 999);
+    getCitasSemana(start.toISOString(), end.toISOString()).then((db) => {
+      setCitasMes(db ?? []);
+    });
+  }, [vista, mesActual]);
 
   // When day changes, update the form date
   useEffect(() => {
@@ -423,7 +462,11 @@ export default function AgendaClient({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-[#1e2d3a]">{weekLabel(monday)}</h2>
+          <h2 className="text-xl font-bold text-[#1e2d3a]">
+            {vista === "semana"
+              ? weekLabel(monday)
+              : `${MONTH_NAMES_FULL[mesActual.getMonth()]} ${mesActual.getFullYear()}`}
+          </h2>
           <div className="flex items-center gap-3 mt-0.5">
             <p className="text-sm text-[#1e2d3a]/50">{totalSemana} citas esta semana</p>
             {fisioterapeutas && fisioterapeutas.length > 0 && (
@@ -443,48 +486,65 @@ export default function AgendaClient({
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => navigateWeek(-1)}
-            disabled={loadingWeek}
-            className="border-[#a8cfe0] hover:bg-[#e4ecf2] cursor-pointer h-9 w-9"
-          >
-            <ChevronLeft className="h-4 w-4 text-[#1e2d3a]" />
-          </Button>
-          <Button
-            variant="outline"
-            onClick={goToThisWeek}
-            disabled={loadingWeek}
-            className="border-[#a8cfe0] hover:bg-[#e4ecf2] cursor-pointer text-xs text-[#1e2d3a] h-9"
-          >
-            {loadingWeek ? (
-              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <CalendarDays className="mr-1.5 h-3.5 w-3.5 text-[#4a7fa5]" />
-            )}
-            Esta semana
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => navigateWeek(1)}
-            disabled={loadingWeek}
-            className="border-[#a8cfe0] hover:bg-[#e4ecf2] cursor-pointer h-9 w-9"
-          >
-            <ChevronRight className="h-4 w-4 text-[#1e2d3a]" />
-          </Button>
-          <Button
-            onClick={openNuevaCita}
-            className="bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white cursor-pointer transition-all text-sm h-9"
-          >
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* View toggle */}
+          <div className="flex bg-[#e4ecf2] rounded-lg border border-[#c8dce8] p-0.5">
+            <button
+              onClick={() => setVista("semana")}
+              className={`px-3 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                vista === "semana" ? "bg-[#4a7fa5] text-white shadow-sm" : "text-[#1e2d3a]/60 hover:text-[#1e2d3a]"
+              }`}
+            >
+              Semana
+            </button>
+            <button
+              onClick={() => setVista("mes")}
+              className={`px-3 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                vista === "mes" ? "bg-[#4a7fa5] text-white shadow-sm" : "text-[#1e2d3a]/60 hover:text-[#1e2d3a]"
+              }`}
+            >
+              Mes
+            </button>
+          </div>
+
+          {/* Navigation */}
+          {vista === "semana" ? (
+            <>
+              <Button variant="outline" size="icon" onClick={() => navigateWeek(-1)} disabled={loadingWeek} className="border-[#a8cfe0] hover:bg-[#e4ecf2] cursor-pointer h-9 w-9">
+                <ChevronLeft className="h-4 w-4 text-[#1e2d3a]" />
+              </Button>
+              <Button variant="outline" onClick={goToThisWeek} disabled={loadingWeek} className="border-[#a8cfe0] hover:bg-[#e4ecf2] cursor-pointer text-xs text-[#1e2d3a] h-9">
+                {loadingWeek ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <CalendarDays className="mr-1.5 h-3.5 w-3.5 text-[#4a7fa5]" />}
+                Esta semana
+              </Button>
+              <Button variant="outline" size="icon" onClick={() => navigateWeek(1)} disabled={loadingWeek} className="border-[#a8cfe0] hover:bg-[#e4ecf2] cursor-pointer h-9 w-9">
+                <ChevronRight className="h-4 w-4 text-[#1e2d3a]" />
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="outline" size="icon" onClick={() => setMesActual(new Date(mesActual.getFullYear(), mesActual.getMonth() - 1, 1))} className="border-[#a8cfe0] hover:bg-[#e4ecf2] cursor-pointer h-9 w-9">
+                <ChevronLeft className="h-4 w-4 text-[#1e2d3a]" />
+              </Button>
+              <Button variant="outline" onClick={() => setMesActual(new Date(today.getFullYear(), today.getMonth(), 1))} className="border-[#a8cfe0] hover:bg-[#e4ecf2] cursor-pointer text-xs text-[#1e2d3a] h-9">
+                <CalendarDays className="mr-1.5 h-3.5 w-3.5 text-[#4a7fa5]" />
+                Este mes
+              </Button>
+              <Button variant="outline" size="icon" onClick={() => setMesActual(new Date(mesActual.getFullYear(), mesActual.getMonth() + 1, 1))} className="border-[#a8cfe0] hover:bg-[#e4ecf2] cursor-pointer h-9 w-9">
+                <ChevronRight className="h-4 w-4 text-[#1e2d3a]" />
+              </Button>
+            </>
+          )}
+
+          <Button onClick={openNuevaCita} className="bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white cursor-pointer transition-all text-sm h-9">
             <Plus className="mr-1.5 h-4 w-4" />
             Nueva Cita
           </Button>
         </div>
       </div>
 
+      {vista === "semana" ? (
+      <>
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {[
@@ -627,6 +687,77 @@ export default function AgendaClient({
           </CardContent>
         </Card>
       </div>
+      </>
+      ) : (
+      /* ── MONTH VIEW ── */
+      <Card className="border-[#c8dce8] bg-white">
+        <CardContent className="p-4">
+          <div className="grid grid-cols-7 gap-px">
+            {/* Header */}
+            {["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"].map((d) => (
+              <div key={d} className="text-center py-2">
+                <span className="text-[11px] font-bold text-[#1e2d3a]/50 uppercase">{d}</span>
+              </div>
+            ))}
+            {/* Days */}
+            {buildMonthGrid(mesActual).flat().map((day, i) => {
+              if (day === null) return <div key={`empty-${i}`} className="p-1 min-h-[70px]" />;
+              const dateObj = new Date(mesActual.getFullYear(), mesActual.getMonth(), day);
+              const isToday = sameDay(dateObj, today);
+              const citasDelDia = citasMes.filter((c) => {
+                const citaDate = new Date(c.fechaHoraInicio);
+                return sameDay(citaDate, dateObj) && c.estado !== "cancelada";
+              });
+              return (
+                <button
+                  key={day}
+                  onClick={() => {
+                    // Navigate to that week and select the day
+                    const dayOfWeek = dateObj.getDay();
+                    const diffToMon = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+                    const targetMonday = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate() + diffToMon);
+                    const targetSat = new Date(targetMonday);
+                    targetSat.setDate(targetMonday.getDate() + 5);
+                    targetSat.setHours(23, 59, 59, 999);
+                    setLoadingWeek(true);
+                    getCitasSemana(targetMonday.toISOString(), targetSat.toISOString()).then((db) => {
+                      setMonday(targetMonday);
+                      setCitasData(mapDBCitas(db ?? [], targetMonday));
+                      const newDays = buildWeekDays(targetMonday);
+                      const ti = newDays.findIndex((d) => sameDay(d.dateObj, dateObj));
+                      setDiaActivo(ti >= 0 ? ti : 0);
+                      setVista("semana");
+                      setLoadingWeek(false);
+                    });
+                  }}
+                  className={`p-1.5 min-h-[70px] rounded-lg text-left transition-all cursor-pointer hover:bg-[#e4ecf2]/50 ${
+                    isToday ? "bg-[#4a7fa5]/10 ring-2 ring-[#4a7fa5]/30" : "bg-white"
+                  }`}
+                >
+                  <span className={`text-xs font-bold block ${isToday ? "text-[#4a7fa5]" : "text-[#1e2d3a]"}`}>
+                    {day}
+                  </span>
+                  {citasDelDia.length > 0 && (
+                    <div className="mt-1 flex flex-wrap gap-0.5">
+                      {citasDelDia.slice(0, 3).map((c) => (
+                        <div
+                          key={c.id}
+                          className="h-1.5 w-1.5 rounded-full"
+                          style={{ backgroundColor: c.colorFisio }}
+                        />
+                      ))}
+                      {citasDelDia.length > 3 && (
+                        <span className="text-[8px] text-[#1e2d3a]/40 leading-none">+{citasDelDia.length - 3}</span>
+                      )}
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+      )}
 
       {/* ── MODAL: DETALLE CITA ── */}
       <Dialog open={!!citaSeleccionada} onOpenChange={() => { setCitaSeleccionada(null); setModalCobrar(false); }}>
