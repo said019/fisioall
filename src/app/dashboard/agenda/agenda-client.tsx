@@ -130,7 +130,7 @@ const TIPOS_SESION = [
 const SERVICIOS_COSMETOLOGIA = new Set([
   "Masaje Revitalizante Facial", "Limpieza Facial Básica", "Limpieza Facial Profunda",
   "Hidratación Profunda", "Rejuvenecimiento Facial", "Hilos de Colágeno",
-  "Tratamiento Corporal",
+  "Tratamiento Corporal", "Suelo Pélvico",
   "Epilación Media Pierna Inf", "Epilación Media Pierna Sup", "Epilación Piernas Completas",
   "Epilación Axila", "Epilación Bigote/Barbilla", "Epilación Barba", "Epilación Bikini",
 ]);
@@ -139,7 +139,7 @@ const SERVICIOS_COSMETOLOGIA = new Set([
 const SERVICIOS_FISIOTERAPIA = new Set([
   "Fisioterapia", "Fisioterapia Antiestrés", "Descarga Muscular",
   "Drenaje Linfático", "Presoterapia", "Ejercicio Terapéutico",
-  "Valoración Fisioterapéutica", "Suelo Pélvico", "Rehabilitación",
+  "Valoración Fisioterapéutica", "Rehabilitación",
   "Masaje Terapéutico", "Masaje Relajante", "Masaje Descontracturante",
 ]);
 
