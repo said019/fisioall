@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import {
   Search,
   TrendingUp,
@@ -13,6 +13,7 @@ import {
   ChevronRight,
   SmilePlus,
   Frown,
+  Loader2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -28,118 +29,145 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { reenviarEncuesta } from "./actions";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TIPOS
+// TIPOS (match server action return shape)
 // ─────────────────────────────────────────────────────────────────────────────
-type DolorEscala = "sin_dolor" | "leve" | "moderado" | "severo" | "muy_severo";
-type Satisfaccion = "muy_insatisfecho" | "insatisfecho" | "neutral" | "satisfecho" | "muy_satisfecho";
-
-interface EncuestaSesion {
+interface EncuestaData {
   id: string;
   pacienteNombre: string;
   pacienteIniciales: string;
-  npsScore: number; // 0-10
-  dolorPost: DolorEscala;
-  satisfaccion: Satisfaccion;
-  mejoriaPercibida: boolean;
-  comentarios?: string;
-  enviadaAt: string;
-  respondidaAt?: string;
+  npsScore: number | null;
+  dolorPost: string | null; // Prisma enum: N0-N10
+  satisfaccion: number | null; // 1-5
+  mejoriaPercibida: string | null; // "si" | "no"
+  comentarios: string | null;
+  enviadaAt: string | null;
+  respondidaAt: string | null;
   respondida: boolean;
-  fisioterapeuta: string;
+  fisioterapeuta: string | null;
+  tipoSesion: string | null;
+}
+
+interface KPIsData {
+  npsScore: number;
+  promotores: number;
+  detractores: number;
+  pasivos: number;
+  totalEncuestas: number;
+  respondidas: number;
+  tasaRespuesta: number;
+  tasaSatisfaccion: number;
+  tasaMejoria: number;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CONSTANTES
 // ─────────────────────────────────────────────────────────────────────────────
-const DOLOR_CONFIG: Record<DolorEscala, { label: string; color: string; emoji: string }> = {
-  sin_dolor:  { label: "Sin dolor",  color: "text-emerald-600", emoji: "😊" },
-  leve:       { label: "Leve",       color: "text-lime-600",    emoji: "🙂" },
-  moderado:   { label: "Moderado",   color: "text-amber-600",   emoji: "😐" },
-  severo:     { label: "Severo",     color: "text-orange-600",  emoji: "😣" },
-  muy_severo: { label: "Muy severo", color: "text-red-600",     emoji: "😫" },
+const DOLOR_FROM_ENUM: Record<string, { label: string; emoji: string }> = {
+  N0: { label: "Sin dolor", emoji: "😊" },
+  N1: { label: "Muy leve", emoji: "🙂" },
+  N2: { label: "Leve", emoji: "🙂" },
+  N3: { label: "Leve-moderado", emoji: "😐" },
+  N4: { label: "Moderado", emoji: "😐" },
+  N5: { label: "Moderado", emoji: "😐" },
+  N6: { label: "Moderado-severo", emoji: "😣" },
+  N7: { label: "Severo", emoji: "😣" },
+  N8: { label: "Severo", emoji: "😣" },
+  N9: { label: "Muy severo", emoji: "😫" },
+  N10: { label: "Muy severo", emoji: "😫" },
 };
 
-const SATISFACCION_CONFIG: Record<Satisfaccion, { label: string; color: string; bg: string }> = {
-  muy_insatisfecho: { label: "Muy insatisfecho", color: "text-red-600",     bg: "bg-red-50" },
-  insatisfecho:     { label: "Insatisfecho",     color: "text-orange-600",  bg: "bg-orange-50" },
-  neutral:          { label: "Neutral",          color: "text-amber-600",   bg: "bg-amber-50" },
-  satisfecho:       { label: "Satisfecho",       color: "text-lime-600",    bg: "bg-lime-50" },
-  muy_satisfecho:   { label: "Muy satisfecho",   color: "text-emerald-600", bg: "bg-emerald-50" },
-};
+function getDolorInfo(d: string | null): { label: string; emoji: string; color: string } {
+  if (!d) return { label: "—", emoji: "—", color: "text-[#1e2d3a]/40" };
+  const info = DOLOR_FROM_ENUM[d];
+  if (!info) return { label: d, emoji: "❓", color: "text-[#1e2d3a]/40" };
+  const num = parseInt(d.replace("N", ""), 10);
+  let color = "text-emerald-600";
+  if (num >= 7) color = "text-red-500";
+  else if (num >= 4) color = "text-amber-600";
+  else if (num >= 1) color = "text-lime-600";
+  return { ...info, color };
+}
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MOCK DATA
-// ─────────────────────────────────────────────────────────────────────────────
-const mockEncuestas: EncuestaSesion[] = [
-  { id: "e1",  pacienteNombre: "Ana Flores Torres",     pacienteIniciales: "AF", npsScore: 10, dolorPost: "sin_dolor",  satisfaccion: "muy_satisfecho",   mejoriaPercibida: true,  comentarios: "Excelente sesión, me siento mucho mejor del hombro. El doctor fue muy atento.", enviadaAt: "2026-02-28T14:00:00", respondidaAt: "2026-02-28T16:30:00", respondida: true,  fisioterapeuta: "L.F.T. Paola Ríos" },
-  { id: "e2",  pacienteNombre: "Carlos Mendoza López",  pacienteIniciales: "CM", npsScore: 8,  dolorPost: "leve",       satisfaccion: "satisfecho",       mejoriaPercibida: true,  comentarios: "Buen tratamiento, aunque me gustaría sesiones más largas.",                     enviadaAt: "2026-02-27T14:00:00", respondidaAt: "2026-02-27T18:00:00", respondida: true,  fisioterapeuta: "Gaby Sánchez" },
-  { id: "e3",  pacienteNombre: "Roberto Sánchez Vega",  pacienteIniciales: "RS", npsScore: 6,  dolorPost: "moderado",   satisfaccion: "neutral",          mejoriaPercibida: false, comentarios: "No sentí mucha mejoría esta vez, espero que la próxima sea mejor.",            enviadaAt: "2026-02-26T14:00:00", respondidaAt: "2026-02-26T20:00:00", respondida: true,  fisioterapeuta: "Jenni Morales" },
-  { id: "e4",  pacienteNombre: "Sofía Reyes Castillo",  pacienteIniciales: "SR", npsScore: 9,  dolorPost: "leve",       satisfaccion: "muy_satisfecho",   mejoriaPercibida: true,  comentarios: "Cada sesión me siento mejor. ¡Los ejercicios en casa también ayudan mucho!",   enviadaAt: "2026-02-25T14:00:00", respondidaAt: "2026-02-25T15:00:00", respondida: true,  fisioterapeuta: "L.F.T. Paola Ríos" },
-  { id: "e5",  pacienteNombre: "Luis Hernández Mora",   pacienteIniciales: "LH", npsScore: 7,  dolorPost: "leve",       satisfaccion: "satisfecho",       mejoriaPercibida: true,  enviadaAt: "2026-02-24T14:00:00", respondidaAt: "2026-02-24T19:30:00", respondida: true,  fisioterapeuta: "Gaby Sánchez" },
-  { id: "e6",  pacienteNombre: "María José Ruiz",       pacienteIniciales: "MR", npsScore: 3,  dolorPost: "severo",     satisfaccion: "insatisfecho",     mejoriaPercibida: false, comentarios: "Sentí más dolor después de la sesión, necesito algo diferente.",               enviadaAt: "2026-02-23T14:00:00", respondidaAt: "2026-02-23T21:00:00", respondida: true,  fisioterapeuta: "L.F.T. Paola Ríos" },
-  { id: "e7",  pacienteNombre: "Ana Flores Torres",     pacienteIniciales: "AF", npsScore: 9,  dolorPost: "sin_dolor",  satisfaccion: "muy_satisfecho",   mejoriaPercibida: true,  comentarios: "Segunda sesión, todo perfecto.",                                                enviadaAt: "2026-02-22T14:00:00", respondidaAt: "2026-02-22T14:45:00", respondida: true,  fisioterapeuta: "L.F.T. Paola Ríos" },
-  { id: "e8",  pacienteNombre: "Carlos Mendoza López",  pacienteIniciales: "CM", npsScore: 0,  dolorPost: "leve",       satisfaccion: "satisfecho",       mejoriaPercibida: true,  enviadaAt: "2026-03-01T14:00:00",                                                                                            respondida: false, fisioterapeuta: "Gaby Sánchez" },
-  { id: "e9",  pacienteNombre: "Roberto Sánchez Vega",  pacienteIniciales: "RS", npsScore: 0,  dolorPost: "leve",       satisfaccion: "neutral",          mejoriaPercibida: false, enviadaAt: "2026-03-02T14:00:00",                                                                                            respondida: false, fisioterapeuta: "Jenni Morales" },
-  { id: "e10", pacienteNombre: "Sofía Reyes Castillo",  pacienteIniciales: "SR", npsScore: 10, dolorPost: "sin_dolor",  satisfaccion: "muy_satisfecho",   mejoriaPercibida: true,  comentarios: "¡Lo recomiendo al 100%! Mi rodilla ya no duele al subir escaleras.",            enviadaAt: "2026-02-20T14:00:00", respondidaAt: "2026-02-20T14:20:00", respondida: true,  fisioterapeuta: "L.F.T. Paola Ríos" },
-];
+function getSatisfaccionInfo(s: number | null): { label: string; color: string; bg: string } {
+  if (s === null) return { label: "—", color: "text-[#1e2d3a]/40", bg: "bg-gray-50" };
+  if (s >= 5) return { label: "Muy satisfecho", color: "text-emerald-600", bg: "bg-emerald-50" };
+  if (s >= 4) return { label: "Satisfecho", color: "text-lime-600", bg: "bg-lime-50" };
+  if (s >= 3) return { label: "Neutral", color: "text-amber-600", bg: "bg-amber-50" };
+  if (s >= 2) return { label: "Insatisfecho", color: "text-orange-600", bg: "bg-orange-50" };
+  return { label: "Muy insatisfecho", color: "text-red-600", bg: "bg-red-50" };
+}
+
+function getNpsColor(score: number): string {
+  if (score >= 9) return "text-emerald-600";
+  if (score >= 7) return "text-amber-600";
+  return "text-red-500";
+}
+
+function getNpsBg(score: number): string {
+  if (score >= 9) return "bg-emerald-50";
+  if (score >= 7) return "bg-amber-50";
+  return "bg-red-50";
+}
+
+function getNpsLabel(score: number): string {
+  if (score >= 9) return "Promotor";
+  if (score >= 7) return "Pasivo";
+  return "Detractor";
+}
+
+function formatFechaHora(fecha: string): string {
+  const d = new Date(fecha);
+  return (
+    d.toLocaleDateString("es-MX", { day: "numeric", month: "short" }) +
+    " · " +
+    d.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })
+  );
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CLIENT COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
-export default function EncuestasClient({ initialEncuestas }: { initialEncuestas?: EncuestaSesion[] }) {
-  const encuestasData = initialEncuestas && initialEncuestas.length > 0 ? initialEncuestas : mockEncuestas;
-
+export default function EncuestasClient({
+  encuestas,
+  kpis,
+}: {
+  encuestas: EncuestaData[];
+  kpis: KPIsData;
+}) {
   const [busqueda, setBusqueda] = useState("");
-  const [modalDetalle, setModalDetalle] = useState<EncuestaSesion | null>(null);
+  const [modalDetalle, setModalDetalle] = useState<EncuestaData | null>(null);
+  const [reenviarPending, startReenviar] = useTransition();
+  const [reenviarId, setReenviarId] = useState<string | null>(null);
 
-  // Solo encuestas respondidas para métricas
-  const respondidas = encuestasData.filter((e) => e.respondida);
-  const pendientes = encuestasData.filter((e) => !e.respondida);
+  const respondidas = encuestas.filter((e) => e.respondida);
+  const pendientes = encuestas.filter((e) => !e.respondida);
 
-  // NPS Calculation
-  const promotores = respondidas.filter((e) => e.npsScore >= 9).length;
-  const pasivos = respondidas.filter((e) => e.npsScore >= 7 && e.npsScore <= 8).length;
-  const detractores = respondidas.filter((e) => e.npsScore <= 6).length;
-  const npsScore = respondidas.length > 0
-    ? Math.round(((promotores - detractores) / respondidas.length) * 100)
-    : 0;
-
-  const satisfechos = respondidas.filter((e) => e.satisfaccion === "satisfecho" || e.satisfaccion === "muy_satisfecho").length;
-  const tasaSatisfaccion = respondidas.length > 0 ? Math.round((satisfechos / respondidas.length) * 100) : 0;
-  const tasaMejoria = respondidas.length > 0 ? Math.round((respondidas.filter(e => e.mejoriaPercibida).length / respondidas.length) * 100) : 0;
-  const tasaRespuesta = encuestasData.length > 0 ? Math.round((respondidas.length / encuestasData.length) * 100) : 0;
-
-
-  function formatFechaHora(fecha: string): string {
-    const d = new Date(fecha);
-    return d.toLocaleDateString("es-MX", { day: "numeric", month: "short" }) + " · " + d.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
+  function handleReenviar(encuestaId: string) {
+    setReenviarId(encuestaId);
+    startReenviar(async () => {
+      await reenviarEncuesta(encuestaId);
+      setReenviarId(null);
+    });
   }
 
-  function getNpsColor(score: number): string {
-    if (score >= 9) return "text-emerald-600";
-    if (score >= 7) return "text-amber-600";
-    return "text-red-500";
-  }
-
-  function getNpsBg(score: number): string {
-    if (score >= 9) return "bg-emerald-50";
-    if (score >= 7) return "bg-amber-50";
-    return "bg-red-50";
-  }
-
-  function getNpsLabel(score: number): string {
-    if (score >= 9) return "Promotor";
-    if (score >= 7) return "Pasivo";
-    return "Detractor";
-  }
+  const {
+    npsScore,
+    promotores,
+    pasivos,
+    detractores,
+    tasaSatisfaccion,
+    tasaMejoria,
+    tasaRespuesta,
+    totalEncuestas,
+  } = kpis;
 
   return (
     <div className="space-y-6">
       {/* ── KPI CARDS ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* NPS Score */}
         <Card className="border-[#c8dce8] shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-start justify-between">
@@ -165,9 +193,9 @@ export default function EncuestasClient({ initialEncuestas }: { initialEncuestas
           <CardContent className="p-4">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-semibold text-[#1e2d3a]/50 uppercase tracking-wide">Satisfacción</p>
+                <p className="text-xs font-semibold text-[#1e2d3a]/50 uppercase tracking-wide">Satisfaccion</p>
                 <p className="text-2xl font-bold text-[#1e2d3a] mt-1">{tasaSatisfaccion}%</p>
-                <p className="text-[11px] text-[#1e2d3a]/40 mt-0.5">{satisfechos} de {respondidas.length} satisfechos</p>
+                <p className="text-[11px] text-[#1e2d3a]/40 mt-0.5">{kpis.respondidas} encuestas</p>
               </div>
               <div className="bg-emerald-50 h-10 w-10 rounded-xl flex items-center justify-center">
                 <ThumbsUp className="h-5 w-5 text-emerald-600" />
@@ -180,9 +208,9 @@ export default function EncuestasClient({ initialEncuestas }: { initialEncuestas
           <CardContent className="p-4">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-semibold text-[#1e2d3a]/50 uppercase tracking-wide">Mejoría Percibida</p>
+                <p className="text-xs font-semibold text-[#1e2d3a]/50 uppercase tracking-wide">Mejoria Percibida</p>
                 <p className="text-2xl font-bold text-[#1e2d3a] mt-1">{tasaMejoria}%</p>
-                <p className="text-[11px] text-[#1e2d3a]/40 mt-0.5">{respondidas.filter(e => e.mejoriaPercibida).length} reportan mejoría</p>
+                <p className="text-[11px] text-[#1e2d3a]/40 mt-0.5">reportan mejoria</p>
               </div>
               <div className="bg-[#e4ecf2] h-10 w-10 rounded-xl flex items-center justify-center">
                 <TrendingUp className="h-5 w-5 text-cyan-600" />
@@ -197,7 +225,7 @@ export default function EncuestasClient({ initialEncuestas }: { initialEncuestas
               <div>
                 <p className="text-xs font-semibold text-[#1e2d3a]/50 uppercase tracking-wide">Tasa de Respuesta</p>
                 <p className="text-2xl font-bold text-[#1e2d3a] mt-1">{tasaRespuesta}%</p>
-                <p className="text-[11px] text-[#1e2d3a]/40 mt-0.5">{respondidas.length} de {encuestasData.length} respondidas</p>
+                <p className="text-[11px] text-[#1e2d3a]/40 mt-0.5">{kpis.respondidas} de {totalEncuestas}</p>
               </div>
               <div className="bg-violet-50 h-10 w-10 rounded-xl flex items-center justify-center">
                 <MessageSquare className="h-5 w-5 text-violet-600" />
@@ -208,55 +236,53 @@ export default function EncuestasClient({ initialEncuestas }: { initialEncuestas
       </div>
 
       {/* ── NPS BREAKDOWN BAR ── */}
-      <Card className="border-[#c8dce8] shadow-sm">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <p className="text-sm font-bold text-[#1e2d3a]">Distribución NPS</p>
-              <p className="text-xs text-[#1e2d3a]/40">Promotores vs. Pasivos vs. Detractores</p>
+      {kpis.respondidas > 0 && (
+        <Card className="border-[#c8dce8] shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-sm font-bold text-[#1e2d3a]">Distribucion NPS</p>
+                <p className="text-xs text-[#1e2d3a]/40">Promotores vs. Pasivos vs. Detractores</p>
+              </div>
+              <Badge variant="outline" className={`text-xs border ${npsScore >= 50 ? "border-emerald-200 text-emerald-600 bg-emerald-50" : npsScore >= 0 ? "border-amber-200 text-amber-600 bg-amber-50" : "border-red-200 text-red-500 bg-red-50"}`}>
+                NPS: {npsScore > 0 ? "+" : ""}{npsScore}
+              </Badge>
             </div>
-            <Badge variant="outline" className={`text-xs border ${npsScore >= 50 ? "border-emerald-200 text-emerald-600 bg-emerald-50" : npsScore >= 0 ? "border-amber-200 text-amber-600 bg-amber-50" : "border-red-200 text-red-500 bg-red-50"}`}>
-              NPS: {npsScore > 0 ? "+" : ""}{npsScore}
-            </Badge>
-          </div>
 
-          {respondidas.length > 0 && (
-            <>
-              <div className="flex h-6 rounded-full overflow-hidden">
-                {promotores > 0 && (
-                  <div className="bg-emerald-400 flex items-center justify-center" style={{ width: `${(promotores / respondidas.length) * 100}%` }}>
-                    <span className="text-[10px] font-bold text-white">{Math.round((promotores / respondidas.length) * 100)}%</span>
-                  </div>
-                )}
-                {pasivos > 0 && (
-                  <div className="bg-amber-400 flex items-center justify-center" style={{ width: `${(pasivos / respondidas.length) * 100}%` }}>
-                    <span className="text-[10px] font-bold text-white">{Math.round((pasivos / respondidas.length) * 100)}%</span>
-                  </div>
-                )}
-                {detractores > 0 && (
-                  <div className="bg-red-400 flex items-center justify-center" style={{ width: `${(detractores / respondidas.length) * 100}%` }}>
-                    <span className="text-[10px] font-bold text-white">{Math.round((detractores / respondidas.length) * 100)}%</span>
-                  </div>
-                )}
+            <div className="flex h-6 rounded-full overflow-hidden">
+              {promotores > 0 && (
+                <div className="bg-emerald-400 flex items-center justify-center" style={{ width: `${(promotores / kpis.respondidas) * 100}%` }}>
+                  <span className="text-[10px] font-bold text-white">{Math.round((promotores / kpis.respondidas) * 100)}%</span>
+                </div>
+              )}
+              {pasivos > 0 && (
+                <div className="bg-amber-400 flex items-center justify-center" style={{ width: `${(pasivos / kpis.respondidas) * 100}%` }}>
+                  <span className="text-[10px] font-bold text-white">{Math.round((pasivos / kpis.respondidas) * 100)}%</span>
+                </div>
+              )}
+              {detractores > 0 && (
+                <div className="bg-red-400 flex items-center justify-center" style={{ width: `${(detractores / kpis.respondidas) * 100}%` }}>
+                  <span className="text-[10px] font-bold text-white">{Math.round((detractores / kpis.respondidas) * 100)}%</span>
+                </div>
+              )}
+            </div>
+            <div className="flex items-center justify-between mt-2">
+              <div className="flex items-center gap-1.5">
+                <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
+                <span className="text-[11px] text-[#1e2d3a]/50">Promotores (9-10): {promotores}</span>
               </div>
-              <div className="flex items-center justify-between mt-2">
-                <div className="flex items-center gap-1.5">
-                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
-                  <span className="text-[11px] text-[#1e2d3a]/50">Promotores (9-10): {promotores}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
-                  <span className="text-[11px] text-[#1e2d3a]/50">Pasivos (7-8): {pasivos}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
-                  <span className="text-[11px] text-[#1e2d3a]/50">Detractores (0-6): {detractores}</span>
-                </div>
+              <div className="flex items-center gap-1.5">
+                <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
+                <span className="text-[11px] text-[#1e2d3a]/50">Pasivos (7-8): {pasivos}</span>
               </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
+              <div className="flex items-center gap-1.5">
+                <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
+                <span className="text-[11px] text-[#1e2d3a]/50">Detractores (0-6): {detractores}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* ── TABS: Respuestas / Pendientes ── */}
       <Tabs defaultValue="respuestas" className="space-y-4">
@@ -293,17 +319,22 @@ export default function EncuestasClient({ initialEncuestas }: { initialEncuestas
 
         {/* ─── TAB: RESPONDIDAS ─── */}
         <TabsContent value="respuestas" className="space-y-3">
-          {respondidas.filter(e => e.pacienteNombre.toLowerCase().includes(busqueda.toLowerCase())).length === 0 ? (
+          {respondidas.filter((e) => e.pacienteNombre.toLowerCase().includes(busqueda.toLowerCase())).length === 0 ? (
             <div className="text-center py-16">
               <MessageSquare className="h-12 w-12 text-[#1e2d3a]/20 mx-auto mb-3" />
-              <p className="text-sm text-[#1e2d3a]/50">No se encontraron encuestas respondidas</p>
+              <p className="text-sm text-[#1e2d3a]/50">
+                {encuestas.length === 0
+                  ? "Aun no hay encuestas. Se crean automaticamente al completar una cita."
+                  : "No se encontraron encuestas respondidas"}
+              </p>
             </div>
           ) : (
             respondidas
-              .filter(e => e.pacienteNombre.toLowerCase().includes(busqueda.toLowerCase()))
+              .filter((e) => e.pacienteNombre.toLowerCase().includes(busqueda.toLowerCase()))
               .map((enc) => {
-                const dolorCfg = DOLOR_CONFIG[enc.dolorPost];
-                const satCfg = SATISFACCION_CONFIG[enc.satisfaccion];
+                const dolorInfo = getDolorInfo(enc.dolorPost);
+                const satInfo = getSatisfaccionInfo(enc.satisfaccion);
+                const score = enc.npsScore ?? 0;
                 return (
                   <Card
                     key={enc.id}
@@ -312,10 +343,9 @@ export default function EncuestasClient({ initialEncuestas }: { initialEncuestas
                   >
                     <CardContent className="p-4">
                       <div className="flex items-start gap-4">
-                        {/* NPS Badge */}
-                        <div className={`${getNpsBg(enc.npsScore)} h-14 w-14 rounded-2xl flex flex-col items-center justify-center shrink-0`}>
-                          <span className={`text-xl font-bold ${getNpsColor(enc.npsScore)}`}>{enc.npsScore}</span>
-                          <span className={`text-[8px] font-semibold ${getNpsColor(enc.npsScore)} uppercase`}>{getNpsLabel(enc.npsScore)}</span>
+                        <div className={`${getNpsBg(score)} h-14 w-14 rounded-2xl flex flex-col items-center justify-center shrink-0`}>
+                          <span className={`text-xl font-bold ${getNpsColor(score)}`}>{score}</span>
+                          <span className={`text-[8px] font-semibold ${getNpsColor(score)} uppercase`}>{getNpsLabel(score)}</span>
                         </div>
 
                         <div className="flex-1 min-w-0">
@@ -326,7 +356,9 @@ export default function EncuestasClient({ initialEncuestas }: { initialEncuestas
                               </AvatarFallback>
                             </Avatar>
                             <span className="text-sm font-semibold text-[#1e2d3a]">{enc.pacienteNombre}</span>
-                            <span className="text-[10px] text-[#1e2d3a]/30">· {enc.fisioterapeuta}</span>
+                            {enc.fisioterapeuta && (
+                              <span className="text-[10px] text-[#1e2d3a]/30">· {enc.fisioterapeuta}</span>
+                            )}
                           </div>
 
                           {enc.comentarios && (
@@ -336,16 +368,19 @@ export default function EncuestasClient({ initialEncuestas }: { initialEncuestas
                           )}
 
                           <div className="flex flex-wrap items-center gap-2">
-                            <Badge variant="outline" className={`text-[10px] border ${satCfg.bg} ${satCfg.color} border-transparent`}>
-                              {satCfg.label}
+                            <Badge variant="outline" className={`text-[10px] border ${satInfo.bg} ${satInfo.color} border-transparent`}>
+                              {satInfo.label}
                             </Badge>
                             <span className="text-[11px] text-[#1e2d3a]/40 flex items-center gap-1">
-                              {dolorCfg.emoji} Dolor post: {dolorCfg.label}
+                              {dolorInfo.emoji} Dolor post: {dolorInfo.label}
                             </span>
-                            {enc.mejoriaPercibida && (
+                            {enc.mejoriaPercibida === "si" && (
                               <span className="text-[11px] text-emerald-600 flex items-center gap-0.5">
-                                <TrendingUp className="h-3 w-3" /> Mejoría
+                                <TrendingUp className="h-3 w-3" /> Mejoria
                               </span>
+                            )}
+                            {enc.tipoSesion && (
+                              <span className="text-[10px] text-[#1e2d3a]/30">{enc.tipoSesion}</span>
                             )}
                           </div>
                         </div>
@@ -366,14 +401,14 @@ export default function EncuestasClient({ initialEncuestas }: { initialEncuestas
 
         {/* ─── TAB: PENDIENTES ─── */}
         <TabsContent value="pendientes" className="space-y-3">
-          {pendientes.filter(e => e.pacienteNombre.toLowerCase().includes(busqueda.toLowerCase())).length === 0 ? (
+          {pendientes.filter((e) => e.pacienteNombre.toLowerCase().includes(busqueda.toLowerCase())).length === 0 ? (
             <div className="text-center py-16">
               <CheckCircle2 className="h-12 w-12 text-emerald-200 mx-auto mb-3" />
               <p className="text-sm text-[#1e2d3a]/50">Todas las encuestas han sido respondidas</p>
             </div>
           ) : (
             pendientes
-              .filter(e => e.pacienteNombre.toLowerCase().includes(busqueda.toLowerCase()))
+              .filter((e) => e.pacienteNombre.toLowerCase().includes(busqueda.toLowerCase()))
               .map((enc) => (
                 <Card key={enc.id} className="border-amber-100 bg-amber-50/30">
                   <CardContent className="p-4">
@@ -391,11 +426,23 @@ export default function EncuestasClient({ initialEncuestas }: { initialEncuestas
                           <span className="text-sm font-semibold text-[#1e2d3a]">{enc.pacienteNombre}</span>
                         </div>
                         <p className="text-xs text-[#1e2d3a]/40 mt-0.5">
-                          Enviada: {formatFechaHora(enc.enviadaAt)} · {enc.fisioterapeuta}
+                          Enviada: {enc.enviadaAt ? formatFechaHora(enc.enviadaAt) : "—"}
+                          {enc.fisioterapeuta ? ` · ${enc.fisioterapeuta}` : ""}
+                          {enc.tipoSesion ? ` · ${enc.tipoSesion}` : ""}
                         </p>
                       </div>
-                      <Button variant="outline" size="sm" className="cursor-pointer border-amber-200 text-amber-600 hover:bg-amber-50 shrink-0">
-                        <Send className="h-3.5 w-3.5 mr-1.5" /> Reenviar
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="cursor-pointer border-amber-200 text-amber-600 hover:bg-amber-50 shrink-0"
+                        disabled={reenviarPending && reenviarId === enc.id}
+                        onClick={() => handleReenviar(enc.id)}
+                      >
+                        {reenviarPending && reenviarId === enc.id ? (
+                          <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> Enviando...</>
+                        ) : (
+                          <><Send className="h-3.5 w-3.5 mr-1.5" /> Reenviar</>
+                        )}
                       </Button>
                     </div>
                   </CardContent>
@@ -409,8 +456,9 @@ export default function EncuestasClient({ initialEncuestas }: { initialEncuestas
       <Dialog open={!!modalDetalle} onOpenChange={() => setModalDetalle(null)}>
         <DialogContent className="max-w-md">
           {modalDetalle && (() => {
-            const dolorCfg = DOLOR_CONFIG[modalDetalle.dolorPost];
-            const satCfg = SATISFACCION_CONFIG[modalDetalle.satisfaccion];
+            const dolorInfo = getDolorInfo(modalDetalle.dolorPost);
+            const satInfo = getSatisfaccionInfo(modalDetalle.satisfaccion);
+            const score = modalDetalle.npsScore ?? 0;
             return (
               <>
                 <DialogHeader>
@@ -426,29 +474,35 @@ export default function EncuestasClient({ initialEncuestas }: { initialEncuestas
                     </Avatar>
                     <div>
                       <p className="font-semibold text-[#1e2d3a]">{modalDetalle.pacienteNombre}</p>
-                      <p className="text-xs text-[#1e2d3a]/40">{modalDetalle.fisioterapeuta} · {modalDetalle.respondidaAt && formatFechaHora(modalDetalle.respondidaAt)}</p>
+                      <p className="text-xs text-[#1e2d3a]/40">
+                        {modalDetalle.fisioterapeuta ?? ""}
+                        {modalDetalle.respondidaAt ? ` · ${formatFechaHora(modalDetalle.respondidaAt)}` : ""}
+                      </p>
+                      {modalDetalle.tipoSesion && (
+                        <p className="text-[10px] text-[#1e2d3a]/30 mt-0.5">{modalDetalle.tipoSesion}</p>
+                      )}
                     </div>
-                    <div className={`ml-auto ${getNpsBg(modalDetalle.npsScore)} h-14 w-14 rounded-2xl flex flex-col items-center justify-center`}>
-                      <span className={`text-xl font-bold ${getNpsColor(modalDetalle.npsScore)}`}>{modalDetalle.npsScore}</span>
-                      <span className={`text-[8px] font-semibold ${getNpsColor(modalDetalle.npsScore)} uppercase`}>NPS</span>
+                    <div className={`ml-auto ${getNpsBg(score)} h-14 w-14 rounded-2xl flex flex-col items-center justify-center`}>
+                      <span className={`text-xl font-bold ${getNpsColor(score)}`}>{score}</span>
+                      <span className={`text-[8px] font-semibold ${getNpsColor(score)} uppercase`}>NPS</span>
                     </div>
                   </div>
 
                   {/* Metrics Grid */}
                   <div className="grid grid-cols-3 gap-3">
-                    <div className={`${satCfg.bg} rounded-xl p-3 text-center`}>
-                      <p className={`text-xs font-bold ${satCfg.color}`}>{satCfg.label}</p>
-                      <p className="text-[10px] text-[#1e2d3a]/40 mt-0.5">Satisfacción</p>
+                    <div className={`${satInfo.bg} rounded-xl p-3 text-center`}>
+                      <p className={`text-xs font-bold ${satInfo.color}`}>{satInfo.label}</p>
+                      <p className="text-[10px] text-[#1e2d3a]/40 mt-0.5">Satisfaccion</p>
                     </div>
                     <div className="bg-[#e4ecf2] rounded-xl p-3 text-center">
-                      <p className="text-xs font-bold text-[#1e2d3a]">{dolorCfg.emoji} {dolorCfg.label}</p>
+                      <p className="text-xs font-bold text-[#1e2d3a]">{dolorInfo.emoji} {dolorInfo.label}</p>
                       <p className="text-[10px] text-[#1e2d3a]/40 mt-0.5">Dolor Post</p>
                     </div>
-                    <div className={`${modalDetalle.mejoriaPercibida ? "bg-emerald-50" : "bg-red-50"} rounded-xl p-3 text-center`}>
-                      <p className={`text-xs font-bold ${modalDetalle.mejoriaPercibida ? "text-emerald-600" : "text-red-500"}`}>
-                        {modalDetalle.mejoriaPercibida ? "Sí" : "No"}
+                    <div className={`${modalDetalle.mejoriaPercibida === "si" ? "bg-emerald-50" : "bg-red-50"} rounded-xl p-3 text-center`}>
+                      <p className={`text-xs font-bold ${modalDetalle.mejoriaPercibida === "si" ? "text-emerald-600" : "text-red-500"}`}>
+                        {modalDetalle.mejoriaPercibida === "si" ? "Si" : "No"}
                       </p>
-                      <p className="text-[10px] text-[#1e2d3a]/40 mt-0.5">Mejoría</p>
+                      <p className="text-[10px] text-[#1e2d3a]/40 mt-0.5">Mejoria</p>
                     </div>
                   </div>
 
@@ -466,9 +520,11 @@ export default function EncuestasClient({ initialEncuestas }: { initialEncuestas
 
                   {/* Timeline */}
                   <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-xs text-[#1e2d3a]/40">
-                      <Send className="h-3 w-3" /> Enviada: {formatFechaHora(modalDetalle.enviadaAt)}
-                    </div>
+                    {modalDetalle.enviadaAt && (
+                      <div className="flex items-center gap-2 text-xs text-[#1e2d3a]/40">
+                        <Send className="h-3 w-3" /> Enviada: {formatFechaHora(modalDetalle.enviadaAt)}
+                      </div>
+                    )}
                     {modalDetalle.respondidaAt && (
                       <div className="flex items-center gap-2 text-xs text-emerald-600">
                         <CheckCircle2 className="h-3 w-3" /> Respondida: {formatFechaHora(modalDetalle.respondidaAt)}
