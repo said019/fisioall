@@ -165,20 +165,6 @@ const DOLOR_TO_ENUM: Record<string, "N0" | "N2" | "N5" | "N7" | "N10"> = {
   muy_severo: "N10",
 };
 
-export const DOLOR_FROM_ENUM: Record<string, { label: string; emoji: string }> = {
-  N0: { label: "Sin dolor", emoji: "😊" },
-  N1: { label: "Muy leve", emoji: "🙂" },
-  N2: { label: "Leve", emoji: "🙂" },
-  N3: { label: "Leve-moderado", emoji: "😐" },
-  N4: { label: "Moderado", emoji: "😐" },
-  N5: { label: "Moderado", emoji: "😐" },
-  N6: { label: "Moderado-severo", emoji: "😣" },
-  N7: { label: "Severo", emoji: "😣" },
-  N8: { label: "Severo", emoji: "😣" },
-  N9: { label: "Muy severo", emoji: "😫" },
-  N10: { label: "Muy severo", emoji: "😫" },
-};
-
 // ─── GUARDAR RESPUESTA NPS (public, no auth) ─────────────────────────────────
 export async function guardarRespuestaNPS(
   token: string,
