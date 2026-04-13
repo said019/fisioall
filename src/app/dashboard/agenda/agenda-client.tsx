@@ -384,6 +384,27 @@ export default function AgendaClient({
   const completadas = citasData.filter(c => c.estado === "completada").length;
   const canceladas = citasData.filter(c => c.estado === "cancelada").length;
 
+  function handleReagendar(cita: Cita) {
+    // Find the patient object to pre-fill
+    const pac = (pacientes ?? []).find((p) => p.id === cita.pacienteId);
+    // Cancel old cita
+    startStatusTransition(async () => {
+      await actualizarEstadoCita(cita.id, "cancelada");
+      setCitaSeleccionada(null);
+      // Refresh week data
+      const sat = new Date(monday);
+      sat.setDate(monday.getDate() + 5);
+      sat.setHours(23, 59, 59, 999);
+      const db = await getCitasSemana(monday.toISOString(), sat.toISOString());
+      if (db) setCitasData(mapDBCitas(db, monday));
+      // Pre-fill patient and open new cita modal
+      resetForm();
+      if (pac) setPacienteSeleccionado(pac);
+      setFechaCita(diasSemana[diaActivo]?.isoDate ?? "");
+      setModalNuevaCita(true);
+    });
+  }
+
   function handleStatusChange(citaId: string, estado: "completada" | "cancelada") {
     startStatusTransition(async () => {
       await actualizarEstadoCita(citaId, estado);
@@ -748,7 +769,12 @@ export default function AgendaClient({
                       {statusPending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />}
                       Completar
                     </Button>
-                    <Button variant="outline" className="flex-1 border-[#a8cfe0] hover:bg-[#e4ecf2] cursor-pointer text-xs h-9">
+                    <Button
+                      onClick={() => handleReagendar(citaSeleccionada)}
+                      disabled={statusPending}
+                      variant="outline"
+                      className="flex-1 border-[#a8cfe0] hover:bg-[#e4ecf2] cursor-pointer text-xs h-9"
+                    >
                       <RefreshCw className="mr-1.5 h-3.5 w-3.5 text-[#4a7fa5]" />
                       Reagendar
                     </Button>
