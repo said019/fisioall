@@ -114,6 +114,7 @@ export async function crearEncuesta(citaId: string) {
   // Avoid duplicates
   const existing = await prisma.encuestaSesion.findFirst({
     where: { citaId },
+    select: { id: true, token: true },
   });
   if (existing) return { ok: true, encuestaId: existing.id, token: existing.token };
 
