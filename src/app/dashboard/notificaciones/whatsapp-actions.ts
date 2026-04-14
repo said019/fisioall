@@ -154,14 +154,17 @@ export async function sendAppointmentReminder(
       `Hola ${cita.paciente.nombre} 👋`,
       ``,
       `Te recordamos tu cita en *Kaya Kalp*:`,
+      cita.tipoSesion ? `📋 *${cita.tipoSesion}*` : null,
       `📅 ${fecha}`,
       `🕐 ${hora}`,
       `👩‍⚕️ ${fisio}`,
-      cita.tipoSesion ? `📋 ${cita.tipoSesion}` : null,
-      cita.sala ? `🏠 Sala: ${cita.sala}` : null,
       ``,
-      `Si necesitas reagendar, avísanos con anticipación.`,
-      `¡Te esperamos!`,
+      `📍 Av. María No. 25, San Juan del Río, Qro.`,
+      ``,
+      `Responde:`,
+      `1️⃣ *1* — Confirmar asistencia`,
+      `2️⃣ *2* — Cancelar`,
+      `3️⃣ *3* — Reagendar`,
     ]
       .filter(Boolean)
       .join("\n");
