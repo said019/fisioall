@@ -141,6 +141,23 @@ export async function crearCita(prevState: unknown, formData: FormData) {
       console.error("[Email] Send on cita create failed:", emailErr);
     }
 
+    // Send WhatsApp notification (best-effort)
+    try {
+      const { sendCitaAgendadaWhatsApp } = await import("@/lib/send-whatsapp");
+      await sendCitaAgendadaWhatsApp({
+        pacienteNombre: pacNombre,
+        pacienteTelefono: pac?.telefono ?? "",
+        tipoSesion: tipoSesion || "Sesión de fisioterapia",
+        fisioterapeuta: fisioNombre,
+        fechaHoraInicio,
+        fechaHoraFin,
+        sala: sala || null,
+        citaId: cita.id,
+      });
+    } catch (waErr) {
+      console.error("[WhatsApp] Send on cita create failed:", waErr);
+    }
+
     // Crear pago de anticipo en estado pendiente
     const pagoPendiente = await prisma.pago.create({
       data: {
@@ -187,7 +204,7 @@ export async function actualizarEstadoCita(
     const cita = await prisma.cita.findFirst({
       where: { id: citaId, tenantId },
       include: {
-        paciente: { select: { nombre: true, apellido: true, email: true } },
+        paciente: { select: { nombre: true, apellido: true, email: true, telefono: true } },
         fisioterapeuta: { select: { nombre: true, apellido: true } },
       },
     });
@@ -220,13 +237,22 @@ export async function actualizarEstadoCita(
       }
     }
 
-    // Send confirmation email when anticipo is confirmed
+    // Send confirmation email + WhatsApp when anticipo is confirmed
     if (estado === "confirmada") {
       try {
         const { sendCitaConfirmadaEmail } = await import("@/lib/send-email");
         await sendCitaConfirmadaEmail(emailData);
       } catch (emailErr) {
         console.error("[Email] Confirmada send failed:", emailErr);
+      }
+      try {
+        const { sendAnticipoConfirmadoWhatsApp } = await import("@/lib/send-whatsapp");
+        await sendAnticipoConfirmadoWhatsApp({
+          ...emailData,
+          pacienteTelefono: cita.paciente.telefono ?? "",
+        });
+      } catch (waErr) {
+        console.error("[WhatsApp] Confirmada send failed:", waErr);
       }
     }
 
@@ -236,14 +262,24 @@ export async function actualizarEstadoCita(
         const { crearEncuesta } = await import("@/app/dashboard/encuestas/actions");
         const result = await crearEncuesta(citaId);
         // Send completada email with encuesta link
+        const encuestaToken = result && "token" in result ? (result.token as string) : undefined;
+        // Email
         try {
           const { sendCitaCompletadaEmail } = await import("@/lib/send-email");
-          await sendCitaCompletadaEmail({
-            ...emailData,
-            encuestaToken: result && "token" in result ? (result.token as string) : undefined,
-          });
+          await sendCitaCompletadaEmail({ ...emailData, encuestaToken });
         } catch (emailErr) {
           console.error("[Email] Completada send failed:", emailErr);
+        }
+        // WhatsApp
+        try {
+          const { sendCitaCompletadaWhatsApp } = await import("@/lib/send-whatsapp");
+          await sendCitaCompletadaWhatsApp({
+            ...emailData,
+            pacienteTelefono: cita.paciente.telefono ?? "",
+            encuestaToken,
+          });
+        } catch (waErr) {
+          console.error("[WhatsApp] Completada send failed:", waErr);
         }
       } catch (encErr) {
         console.error("[Encuesta] Auto-create failed:", encErr);
@@ -303,7 +339,7 @@ export async function confirmarAnticipo(citaId: string, metodo: string) {
   const cita = await prisma.cita.findFirst({
     where: { id: citaId, tenantId },
     include: {
-      paciente: { select: { id: true, nombre: true, apellido: true, email: true } },
+      paciente: { select: { id: true, nombre: true, apellido: true, email: true, telefono: true } },
       fisioterapeuta: { select: { nombre: true, apellido: true } },
     },
   });
@@ -328,21 +364,34 @@ export async function confirmarAnticipo(citaId: string, metodo: string) {
     }),
   ]);
 
+  const notifData = {
+    pacienteNombre: `${cita.paciente.nombre} ${cita.paciente.apellido}`.trim(),
+    pacienteEmail: cita.paciente.email ?? "",
+    tipoSesion: cita.tipoSesion ?? "Sesión",
+    fisioterapeuta: `${cita.fisioterapeuta.nombre} ${cita.fisioterapeuta.apellido}`.trim(),
+    fechaHoraInicio: cita.fechaHoraInicio,
+    fechaHoraFin: cita.fechaHoraFin,
+    sala: cita.sala,
+    citaId,
+  };
+
   // Send confirmation email (best-effort)
   try {
     const { sendCitaConfirmadaEmail } = await import("@/lib/send-email");
-    await sendCitaConfirmadaEmail({
-      pacienteNombre: `${cita.paciente.nombre} ${cita.paciente.apellido}`.trim(),
-      pacienteEmail: cita.paciente.email ?? "",
-      tipoSesion: cita.tipoSesion ?? "Sesión",
-      fisioterapeuta: `${cita.fisioterapeuta.nombre} ${cita.fisioterapeuta.apellido}`.trim(),
-      fechaHoraInicio: cita.fechaHoraInicio,
-      fechaHoraFin: cita.fechaHoraFin,
-      sala: cita.sala,
-      citaId,
-    });
+    await sendCitaConfirmadaEmail(notifData);
   } catch (emailErr) {
     console.error("[Email] Anticipo confirmado send failed:", emailErr);
+  }
+
+  // Send WhatsApp confirmation (best-effort)
+  try {
+    const { sendAnticipoConfirmadoWhatsApp } = await import("@/lib/send-whatsapp");
+    await sendAnticipoConfirmadoWhatsApp({
+      ...notifData,
+      pacienteTelefono: cita.paciente.telefono ?? "",
+    });
+  } catch (waErr) {
+    console.error("[WhatsApp] Anticipo confirmado send failed:", waErr);
   }
 
   revalidatePath("/dashboard/agenda");
