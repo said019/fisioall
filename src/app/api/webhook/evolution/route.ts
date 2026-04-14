@@ -80,13 +80,12 @@ async function handlePatientResponse(phone: string, text: string, pushName?: str
     return;
   }
 
-  // Find the next upcoming cita with reminder sent
+  // Find the next upcoming cita (any active state, not just reminders)
   const cita = await prisma.cita.findFirst({
     where: {
       pacienteId: paciente.id,
       tenantId: tenant.id,
-      recordatorioEnviado: true,
-      estado: { in: ["confirmada", "agendada"] },
+      estado: { in: ["agendada", "confirmada", "pendiente_anticipo"] },
       fechaHoraInicio: { gte: new Date() },
     },
     orderBy: { fechaHoraInicio: "asc" },
@@ -106,9 +105,15 @@ async function handlePatientResponse(phone: string, text: string, pushName?: str
 
   // ── 1 = CONFIRMAR ──
   if (keyword === "1") {
+    // Update estado to confirmada + mark patient confirmed
+    const updateData: Record<string, unknown> = { confirmadaPaciente: true };
+    if (cita.estado === "agendada" || cita.estado === "pendiente_anticipo") {
+      updateData.estado = "confirmada";
+    }
+
     await prisma.cita.update({
       where: { id: cita.id },
-      data: { confirmadaPaciente: true },
+      data: updateData,
     });
 
     const fecha = cita.fechaHoraInicio.toLocaleDateString("es-MX", {
@@ -127,30 +132,37 @@ async function handlePatientResponse(phone: string, text: string, pushName?: str
         `✅ ¡Perfecto, ${paciente.nombre}!`,
         ``,
         `Tu cita queda *confirmada*:`,
+        `📋 *${cita.tipoSesion ?? "Sesión"}*`,
         `📅 ${fecha}`,
         `🕐 ${hora} hrs`,
         `👩‍⚕️ ${cita.fisioterapeuta.nombre} ${cita.fisioterapeuta.apellido}`,
         ``,
-        `Te esperamos en *Kaya Kalp* 💆‍♀️`,
+        `📍 Av. María No. 25, San Juan del Río, Qro.`,
+        ``,
+        `*Recuerda:*`,
+        `• Llega 5 min antes de tu cita`,
+        `• Puedes cancelar sin cargo antes de las 8:00 PM del día anterior`,
+        ``,
+        `¡Te esperamos en *Kaya Kalp*! 💆‍♀️`,
       ].join("\n"),
     );
 
-    console.log(`[Webhook] Cita ${cita.id} confirmada por paciente`);
+    console.log(`[Webhook] Cita ${cita.id} confirmada por paciente vía WhatsApp`);
     return;
   }
 
   // ── 2 = CANCELAR ──
   if (keyword === "2") {
     const enVentana = dentroDeVentana(cita.fechaHoraInicio);
+    const tienAnticipo = cita.anticipoPagado === true;
 
-    if (enVentana) {
-      // Cancelar sin perder anticipo → devolver saldo
+    if (enVentana && tienAnticipo) {
+      // Cancelar dentro de ventana con anticipo pagado → devolver saldo
       await prisma.$transaction([
         prisma.cita.update({
           where: { id: cita.id },
           data: { estado: "cancelada" },
         }),
-        // Regresar anticipo al saldo del paciente
         prisma.paciente.update({
           where: { id: paciente.id },
           data: { anticipoSaldo: { increment: 200 } },
@@ -160,17 +172,18 @@ async function handlePatientResponse(phone: string, text: string, pushName?: str
       await client.sendText(
         jid,
         [
-          `❌ Tu cita ha sido *cancelada*.`,
+          `❌ Tu cita ha sido *cancelada*, ${paciente.nombre}.`,
           ``,
           `Tu anticipo de *$200 MXN* se conserva como saldo a favor para tu próxima cita.`,
           ``,
-          `Puedes agendar de nuevo en cualquier momento 🙌`,
+          `Para agendar de nuevo, comunícate con nosotros 🙌`,
+          `📞 427 165 92 04`,
         ].join("\n"),
       );
 
       console.log(`[Webhook] Cita ${cita.id} cancelada EN ventana — anticipo a saldo`);
-    } else {
-      // Cancelar fuera de ventana → anticipo perdido
+    } else if (!enVentana && tienAnticipo) {
+      // Cancelar fuera de ventana con anticipo → anticipo perdido
       await prisma.cita.update({
         where: { id: cita.id },
         data: { estado: "cancelada" },
@@ -179,16 +192,45 @@ async function handlePatientResponse(phone: string, text: string, pushName?: str
       await client.sendText(
         jid,
         [
-          `❌ Tu cita ha sido *cancelada*.`,
+          `❌ Tu cita ha sido *cancelada*, ${paciente.nombre}.`,
           ``,
           `⚠️ Lamentablemente, el anticipo de *$200 MXN* no es reembolsable ya que la cancelación fue después de las 8:00 PM del día anterior.`,
           ``,
-          `Para futuras citas, recuerda que puedes cancelar sin cargo antes de las 8:00 PM del día previo.`,
+          `Para futuras citas, recuerda cancelar antes de las 8:00 PM del día previo para conservar tu anticipo.`,
         ].join("\n"),
       );
 
       console.log(`[Webhook] Cita ${cita.id} cancelada FUERA de ventana — anticipo perdido`);
+    } else {
+      // Cancelar sin anticipo pagado (pendiente_anticipo)
+      await prisma.cita.update({
+        where: { id: cita.id },
+        data: { estado: "cancelada" },
+      });
+
+      await client.sendText(
+        jid,
+        [
+          `❌ Tu cita ha sido *cancelada*, ${paciente.nombre}.`,
+          ``,
+          `Para agendar de nuevo, comunícate con nosotros:`,
+          `📞 427 165 92 04`,
+        ].join("\n"),
+      );
+
+      console.log(`[Webhook] Cita ${cita.id} cancelada — sin anticipo`);
     }
+
+    // Delete Google Calendar event if exists
+    if (cita.googleEventId) {
+      try {
+        const { deleteCalendarEvent } = await import("@/lib/google-calendar");
+        await deleteCalendarEvent(cita.tenantId, cita.googleEventId);
+      } catch (gcalErr) {
+        console.error("[GCal] Delete on WhatsApp cancel:", gcalErr);
+      }
+    }
+
     return;
   }
 
@@ -222,9 +264,8 @@ async function handlePatientResponse(phone: string, text: string, pushName?: str
       },
     });
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : "http://localhost:3000";
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
 
     const reagendarUrl = `${baseUrl}/reagendar?token=${token}`;
 

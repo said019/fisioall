@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { isConfigured, getEvolutionClient, formatPhone } from "@/lib/evolution";
 
 const TENANT_SLUG = "kaya-kalp";
 const TOKEN_EXPIRY_MS = 2 * 60 * 60 * 1000; // 2 hours
@@ -164,7 +165,10 @@ export async function confirmarReagendar(
 ) {
   const cita = await prisma.cita.findFirst({
     where: { reagendarToken: token },
-    include: { paciente: { select: { id: true, nombre: true } } },
+    include: {
+      paciente: { select: { id: true, nombre: true, telefono: true } },
+      fisioterapeuta: { select: { nombre: true, apellido: true } },
+    },
   });
 
   if (!cita) return { error: "Token inválido." };
@@ -199,12 +203,40 @@ export async function confirmarReagendar(
 
   revalidatePath("/dashboard/agenda");
 
+  const fechaFmt = nuevaInicio.toLocaleDateString("es-MX", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+
+  // Send WhatsApp confirmation of new date
+  if (isConfigured() && cita.paciente.telefono) {
+    try {
+      const client = getEvolutionClient();
+      await client.sendText(
+        formatPhone(cita.paciente.telefono),
+        [
+          `✅ *¡Cita reagendada, ${cita.paciente.nombre}!*`,
+          ``,
+          `Tu nueva cita en *Kaya Kalp*:`,
+          `📋 *${cita.tipoSesion ?? "Sesión"}*`,
+          `📅 ${fechaFmt}`,
+          `🕐 ${nuevaHora} hrs`,
+          `👩‍⚕️ ${cita.fisioterapeuta.nombre} ${cita.fisioterapeuta.apellido}`,
+          ``,
+          `📍 Av. María No. 25, San Juan del Río, Qro.`,
+          ``,
+          `Tu anticipo de $200 se conserva para esta fecha.`,
+          `¡Te esperamos! 💆‍♀️`,
+        ].join("\n"),
+      );
+    } catch (waErr) {
+      console.error("[WhatsApp] Reagendar confirmation failed:", waErr);
+    }
+  }
+
   return {
     ok: true,
-    mensaje: `Cita reagendada para ${nuevaInicio.toLocaleDateString("es-MX", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-    })} a las ${nuevaHora} hrs.`,
+    mensaje: `Cita reagendada para ${fechaFmt} a las ${nuevaHora} hrs.`,
   };
 }
