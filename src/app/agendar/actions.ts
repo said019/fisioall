@@ -314,16 +314,19 @@ export async function getHorariosDisponibles(
 
   const todasOcupadas = [...horasOcupadas, ...gcalOcupadas];
 
-  // Generar slots a partir de las franjas reales de los terapeutas
-  // Intervalo = duración del servicio, mínimo 30 min
-  const intervalo = Math.max(duracionMin, 30);
+  // Generar slots cada hora en punto (9:00, 10:00, 11:00...)
+  // El intervalo es SIEMPRE 60 min — la duración solo se usa para verificar
+  // que la sesión cabe dentro de la franja, no para espaciar los slots.
+  const INTERVALO = 60;
   const slotsSet = new Set<string>();
   const slotsResult: { hora: string; disponible: boolean }[] = [];
 
   for (const franja of todasFranjas) {
     const [hIni, mIni] = franja.inicio.split(":").map(Number);
     const [hFin, mFin] = franja.fin.split(":").map(Number);
-    let minutos = hIni * 60 + mIni;
+    // Arrancar siempre en la hora en punto más próxima >= inicio de la franja
+    let minutos = (hIni * 60 + mIni);
+    if (mIni > 0) minutos = (hIni + 1) * 60; // redondear a la siguiente hora entera
     const finMinutos = hFin * 60 + mFin;
 
     while (minutos + duracionMin <= finMinutos) {
@@ -335,7 +338,7 @@ export async function getHorariosDisponibles(
         const ocupado = todasOcupadas.some((o) => minutos >= o.inicio && minutos < o.fin);
         slotsResult.push({ hora, disponible: !ocupado && !yaPaso });
       }
-      minutos += intervalo;
+      minutos += INTERVALO;
     }
   }
 

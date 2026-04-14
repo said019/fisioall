@@ -454,13 +454,18 @@ export async function getSlotsDisponibles(params: {
     select: { fechaHoraInicio: true, fechaHoraFin: true, sala: true },
   });
 
-  // 4. Generar slots dentro de las franjas
+  // 4. Generar slots dentro de las franjas — siempre cada 60 min (hora en punto)
+  // duracionMin solo se usa para: 1) verificar que la sesión cabe antes del fin de la franja
+  //                                2) calcular slotFin para detectar conflictos reales
+  const INTERVALO = 60;
   const slots: { hora: string; cubiculo: number; disponible: boolean }[] = [];
 
   for (const franja of franjas) {
     const [hIni, mIni] = franja.inicio.split(":").map(Number);
     const [hFin, mFin] = franja.fin.split(":").map(Number);
+    // Arrancar siempre en la hora en punto más próxima >= inicio de la franja
     let minutos = hIni * 60 + mIni;
+    if (mIni > 0) minutos = (hIni + 1) * 60;
     const finMinutos = hFin * 60 + mFin;
 
     while (minutos + duracionMin <= finMinutos) {
@@ -485,7 +490,7 @@ export async function getSlotsDisponibles(params: {
 
       const hora = `${String(Math.floor(minutos / 60)).padStart(2, "0")}:${String(minutos % 60).padStart(2, "0")}`;
       slots.push({ hora, cubiculo: cubiculoLibre ?? 0, disponible: cubiculoLibre !== null });
-      minutos += duracionMin;
+      minutos += INTERVALO;
     }
   }
 
