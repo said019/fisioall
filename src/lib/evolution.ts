@@ -112,29 +112,56 @@ class EvolutionClient {
 
   /** Check current instance connection state. */
   async getStatus(): Promise<EvolutionInstanceStatus> {
-    return this.request<EvolutionInstanceStatus>(
+    const raw = await this.request<{ instance: EvolutionInstanceStatus } | EvolutionInstanceStatus>(
       "GET",
       `/instance/connectionState/${this.instance}`,
     );
+    // Evolution API wraps the response in { instance: {...} }
+    if ("instance" in raw && raw.instance) {
+      return raw.instance;
+    }
+    return raw as EvolutionInstanceStatus;
   }
 
   /**
    * Create the instance (if it doesn't exist) and ask for a new QR code.
+   * If the instance is stuck in "connecting" state, deletes and recreates it.
    * Returns the QR payload so the frontend can display it.
    */
   async connectInstance(): Promise<EvolutionQRCode> {
-    // Try creating the instance first – if it already exists Evolution
-    // returns an error we can safely ignore.
+    // 1. Check if instance already exists and its state
+    let existingState: string | null = null;
     try {
-      await this.request("POST", "/instance/create", {
-        instanceName: this.instance,
-        integration: "WHATSAPP-BAILEYS",
-        qrcode: true,
-      });
+      const status = await this.getStatus();
+      existingState = status.state;
     } catch {
-      // instance likely already exists – continue
+      // Instance doesn't exist yet – that's fine
     }
 
+    // 2. If stuck in "connecting" or "close", delete and start fresh
+    if (existingState === "connecting" || existingState === "close") {
+      try {
+        await this.request("DELETE", `/instance/delete/${this.instance}`);
+      } catch {
+        // Ignore delete errors
+      }
+      existingState = null;
+    }
+
+    // 3. Create instance if it doesn't exist
+    if (!existingState || existingState !== "open") {
+      try {
+        await this.request("POST", "/instance/create", {
+          instanceName: this.instance,
+          integration: "WHATSAPP-BAILEYS",
+          qrcode: true,
+        });
+      } catch {
+        // instance likely already exists – continue
+      }
+    }
+
+    // 4. Request QR code
     return this.request<EvolutionQRCode>(
       "GET",
       `/instance/connect/${this.instance}`,

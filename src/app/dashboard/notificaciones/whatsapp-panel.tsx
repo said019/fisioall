@@ -98,20 +98,44 @@ export default function WhatsAppPanel({
     checkStatus();
   }, [checkStatus]);
 
+  // Auto-poll every 5s while QR is displayed to detect scan
+  useEffect(() => {
+    if (!qrBase64 || state === "open") return;
+    const interval = setInterval(async () => {
+      try {
+        const result = await getWhatsAppStatus();
+        if (result.ok && result.data) {
+          const newState = result.data.state as ConnectionState;
+          if (newState === "open") {
+            setState("open");
+            setQrBase64(null);
+            toast.success("¡WhatsApp conectado exitosamente!");
+            clearInterval(interval);
+          }
+        }
+      } catch {
+        // ignore polling errors
+      }
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [qrBase64, state]);
+
   const handleConnect = async () => {
     setLoading(true);
     setQrBase64(null);
     try {
       const result = await connectWhatsApp();
-      if (result.ok && result.data) {
+      if (result.ok && result.data?.base64) {
         setQrBase64(result.data.base64);
         setState("connecting");
         toast.success("QR generado. Escanea con WhatsApp.");
       } else {
-        toast.error(result.error ?? "Error al conectar");
+        toast.error(result.error ?? "No se pudo generar el QR. Intenta de nuevo.");
+        console.error("[WhatsApp] connectWhatsApp response:", result);
       }
-    } catch {
+    } catch (err) {
       toast.error("Error al conectar WhatsApp");
+      console.error("[WhatsApp] connectWhatsApp error:", err);
     } finally {
       setLoading(false);
     }
