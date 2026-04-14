@@ -24,11 +24,14 @@ export async function sendCitaAgendadaEmail(data: CitaEmailData) {
       to: data.pacienteEmail,
       subject,
       html,
+      headers: {
+        "Content-Type": "multipart/mixed",
+      },
       attachments: [
         {
-          filename: "cita-kaya-kalp.ics",
-          content: Buffer.from(ics).toString("base64"),
-          contentType: "text/calendar; method=REQUEST",
+          filename: "invite.ics",
+          content: Buffer.from(ics),
+          contentType: "text/calendar; charset=utf-8; method=REQUEST",
         },
       ],
     });

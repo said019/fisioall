@@ -24,7 +24,7 @@ function getBaseUrl(): string {
 }
 
 function logoUrl(): string {
-  return `${getBaseUrl()}/images/logo-kaya-kalp.webp`;
+  return `${getBaseUrl()}/images/logo-kaya-kalp.png`;
 }
 
 // ─── SHARED LAYOUT ───────────────────────────────────────────────────────────
@@ -42,9 +42,8 @@ function emailLayout(title: string, body: string): string {
       <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(30,58,79,0.08);">
         <!-- Header -->
         <tr>
-          <td style="background:${BRAND.color};padding:32px 40px;text-align:center;">
-            <img src="${logoUrl()}" alt="Kaya Kalp" width="180" style="max-width:180px;height:auto;" />
-            <p style="color:rgba(255,255,255,0.7);font-size:13px;font-style:italic;margin:8px 0 0;">${BRAND.slogan}</p>
+          <td style="background:#ffffff;padding:32px 40px;text-align:center;border-bottom:2px solid ${BRAND.colorBg};">
+            <img src="${logoUrl()}" alt="Kaya Kalp" width="200" style="max-width:200px;height:auto;" />
           </td>
         </tr>
         <!-- Body -->
