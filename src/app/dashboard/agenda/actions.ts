@@ -26,28 +26,39 @@ export async function getCitasSemana(fechaInicio: string, fechaFin: string) {
       membresia: {
         select: { sesionesUsadas: true, sesionesTotal: true },
       },
+      pagos: {
+        where: { concepto: { in: ["Anticipo obligatorio", "Anticipo de sesión"] } },
+        select: { id: true, comprobanteUrl: true, estado: true },
+        take: 1,
+        orderBy: { fechaPago: "desc" },
+      },
     },
     orderBy: { fechaHoraInicio: "asc" },
   });
 
-  return citas.map((c) => ({
-    id: c.id,
-    pacienteId: c.pacienteId,
-    paciente: `${c.paciente.nombre} ${c.paciente.apellido}`,
-    iniciales: `${c.paciente.nombre[0]}${c.paciente.apellido[0]}`.toUpperCase(),
-    telefono: c.paciente.telefono,
-    fisioterapeuta: `${c.fisioterapeuta.nombre} ${c.fisioterapeuta.apellido}`,
-    colorFisio: c.fisioterapeuta.colorAgenda ?? "#4a7fa5",
-    motivo: c.tipoSesion ?? "Sesión",
-    fechaHoraInicio: c.fechaHoraInicio.toISOString(),
-    fechaHoraFin: c.fechaHoraFin.toISOString(),
-    estado: c.estado,
-    sala: c.sala,
-    numeroSesion: c.numeroSesion,
-    sesion: c.membresia
-      ? `${(c.membresia.sesionesUsadas ?? 0)}/${c.membresia.sesionesTotal}`
-      : null,
-  }));
+  return citas.map((c) => {
+    const anticipo = c.pagos?.[0];
+    return {
+      id: c.id,
+      pacienteId: c.pacienteId,
+      paciente: `${c.paciente.nombre} ${c.paciente.apellido}`,
+      iniciales: `${c.paciente.nombre[0]}${c.paciente.apellido[0]}`.toUpperCase(),
+      telefono: c.paciente.telefono,
+      fisioterapeuta: `${c.fisioterapeuta.nombre} ${c.fisioterapeuta.apellido}`,
+      colorFisio: c.fisioterapeuta.colorAgenda ?? "#4a7fa5",
+      motivo: c.tipoSesion ?? "Sesión",
+      fechaHoraInicio: c.fechaHoraInicio.toISOString(),
+      fechaHoraFin: c.fechaHoraFin.toISOString(),
+      estado: c.estado,
+      sala: c.sala,
+      numeroSesion: c.numeroSesion,
+      sesion: c.membresia
+        ? `${(c.membresia.sesionesUsadas ?? 0)}/${c.membresia.sesionesTotal}`
+        : null,
+      anticipoComprobanteUrl: anticipo?.comprobanteUrl ?? null,
+      anticipoPagoId: anticipo?.id ?? null,
+    };
+  });
 }
 
 // ─── FETCH CITAS FOR TODAY ───────────────────────────────────────────────────
@@ -407,6 +418,64 @@ export async function confirmarAnticipo(citaId: string, metodo: string) {
     } catch (gcalErr) {
       console.error("[GCal] Color update on anticipo confirmed:", gcalErr);
     }
+  }
+
+  revalidatePath("/dashboard/agenda");
+  revalidatePath("/dashboard");
+  return { success: true };
+}
+
+// ─── RECHAZAR COMPROBANTE DE ANTICIPO ────────────────────────────────────────
+// Marca el pago como pendiente y limpia la URL del comprobante para que el
+// paciente pueda subir uno nuevo. Envía WhatsApp pidiendo nuevo comprobante.
+export async function rechazarComprobante(citaId: string, motivo?: string) {
+  const { tenantId } = await requireAuth();
+
+  const cita = await prisma.cita.findFirst({
+    where: { id: citaId, tenantId },
+    include: {
+      paciente: { select: { nombre: true, apellido: true, telefono: true } },
+      fisioterapeuta: { select: { nombre: true, apellido: true } },
+    },
+  });
+
+  if (!cita) return { error: "Cita no encontrada" };
+  if (!cita.anticipoPagoId) return { error: "No hay comprobante registrado" };
+
+  await prisma.pago.update({
+    where: { id: cita.anticipoPagoId },
+    data: { estado: "pendiente", comprobanteUrl: null },
+  });
+
+  // Mantener la cita en pendiente_anticipo (paciente debe resubir)
+  await prisma.cita.update({
+    where: { id: citaId },
+    data: {
+      estado: "pendiente_anticipo",
+      anticipoPagado: false,
+      anticipoVenceAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    },
+  });
+
+  try {
+    const { sendComprobanteRechazadoWhatsApp } = await import("@/lib/send-whatsapp");
+    const baseUrl =
+      process.env.NEXT_PUBLIC_APP_URL ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+    await sendComprobanteRechazadoWhatsApp({
+      pacienteNombre: `${cita.paciente.nombre} ${cita.paciente.apellido}`.trim(),
+      pacienteTelefono: cita.paciente.telefono ?? "",
+      tipoSesion: cita.tipoSesion ?? "Sesión",
+      fisioterapeuta: `${cita.fisioterapeuta.nombre} ${cita.fisioterapeuta.apellido}`.trim(),
+      fechaHoraInicio: cita.fechaHoraInicio,
+      fechaHoraFin: cita.fechaHoraFin,
+      sala: cita.sala,
+      citaId,
+      motivo,
+      reuploadUrl: `${baseUrl}/agendar`,
+    });
+  } catch (waErr) {
+    console.error("[WhatsApp] Rechazo comprobante send failed:", waErr);
   }
 
   revalidatePath("/dashboard/agenda");

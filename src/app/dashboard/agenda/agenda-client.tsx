@@ -44,6 +44,7 @@ import {
   crearCita,
   actualizarEstadoCita,
   confirmarAnticipo,
+  rechazarComprobante,
   getSlotsDisponibles,
   getCitasSemana,
 } from "./actions";
@@ -63,6 +64,7 @@ type Cita = {
   sesion: string;
   sala: string;
   colorFisio: string;
+  anticipoComprobanteUrl?: string | null;
 };
 
 type PacienteOption = {
@@ -95,6 +97,8 @@ type DBCita = {
   sala: string | null;
   numeroSesion: number | null;
   sesion: string | null;
+  anticipoComprobanteUrl?: string | null;
+  anticipoPagoId?: string | null;
 };
 
 // ── CONSTANTS ──────────────────────────────────────────────────────────────
@@ -202,6 +206,7 @@ function mapDBCitas(dbCitas: DBCita[], monday: Date): Cita[] {
       sesion: c.sesion ?? "—",
       sala: c.sala ?? "—",
       colorFisio: c.colorFisio ?? "#4a7fa5",
+      anticipoComprobanteUrl: c.anticipoComprobanteUrl ?? null,
     };
   });
 }
@@ -846,46 +851,102 @@ export default function AgendaClient({
                   <div className="bg-[#e89b3f]/10 border border-[#e89b3f]/30 rounded-lg p-3 space-y-2">
                     <p className="text-xs text-[#854f0b] font-medium flex items-start gap-2">
                       <DollarSign className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                      Anticipo de $200 MXN pendiente de confirmación
+                      {citaSeleccionada.anticipoComprobanteUrl
+                        ? "Comprobante recibido — pendiente de validación"
+                        : "Anticipo de $200 MXN pendiente"}
                     </p>
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={() => {
-                          startStatusTransition(async () => {
-                            await confirmarAnticipo(citaSeleccionada.id, "transferencia");
-                            setCitaSeleccionada(null);
-                            const sat = new Date(monday);
-                            sat.setDate(monday.getDate() + 5);
-                            sat.setHours(23, 59, 59, 999);
-                            const db = await getCitasSemana(monday.toISOString(), sat.toISOString());
-                            if (db) setCitasData(mapDBCitas(db, monday));
-                          });
-                        }}
-                        disabled={statusPending}
-                        className="flex-1 bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white cursor-pointer text-xs h-8"
-                      >
-                        <CreditCard className="mr-1 h-3 w-3" />
-                        Transferencia
-                      </Button>
-                      <Button
-                        onClick={() => {
-                          startStatusTransition(async () => {
-                            await confirmarAnticipo(citaSeleccionada.id, "efectivo");
-                            setCitaSeleccionada(null);
-                            const sat = new Date(monday);
-                            sat.setDate(monday.getDate() + 5);
-                            sat.setHours(23, 59, 59, 999);
-                            const db = await getCitasSemana(monday.toISOString(), sat.toISOString());
-                            if (db) setCitasData(mapDBCitas(db, monday));
-                          });
-                        }}
-                        disabled={statusPending}
-                        className="flex-1 bg-[#4a7fa5] hover:bg-[#4a7fa5]/90 text-white cursor-pointer text-xs h-8"
-                      >
-                        <Banknote className="mr-1 h-3 w-3" />
-                        Efectivo
-                      </Button>
-                    </div>
+
+                    {citaSeleccionada.anticipoComprobanteUrl ? (
+                      <div className="space-y-2">
+                        <a
+                          href={citaSeleccionada.anticipoComprobanteUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block text-xs text-[#4a7fa5] underline hover:text-[#4a7fa5]/80 break-all"
+                        >
+                          Ver comprobante ↗
+                        </a>
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={() => {
+                              startStatusTransition(async () => {
+                                await confirmarAnticipo(citaSeleccionada.id, "transferencia");
+                                setCitaSeleccionada(null);
+                                const sat = new Date(monday);
+                                sat.setDate(monday.getDate() + 5);
+                                sat.setHours(23, 59, 59, 999);
+                                const db = await getCitasSemana(monday.toISOString(), sat.toISOString());
+                                if (db) setCitasData(mapDBCitas(db, monday));
+                              });
+                            }}
+                            disabled={statusPending}
+                            className="flex-1 bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white cursor-pointer text-xs h-8"
+                          >
+                            <CheckCircle2 className="mr-1 h-3 w-3" />
+                            Validar
+                          </Button>
+                          <Button
+                            onClick={() => {
+                              const motivo = window.prompt("Motivo del rechazo (opcional):") ?? undefined;
+                              startStatusTransition(async () => {
+                                await rechazarComprobante(citaSeleccionada.id, motivo || undefined);
+                                setCitaSeleccionada(null);
+                                const sat = new Date(monday);
+                                sat.setDate(monday.getDate() + 5);
+                                sat.setHours(23, 59, 59, 999);
+                                const db = await getCitasSemana(monday.toISOString(), sat.toISOString());
+                                if (db) setCitasData(mapDBCitas(db, monday));
+                              });
+                            }}
+                            disabled={statusPending}
+                            variant="outline"
+                            className="flex-1 border-[#d9534f]/30 text-[#d9534f] hover:bg-[#d9534f]/5 cursor-pointer text-xs h-8"
+                          >
+                            <XCircle className="mr-1 h-3 w-3" />
+                            Rechazar
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => {
+                            startStatusTransition(async () => {
+                              await confirmarAnticipo(citaSeleccionada.id, "transferencia");
+                              setCitaSeleccionada(null);
+                              const sat = new Date(monday);
+                              sat.setDate(monday.getDate() + 5);
+                              sat.setHours(23, 59, 59, 999);
+                              const db = await getCitasSemana(monday.toISOString(), sat.toISOString());
+                              if (db) setCitasData(mapDBCitas(db, monday));
+                            });
+                          }}
+                          disabled={statusPending}
+                          className="flex-1 bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white cursor-pointer text-xs h-8"
+                        >
+                          <CreditCard className="mr-1 h-3 w-3" />
+                          Transferencia
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            startStatusTransition(async () => {
+                              await confirmarAnticipo(citaSeleccionada.id, "efectivo");
+                              setCitaSeleccionada(null);
+                              const sat = new Date(monday);
+                              sat.setDate(monday.getDate() + 5);
+                              sat.setHours(23, 59, 59, 999);
+                              const db = await getCitasSemana(monday.toISOString(), sat.toISOString());
+                              if (db) setCitasData(mapDBCitas(db, monday));
+                            });
+                          }}
+                          disabled={statusPending}
+                          className="flex-1 bg-[#4a7fa5] hover:bg-[#4a7fa5]/90 text-white cursor-pointer text-xs h-8"
+                        >
+                          <Banknote className="mr-1 h-3 w-3" />
+                          Efectivo
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 )}
 

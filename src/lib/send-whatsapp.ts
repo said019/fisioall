@@ -66,6 +66,69 @@ export async function sendCitaAgendadaWhatsApp(data: CitaWhatsAppData) {
   }
 }
 
+// ── SEND: COMPROBANTE RECIBIDO (pendiente de validación) ────────────────
+
+export async function sendComprobanteRecibidoWhatsApp(data: CitaWhatsAppData) {
+  if (!isConfigured() || !data.pacienteTelefono) return;
+
+  const mensaje = [
+    `Hola ${data.pacienteNombre} 👋`,
+    ``,
+    `Recibimos tu comprobante de anticipo para tu cita en *Kaya Kalp*:`,
+    ``,
+    `📋 *${data.tipoSesion}*`,
+    `📅 ${formatFecha(data.fechaHoraInicio)}`,
+    `🕐 ${formatHora(data.fechaHoraInicio)} hrs`,
+    `👩‍⚕️ ${data.fisioterapeuta}`,
+    ``,
+    `⏳ *Tu reserva está pendiente de validación.*`,
+    `En cuanto revisemos tu comprobante, te enviaremos la confirmación.`,
+    ``,
+    `¿Dudas? Escríbenos aquí mismo 💬`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  try {
+    const client = getEvolutionClient();
+    await client.sendText(formatPhone(data.pacienteTelefono), mensaje);
+  } catch (err) {
+    console.error("[WhatsApp] Comprobante recibido failed:", err);
+  }
+}
+
+// ── SEND: COMPROBANTE RECHAZADO ──────────────────────────────────────────
+
+export async function sendComprobanteRechazadoWhatsApp(
+  data: CitaWhatsAppData & { motivo?: string; reuploadUrl?: string },
+) {
+  if (!isConfigured() || !data.pacienteTelefono) return;
+
+  const lines = [
+    `Hola ${data.pacienteNombre} 👋`,
+    ``,
+    `Revisamos el comprobante de tu cita en *Kaya Kalp* y no pudimos validarlo:`,
+    ``,
+    `📋 *${data.tipoSesion}*`,
+    `📅 ${formatFecha(data.fechaHoraInicio)}`,
+    `🕐 ${formatHora(data.fechaHoraInicio)} hrs`,
+  ];
+  if (data.motivo) lines.push(``, `Motivo: *${data.motivo}*`);
+  lines.push(
+    ``,
+    `Por favor envíanos un nuevo comprobante para confirmar tu reserva.`,
+  );
+  if (data.reuploadUrl) lines.push(`👉 ${data.reuploadUrl}`);
+  lines.push(``, `Si es un error, contáctanos respondiendo este mensaje 💬`);
+
+  try {
+    const client = getEvolutionClient();
+    await client.sendText(formatPhone(data.pacienteTelefono), lines.join("\n"));
+  } catch (err) {
+    console.error("[WhatsApp] Comprobante rechazado failed:", err);
+  }
+}
+
 // ── SEND: ANTICIPO CONFIRMADO ────────────────────────────────────────────
 
 export async function sendAnticipoConfirmadoWhatsApp(data: CitaWhatsAppData) {

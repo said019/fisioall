@@ -441,7 +441,9 @@ export async function agendarCitaPublica(prevState: unknown, formData: FormData)
       },
     });
 
-    // Create anticipo Pago and set pendiente_anticipo state
+    // Always pendiente_anticipo at public booking — admin must validate the
+    // comprobante (if any) before flipping the cita to confirmada. A subida
+    // de comprobante por sí sola no confirma nada.
     const pago = await prisma.pago.create({
       data: {
         tenantId,
@@ -449,7 +451,7 @@ export async function agendarCitaPublica(prevState: unknown, formData: FormData)
         citaId: cita.id,
         monto: 200,
         metodo: comprobanteUrl ? "transferencia" : "otro",
-        estado: comprobanteUrl ? "pagado" : "pendiente",
+        estado: "pendiente",
         comprobanteUrl: comprobanteUrl || null,
         concepto: "Anticipo obligatorio",
         registradoPor: fisioId,
@@ -461,9 +463,9 @@ export async function agendarCitaPublica(prevState: unknown, formData: FormData)
       where: { id: cita.id },
       data: {
         anticipoPagoId: pago.id,
-        anticipoPagado: !!comprobanteUrl,
-        anticipoVenceAt: comprobanteUrl ? null : new Date(Date.now() + 24 * 60 * 60 * 1000),
-        estado: comprobanteUrl ? "confirmada" : "pendiente_anticipo",
+        anticipoPagado: false,
+        anticipoVenceAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        estado: "pendiente_anticipo",
       },
     });
 
@@ -486,6 +488,39 @@ export async function agendarCitaPublica(prevState: unknown, formData: FormData)
       }
     } catch (gcalErr) {
       console.error("[GCal] Sync error on create:", gcalErr);
+    }
+
+    // Send WhatsApp to paciente (best-effort) — differ copy by whether a
+    // comprobante was uploaded. A comprobante subido NO confirma nada: el
+    // admin debe validarlo antes de que la cita pase a confirmada.
+    try {
+      const pac = await prisma.paciente.findUnique({
+        where: { id: pacienteId },
+        select: { nombre: true, apellido: true, telefono: true },
+      });
+      const fisio = await prisma.usuario.findUnique({
+        where: { id: fisioId },
+        select: { nombre: true, apellido: true },
+      });
+      const waPayload = {
+        pacienteNombre: `${pac?.nombre ?? ""} ${pac?.apellido ?? ""}`.trim(),
+        pacienteTelefono: pac?.telefono ?? "",
+        tipoSesion: tipoSesion || "Sesión",
+        fisioterapeuta: `${fisio?.nombre ?? ""} ${fisio?.apellido ?? ""}`.trim(),
+        fechaHoraInicio,
+        fechaHoraFin,
+        sala: null,
+        citaId: cita.id,
+      };
+      if (comprobanteUrl) {
+        const { sendComprobanteRecibidoWhatsApp } = await import("@/lib/send-whatsapp");
+        await sendComprobanteRecibidoWhatsApp(waPayload);
+      } else {
+        const { sendCitaAgendadaWhatsApp } = await import("@/lib/send-whatsapp");
+        await sendCitaAgendadaWhatsApp(waPayload);
+      }
+    } catch (waErr) {
+      console.error("[WhatsApp] Public booking send failed:", waErr);
     }
 
     revalidatePath("/agendar");
