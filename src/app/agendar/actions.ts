@@ -119,10 +119,12 @@ export async function getCitasPaciente(pacienteId: string) {
       weekday: "short",
       day: "numeric",
       month: "short",
+      timeZone: "America/Mexico_City",
     }),
     hora: c.fechaHoraInicio.toLocaleTimeString("es-MX", {
       hour: "2-digit",
       minute: "2-digit",
+      timeZone: "America/Mexico_City",
     }),
     duracion: Math.round(
       (c.fechaHoraFin.getTime() - c.fechaHoraInicio.getTime()) / 60000
