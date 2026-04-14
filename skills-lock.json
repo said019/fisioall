@@ -1,15 +1,15 @@
 {
   "version": 1,
   "skills": {
-    "business-analyst": {
-      "source": "aj-geddes/claude-code-bmad-skills",
+    "apple-ui-designer": {
+      "source": "heyman333/atelier-ui",
       "sourceType": "github",
-      "computedHash": "d9520001b077121b9817bb9e0b273ea6d4a5a1b0c4a557b3b2f875cf2ac0b08f"
+      "computedHash": "26d43c0a38e7a0ad8cf2cd5418d48ca7525873cc60f203ac67fcf024ce577eb3"
     },
-    "frontend-design": {
-      "source": "anthropics/skills",
+    "business-analyst": {
+      "source": "404kidwiz/claude-supercode-skills",
       "sourceType": "github",
-      "computedHash": "063a0e6448123cd359ad0044cc46b0e490cc7964d45ef4bb9fd842bd2ffbca67"
+      "computedHash": "5fedbb6177aca0d544b694c1a32e5dfb8cb39dd5f57b7a31ead56de77c4f0f86"
     },
     "fullstack-developer": {
       "source": "shubhamsaboo/awesome-llm-apps",
@@ -19,7 +19,7 @@
     "ui-ux-pro-max": {
       "source": "nextlevelbuilder/ui-ux-pro-max-skill",
       "sourceType": "github",
-      "computedHash": "e688fcd4c5693e14ebd00d48e982dbd2be060fbea89f5f60531e79c704a1bc28"
+      "computedHash": "0a413bf988d06481f69bb81df2070741c3ba12dd9f1be2706d57f259c905992d"
     }
   }
 }
