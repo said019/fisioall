@@ -387,7 +387,29 @@ export async function agendarCitaPublica(prevState: unknown, formData: FormData)
   }
 
   try {
-    const fechaHoraInicio = new Date(`${fecha}T${horaInicio}:00`);
+    // Construir la fecha respetando la zona horaria real de México (con DST automático).
+    // Estrategia: interpretar fecha+hora como si fuera UTC, luego calcular el offset
+    // real de "America/Mexico_City" para ese instante y compensar.
+    const [y, mo, d] = fecha.split("-").map(Number);
+    const [h, mi] = horaInicio.split(":").map(Number);
+    // Fecha en UTC puro (va a diferir de México, pero nos sirve para calcular el offset)
+    const utcRef = new Date(Date.UTC(y, mo - 1, d, h, mi, 0));
+    // Obtener hora que Mexico_City muestra para ese instante UTC
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Mexico_City",
+      year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", second: "2-digit",
+      hour12: false,
+    }).formatToParts(utcRef);
+    const p = Object.fromEntries(parts.map((x) => [x.type, x.value]));
+    const mxDisplayed = Date.UTC(
+      Number(p.year), Number(p.month) - 1, Number(p.day),
+      Number(p.hour) === 24 ? 0 : Number(p.hour), Number(p.minute), Number(p.second)
+    );
+    // El offset es la diferencia entre lo que México mostraría y lo que pusimos
+    const offsetMs = utcRef.getTime() - mxDisplayed;
+    // Fecha/hora correcta en UTC que representa las HH:MM en Ciudad de México
+    const fechaHoraInicio = new Date(Date.UTC(y, mo - 1, d, h, mi, 0) + offsetMs);
     const fechaHoraFin = new Date(fechaHoraInicio.getTime() + duracion * 60 * 1000);
 
     // Verificar que no esté ocupado
