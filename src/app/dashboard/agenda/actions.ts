@@ -227,11 +227,16 @@ export async function actualizarEstadoCita(
       citaId,
     };
 
-    // Delete Google Calendar event on cancel
-    if ((estado === "cancelada" || estado === "no_show") && cita.googleEventId) {
+    // Update Google Calendar event color on status change
+    if (cita.googleEventId) {
       try {
-        const { deleteCalendarEvent } = await import("@/lib/google-calendar");
-        await deleteCalendarEvent(cita.tenantId, cita.googleEventId);
+        if (estado === "cancelada" || estado === "no_show") {
+          const { deleteCalendarEvent } = await import("@/lib/google-calendar");
+          await deleteCalendarEvent(cita.tenantId, cita.googleEventId);
+        } else {
+          const { updateCalendarEvent } = await import("@/lib/google-calendar");
+          await updateCalendarEvent(cita.tenantId, cita.googleEventId, { estado });
+        }
       } catch (gcalErr) {
         console.error("[GCal] Sync error on status change:", gcalErr);
       }
@@ -392,6 +397,16 @@ export async function confirmarAnticipo(citaId: string, metodo: string) {
     });
   } catch (waErr) {
     console.error("[WhatsApp] Anticipo confirmado send failed:", waErr);
+  }
+
+  // Update Google Calendar color to green (confirmada)
+  if (cita.googleEventId) {
+    try {
+      const { updateCalendarEvent } = await import("@/lib/google-calendar");
+      await updateCalendarEvent(cita.tenantId, cita.googleEventId, { estado: "confirmada" });
+    } catch (gcalErr) {
+      console.error("[GCal] Color update on anticipo confirmed:", gcalErr);
+    }
   }
 
   revalidatePath("/dashboard/agenda");

@@ -156,6 +156,7 @@ export async function createCalendarEvent(
           dateTime: cita.fechaHoraFin.toISOString(),
           timeZone: "America/Mexico_City",
         },
+        colorId: "5", // Banana (amarillo) — pendiente anticipo
         reminders: {
           useDefault: false,
           overrides: [{ method: "popup", minutes: 30 }],
@@ -167,6 +168,77 @@ export async function createCalendarEvent(
   } catch (error) {
     console.error("[GCal] Error creating event:", error);
     return null;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Update Calendar Event (color, title, time)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Google Calendar color IDs:
+// 1=Lavender 2=Sage 3=Grape 4=Flamingo 5=Banana
+// 6=Tangerine 7=Peacock 8=Graphite 9=Blueberry 10=Basil 11=Tomato
+const ESTADO_COLOR: Record<string, string> = {
+  pendiente_anticipo: "5",  // Banana (amarillo) — pendiente
+  agendada:           "7",  // Peacock (azul) — agendada
+  confirmada:         "10", // Basil (verde) — confirmada
+  en_curso:           "9",  // Blueberry (azul oscuro) — en curso
+  completada:         "2",  // Sage (verde suave) — completada
+  cancelada:          "11", // Tomato (rojo) — cancelada
+  no_show:            "8",  // Graphite (gris) — no show
+};
+
+export async function updateCalendarEvent(
+  tenantId: string,
+  googleEventId: string,
+  updates: {
+    estado?: string;
+    fechaHoraInicio?: Date;
+    fechaHoraFin?: Date;
+    summary?: string;
+  },
+): Promise<void> {
+  try {
+    const auth = await getAuthenticatedClient(tenantId);
+    if (!auth) return;
+
+    const calendar = google.calendar({ version: "v3", auth });
+
+    const token = await prisma.googleCalendarToken.findUnique({
+      where: { tenantId },
+      select: { calendarId: true },
+    });
+
+    const calendarId = token?.calendarId ?? "primary";
+
+    const requestBody: Record<string, unknown> = {};
+
+    if (updates.estado && ESTADO_COLOR[updates.estado]) {
+      requestBody.colorId = ESTADO_COLOR[updates.estado];
+    }
+
+    if (updates.summary) {
+      requestBody.summary = updates.summary;
+    }
+
+    if (updates.fechaHoraInicio && updates.fechaHoraFin) {
+      requestBody.start = {
+        dateTime: updates.fechaHoraInicio.toISOString(),
+        timeZone: "America/Mexico_City",
+      };
+      requestBody.end = {
+        dateTime: updates.fechaHoraFin.toISOString(),
+        timeZone: "America/Mexico_City",
+      };
+    }
+
+    await calendar.events.patch({
+      calendarId,
+      eventId: googleEventId,
+      requestBody,
+    });
+  } catch (error) {
+    console.error("[GCal] Error updating event:", error);
   }
 }
 

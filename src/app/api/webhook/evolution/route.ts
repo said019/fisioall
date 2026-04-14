@@ -147,6 +147,16 @@ async function handlePatientResponse(phone: string, text: string, pushName?: str
       ].join("\n"),
     );
 
+    // Update Google Calendar color to green (confirmada)
+    if (cita.googleEventId) {
+      try {
+        const { updateCalendarEvent } = await import("@/lib/google-calendar");
+        await updateCalendarEvent(tenant.id, cita.googleEventId, { estado: "confirmada" });
+      } catch (gcalErr) {
+        console.error("[GCal] Color update on confirm:", gcalErr);
+      }
+    }
+
     console.log(`[Webhook] Cita ${cita.id} confirmada por paciente vía WhatsApp`);
     return;
   }
