@@ -23,8 +23,12 @@ import {
   Receipt,
   ExternalLink,
   Clock,
+  XCircle,
 } from "lucide-react";
 import Link from "next/link";
+import { useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { confirmarAnticipo, rechazarComprobante } from "./agenda/actions";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TIPOS
@@ -204,6 +208,24 @@ export interface DashboardData {
 }
 
 export default function DashboardClient({ data }: { data?: DashboardData }) {
+  const [anticipoPending, startAnticipoTransition] = useTransition();
+  const router = useRouter();
+
+  const handleValidar = (citaId: string) => {
+    startAnticipoTransition(async () => {
+      await confirmarAnticipo(citaId, "transferencia");
+      router.refresh();
+    });
+  };
+
+  const handleRechazar = (citaId: string) => {
+    const motivo = window.prompt("Motivo del rechazo (opcional):") ?? undefined;
+    startAnticipoTransition(async () => {
+      await rechazarComprobante(citaId, motivo || undefined);
+      router.refresh();
+    });
+  };
+
   return (
     <div className="flex flex-col gap-5 p-4 md:p-6 bg-[#f0f4f7] min-h-full">
 
@@ -322,39 +344,64 @@ export default function DashboardClient({ data }: { data?: DashboardData }) {
             </Badge>
           </CardHeader>
           <CardContent className="space-y-2">
-            {data.anticiposPendientes.map((a) => (
-              <div
-                key={a.id}
-                className="flex items-center gap-3 p-3 rounded-xl bg-white border border-[#e89b3f]/20 hover:border-[#e89b3f]/40 transition-all duration-200"
-              >
-                <div className="h-9 w-9 rounded-lg bg-[#e89b3f]/10 flex items-center justify-center shrink-0">
-                  <CreditCard className="h-4 w-4 text-[#e89b3f]" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-[#1e2d3a] truncate">{a.paciente}</p>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    {a.cita && (
-                      <span className="text-[10px] text-[#1e2d3a]/50 flex items-center gap-0.5">
-                        <Clock className="h-2.5 w-2.5" />
-                        {a.cita.fecha} · {a.cita.hora} · {a.cita.tipoSesion}
-                      </span>
-                    )}
+            {data.anticiposPendientes.map((a) => {
+              const canValidate = a.cita?.estado === "pendiente_anticipo" && a.cita?.id;
+              const hasValidUrl = !!a.comprobanteUrl && !a.comprobanteUrl.startsWith("/uploads/");
+              return (
+                <div
+                  key={a.id}
+                  className="flex flex-wrap items-center gap-3 p-3 rounded-xl bg-white border border-[#e89b3f]/20 hover:border-[#e89b3f]/40 transition-all duration-200"
+                >
+                  <div className="h-9 w-9 rounded-lg bg-[#e89b3f]/10 flex items-center justify-center shrink-0">
+                    <CreditCard className="h-4 w-4 text-[#e89b3f]" />
                   </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-[#1e2d3a] truncate">{a.paciente}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      {a.cita && (
+                        <span className="text-[10px] text-[#1e2d3a]/50 flex items-center gap-0.5">
+                          <Clock className="h-2.5 w-2.5" />
+                          {a.cita.fecha} · {a.cita.hora} · {a.cita.tipoSesion}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-sm font-bold text-[#e89b3f] shrink-0">${a.monto}</p>
+                  {hasValidUrl && (
+                    <a
+                      href={a.comprobanteUrl!}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="shrink-0 h-8 w-8 rounded-lg bg-[#4a7fa5]/10 flex items-center justify-center hover:bg-[#4a7fa5]/20 transition-colors"
+                      title="Ver comprobante"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5 text-[#4a7fa5]" />
+                    </a>
+                  )}
+                  {canValidate && (
+                    <div className="flex gap-1.5 shrink-0">
+                      <Button
+                        onClick={() => handleValidar(a.cita!.id)}
+                        disabled={anticipoPending}
+                        className="h-8 bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white cursor-pointer text-xs px-2.5"
+                      >
+                        <CheckCircle2 className="mr-1 h-3 w-3" />
+                        Validar
+                      </Button>
+                      <Button
+                        onClick={() => handleRechazar(a.cita!.id)}
+                        disabled={anticipoPending}
+                        variant="outline"
+                        className="h-8 border-[#d9534f]/30 text-[#d9534f] hover:bg-[#d9534f]/5 cursor-pointer text-xs px-2.5"
+                      >
+                        <XCircle className="mr-1 h-3 w-3" />
+                        Rechazar
+                      </Button>
+                    </div>
+                  )}
                 </div>
-                <p className="text-sm font-bold text-[#e89b3f] shrink-0">${a.monto}</p>
-                {a.comprobanteUrl && !a.comprobanteUrl.startsWith("/uploads/") && (
-                  <a
-                    href={a.comprobanteUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="shrink-0 h-8 w-8 rounded-lg bg-[#4a7fa5]/10 flex items-center justify-center hover:bg-[#4a7fa5]/20 transition-colors"
-                    title="Ver comprobante"
-                  >
-                    <ExternalLink className="h-3.5 w-3.5 text-[#4a7fa5]" />
-                  </a>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </CardContent>
         </Card>
       )}
