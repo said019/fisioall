@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
-import { randomUUID } from "crypto";
+import sharp from "sharp";
+import { prisma } from "@/lib/prisma";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "application/pdf"];
-const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+const MAX_SIZE = 5 * 1024 * 1024; // 5 MB input
+const IMAGE_MAX_DIM = 1600;
+const IMAGE_QUALITY = 75;
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,16 +30,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-    const filename = `${randomUUID()}.${ext}`;
+    const input = Buffer.from(await file.arrayBuffer());
 
-    const dir = join(process.cwd(), "public", "uploads", "comprobantes");
-    await mkdir(dir, { recursive: true });
+    let storedBuffer: Buffer;
+    let storedMime: string;
 
-    const bytes = await file.arrayBuffer();
-    await writeFile(join(dir, filename), Buffer.from(bytes));
+    if (file.type === "application/pdf") {
+      storedBuffer = input;
+      storedMime = "application/pdf";
+    } else {
+      // Compress to JPEG, cap dimension, strip metadata
+      storedBuffer = await sharp(input)
+        .rotate()
+        .resize({ width: IMAGE_MAX_DIM, height: IMAGE_MAX_DIM, fit: "inside", withoutEnlargement: true })
+        .jpeg({ quality: IMAGE_QUALITY, mozjpeg: true })
+        .toBuffer();
+      storedMime = "image/jpeg";
+    }
 
-    const url = `/uploads/comprobantes/${filename}`;
+    const row = await prisma.comprobanteArchivo.create({
+      data: {
+        mimeType: storedMime,
+        data: storedBuffer,
+        sizeBytes: storedBuffer.length,
+      },
+      select: { id: true },
+    });
+
+    const url = `/api/comprobantes/${row.id}`;
     return NextResponse.json({ url });
   } catch (error) {
     console.error("Upload error:", error);

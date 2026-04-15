@@ -585,6 +585,16 @@ model Pago {
   @@map("pagos")
 }
 
+model ComprobanteArchivo {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mimeType  String   @map("mime_type") @db.VarChar(80)
+  data      Bytes
+  sizeBytes Int      @map("size_bytes")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@map("comprobantes_archivos")
+}
+
 model Ejercicio {
   id                  String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenantId            String?         @map("tenant_id") @db.Uuid
