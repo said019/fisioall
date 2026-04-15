@@ -342,7 +342,7 @@ export default function DashboardClient({ data }: { data?: DashboardData }) {
                   </div>
                 </div>
                 <p className="text-sm font-bold text-[#e89b3f] shrink-0">${a.monto}</p>
-                {a.comprobanteUrl && (
+                {a.comprobanteUrl && !a.comprobanteUrl.startsWith("/uploads/") && (
                   <a
                     href={a.comprobanteUrl}
                     target="_blank"

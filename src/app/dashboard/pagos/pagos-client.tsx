@@ -364,7 +364,7 @@ export default function PagosClient({ initialPagos }: { initialPagos?: Pago[] })
                     ))}
                   </div>
                 </div>
-                {modalDetalle.comprobanteUrl && (
+                {modalDetalle.comprobanteUrl && !modalDetalle.comprobanteUrl.startsWith("/uploads/") && (
                   <div className="space-y-2">
                     <p className="text-xs font-semibold text-[#1e2d3a]/50">Comprobante</p>
                     <a
@@ -385,7 +385,7 @@ export default function PagosClient({ initialPagos }: { initialPagos?: Pago[] })
 
                 <DialogFooter className="gap-2 mt-4">
                   <Button variant="outline" onClick={() => setModalDetalle(null)} className="cursor-pointer">Cerrar</Button>
-                  {modalDetalle.comprobanteUrl ? (
+                  {modalDetalle.comprobanteUrl && !modalDetalle.comprobanteUrl.startsWith("/uploads/") ? (
                     <a href={modalDetalle.comprobanteUrl} target="_blank" rel="noopener noreferrer">
                       <Button variant="outline" className="cursor-pointer text-[#1e2d3a]">
                         <Eye className="h-4 w-4 mr-1.5" /> Ver Comprobante
