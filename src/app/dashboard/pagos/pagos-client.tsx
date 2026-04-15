@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { confirmarAnticipo, rechazarComprobante } from "@/app/dashboard/agenda/actions";
 import {
   Wallet,
   Search,
@@ -20,6 +22,7 @@ import {
   MoreHorizontal,
   RefreshCcw,
   Eye,
+  XCircle,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -77,6 +80,8 @@ interface Pago {
   fechaPago: string;
   comprobanteUrl?: string | null;
   membresiaNombre?: string;
+  citaId?: string | null;
+  citaEstado?: string | null;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -122,6 +127,25 @@ export default function PagosClient({ initialPagos }: { initialPagos?: Pago[] })
   const [filtroMetodo, setFiltroMetodo] = useState<string>("todos");
   const [modalRegistrar, setModalRegistrar] = useState(false);
   const [modalDetalle, setModalDetalle] = useState<Pago | null>(null);
+  const [anticipoPending, startAnticipoTransition] = useTransition();
+  const router = useRouter();
+
+  const handleValidarAnticipo = (citaId: string) => {
+    startAnticipoTransition(async () => {
+      await confirmarAnticipo(citaId, "transferencia");
+      setModalDetalle(null);
+      router.refresh();
+    });
+  };
+
+  const handleRechazarAnticipo = (citaId: string) => {
+    const motivo = window.prompt("Motivo del rechazo (opcional):") ?? undefined;
+    startAnticipoTransition(async () => {
+      await rechazarComprobante(citaId, motivo || undefined);
+      setModalDetalle(null);
+      router.refresh();
+    });
+  };
 
   // Filtrado
   const pagosFiltrados = pagosData.filter((p) => {
@@ -383,7 +407,7 @@ export default function PagosClient({ initialPagos }: { initialPagos?: Pago[] })
                   </div>
                 )}
 
-                <DialogFooter className="gap-2 mt-4">
+                <DialogFooter className="gap-2 mt-4 flex-wrap">
                   <Button variant="outline" onClick={() => setModalDetalle(null)} className="cursor-pointer">Cerrar</Button>
                   {modalDetalle.comprobanteUrl && !modalDetalle.comprobanteUrl.startsWith("/uploads/") ? (
                     <a href={modalDetalle.comprobanteUrl} target="_blank" rel="noopener noreferrer">
@@ -395,6 +419,25 @@ export default function PagosClient({ initialPagos }: { initialPagos?: Pago[] })
                     <Button variant="outline" className="cursor-pointer text-[#1e2d3a]">
                       <Download className="h-4 w-4 mr-1.5" /> Recibo
                     </Button>
+                  )}
+                  {modalDetalle.citaId && modalDetalle.citaEstado === "pendiente_anticipo" && (
+                    <>
+                      <Button
+                        onClick={() => handleRechazarAnticipo(modalDetalle.citaId!)}
+                        disabled={anticipoPending}
+                        variant="outline"
+                        className="border-[#d9534f]/30 text-[#d9534f] hover:bg-[#d9534f]/5 cursor-pointer"
+                      >
+                        <XCircle className="h-4 w-4 mr-1.5" /> Rechazar
+                      </Button>
+                      <Button
+                        onClick={() => handleValidarAnticipo(modalDetalle.citaId!)}
+                        disabled={anticipoPending}
+                        className="bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white cursor-pointer"
+                      >
+                        <CheckCircle2 className="h-4 w-4 mr-1.5" /> Validar
+                      </Button>
+                    </>
                   )}
                 </DialogFooter>
               </>

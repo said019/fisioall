@@ -43,6 +43,9 @@ export async function getPagos(periodo?: string) {
       registrador: {
         select: { nombre: true, apellido: true },
       },
+      cita: {
+        select: { id: true, estado: true },
+      },
     },
     orderBy: { fechaPago: "desc" },
   });
@@ -63,6 +66,8 @@ export async function getPagos(periodo?: string) {
     fechaPago: p.fechaPago?.toISOString() ?? null,
     comprobanteUrl: p.comprobanteUrl ?? null,
     membresiaNombre: p.membresia?.paquete.nombre ?? null,
+    citaId: p.cita?.id ?? null,
+    citaEstado: p.cita?.estado ?? null,
   }));
 }
 
