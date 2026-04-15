@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition, useEffect } from "react";
 import {
   TrendingUp,
   Users,
@@ -30,45 +30,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-
-// ─────────────────────────────────────────────────────────────────────────────
-// MOCK DATA
-// ─────────────────────────────────────────────────────────────────────────────
-const INGRESOS_MENSUALES = [
-  { mes: "Sep", valor: 8200 },
-  { mes: "Oct", valor: 9400 },
-  { mes: "Nov", valor: 7800 },
-  { mes: "Dic", valor: 11200 },
-  { mes: "Ene", valor: 10500 },
-  { mes: "Feb", valor: 12234 },
-];
-const MAX_INGRESO = Math.max(...INGRESOS_MENSUALES.map((i) => i.valor));
-
-const DOLOR_PACIENTES = [
-  { nombre: "Ana Flores",      color: "#4a7fa5", puntos: [8, 7, 6, 5, 5, 4, 3] },
-  { nombre: "Carlos Mendoza",  color: "#8B5CF6", puntos: [6, 6, 5, 5, 4, 4, 3] },
-  { nombre: "Patricia Morales", color: "#F59E0B", puntos: [9, 8, 7, 7, 6, 5, 5] },
-];
-
-const TOP_PACIENTES = [
-  { nombre: "Ana Flores",       iniciales: "AF", sesiones: 18, ingresos: 8100,  nps: 9.2, ultimaVisita: "22 Feb 2026" },
-  { nombre: "Carlos Mendoza",   iniciales: "CM", sesiones: 15, ingresos: 6750,  nps: 8.8, ultimaVisita: "23 Feb 2026" },
-  { nombre: "Patricia Morales", iniciales: "PM", sesiones: 14, ingresos: 6300,  nps: 9.5, ultimaVisita: "21 Feb 2026" },
-  { nombre: "Roberto Sánchez",  iniciales: "RS", sesiones: 12, ingresos: 5400,  nps: 8.1, ultimaVisita: "20 Feb 2026" },
-  { nombre: "Daniela Martínez", iniciales: "DM", sesiones: 11, ingresos: 4950,  nps: 9.0, ultimaVisita: "24 Feb 2026" },
-];
-
-const DISTRIBUCION_PAGOS = [
-  { metodo: "Transferencia",   porcentaje: 40, monto: 4894, color: "bg-[#4a7fa5]" },
-  { metodo: "Efectivo",        porcentaje: 35, monto: 4282, color: "bg-emerald-500" },
-  { metodo: "Tarjeta débito",  porcentaje: 15, monto: 1835, color: "bg-violet-500" },
-  { metodo: "Tarjeta crédito", porcentaje: 10, monto: 1223, color: "bg-orange-500" },
-];
+import { getReportesData, type ReportesData, type Periodo } from "./actions";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SVG DOLOR CHART
 // ─────────────────────────────────────────────────────────────────────────────
-function DolorChart() {
+function DolorChart({ data }: { data: ReportesData["dolorPacientes"] }) {
   const W = 360;
   const H = 180;
   const padL = 30;
@@ -78,24 +45,31 @@ function DolorChart() {
   const chartW = W - padL - padR;
   const chartH = H - padT - padB;
 
-  const toX = (i: number, total: number) => padL + (i / (total - 1)) * chartW;
+  const toX = (i: number, total: number) => (total <= 1 ? padL : padL + (i / (total - 1)) * chartW);
   const toY = (v: number) => padT + chartH - (v / 10) * chartH;
+
+  if (!data.length) {
+    return (
+      <div className="h-44 flex items-center justify-center text-xs text-[#1e2d3a]/40">
+        Sin registros de dolor en este período
+      </div>
+    );
+  }
+
+  const maxPuntos = Math.max(...data.map((p) => p.puntos.length), 1);
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto">
-      {/* Grid lines */}
       {[0, 2, 4, 6, 8, 10].map((v) => (
         <g key={v}>
           <line x1={padL} y1={toY(v)} x2={W - padR} y2={toY(v)} stroke="#A5F3FC" strokeWidth="0.5" />
           <text x={padL - 6} y={toY(v) + 3} textAnchor="end" className="text-[8px] fill-[#1e2d3a]/30">{v}</text>
         </g>
       ))}
-      {/* X labels */}
-      {[1, 2, 3, 4, 5, 6, 7].map((s, i) => (
-        <text key={s} x={toX(i, 7)} y={H - 5} textAnchor="middle" className="text-[8px] fill-[#1e2d3a]/30">S{s}</text>
+      {Array.from({ length: maxPuntos }).map((_, i) => (
+        <text key={i} x={toX(i, maxPuntos)} y={H - 5} textAnchor="middle" className="text-[8px] fill-[#1e2d3a]/30">S{i + 1}</text>
       ))}
-      {/* Lines */}
-      {DOLOR_PACIENTES.map((p) => {
+      {data.map((p) => {
         const points = p.puntos.map((v, i) => `${toX(i, p.puntos.length)},${toY(v)}`).join(" ");
         return (
           <g key={p.nombre}>
@@ -113,8 +87,27 @@ function DolorChart() {
 // ─────────────────────────────────────────────────────────────────────────────
 // PAGE
 // ─────────────────────────────────────────────────────────────────────────────
-export default function ReportesClient() {
-  const [periodo, setPeriodo] = useState("este_mes");
+export default function ReportesClient({ initialData }: { initialData: ReportesData }) {
+  const [periodo, setPeriodo] = useState<Periodo>("este_mes");
+  const [data, setData] = useState<ReportesData>(initialData);
+  const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    if (periodo === "este_mes") return;
+    startTransition(async () => {
+      const fresh = await getReportesData(periodo);
+      setData(fresh);
+    });
+  }, [periodo]);
+
+  const maxIngreso = Math.max(...data.ingresosMensuales.map((i) => i.valor), 1);
+  const porcentajeSesiones =
+    data.kpis.sesionesTotales > 0
+      ? Math.round((data.kpis.sesionesCompletadas / data.kpis.sesionesTotales) * 100)
+      : 0;
+
+  const formatDelta = (d: number | null, suffix = "%") =>
+    d == null ? "—" : `${d >= 0 ? "+" : ""}${d}${suffix}`;
 
   return (
     <div className="flex flex-col gap-5 p-4 md:p-6 bg-[#f0f4f7] min-h-full">
@@ -123,10 +116,13 @@ export default function ReportesClient() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-[#1e2d3a]">Reportes y Analytics</h1>
-          <p className="text-xs text-[#1e2d3a]/50 mt-0.5">Datos de Febrero 2026</p>
+          <p className="text-xs text-[#1e2d3a]/50 mt-0.5 capitalize">
+            {data.periodoLabel}
+            {isPending && <span className="ml-2 text-[#4a7fa5]">actualizando…</span>}
+          </p>
         </div>
         <div className="flex items-center gap-2">
-          <Select value={periodo} onValueChange={setPeriodo}>
+          <Select value={periodo} onValueChange={(v) => setPeriodo(v as Periodo)}>
             <SelectTrigger className="w-40 border-[#a8cfe0] text-sm bg-white">
               <SelectValue />
             </SelectTrigger>
@@ -156,9 +152,13 @@ export default function ReportesClient() {
               <div className="h-9 w-9 rounded-xl bg-emerald-50 flex items-center justify-center">
                 <TrendingUp className="h-4.5 w-4.5 text-emerald-500" />
               </div>
-              <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-600 border-emerald-200">+19%</Badge>
+              <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-600 border-emerald-200">
+                {formatDelta(data.kpis.ingresosDelta)}
+              </Badge>
             </div>
-            <p className="text-2xl font-bold text-[#1e2d3a]">$12,234</p>
+            <p className="text-2xl font-bold text-[#1e2d3a]">
+              ${data.kpis.ingresos.toLocaleString("es-MX")}
+            </p>
             <p className="text-[10px] text-[#1e2d3a]/50 mt-0.5">Ingresos Totales</p>
           </CardContent>
         </Card>
@@ -169,9 +169,11 @@ export default function ReportesClient() {
               <div className="h-9 w-9 rounded-xl bg-[#e4ecf2] flex items-center justify-center">
                 <Users className="h-4.5 w-4.5 text-[#4a7fa5]" />
               </div>
-              <Badge variant="outline" className="text-[10px] bg-[#e4ecf2] text-cyan-600 border-[#a8cfe0]">+12%</Badge>
+              <Badge variant="outline" className="text-[10px] bg-[#e4ecf2] text-cyan-600 border-[#a8cfe0]">
+                {formatDelta(data.kpis.pacientesDelta)}
+              </Badge>
             </div>
-            <p className="text-2xl font-bold text-[#1e2d3a]">78</p>
+            <p className="text-2xl font-bold text-[#1e2d3a]">{data.kpis.pacientesAtendidos}</p>
             <p className="text-[10px] text-[#1e2d3a]/50 mt-0.5">Pacientes Atendidos</p>
           </CardContent>
         </Card>
@@ -182,9 +184,14 @@ export default function ReportesClient() {
               <div className="h-9 w-9 rounded-xl bg-emerald-50 flex items-center justify-center">
                 <Star className="h-4.5 w-4.5 text-emerald-500" />
               </div>
-              <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-600 border-emerald-200">+0.3</Badge>
+              <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-600 border-emerald-200">
+                {formatDelta(data.kpis.npsDelta, "")}
+              </Badge>
             </div>
-            <p className="text-2xl font-bold text-[#1e2d3a]">8.7<span className="text-sm font-normal text-[#1e2d3a]/40">/10</span></p>
+            <p className="text-2xl font-bold text-[#1e2d3a]">
+              {data.kpis.npsPromedio != null ? data.kpis.npsPromedio : "—"}
+              <span className="text-sm font-normal text-[#1e2d3a]/40">/10</span>
+            </p>
             <p className="text-[10px] text-[#1e2d3a]/50 mt-0.5">NPS Promedio</p>
           </CardContent>
         </Card>
@@ -195,9 +202,14 @@ export default function ReportesClient() {
               <div className="h-9 w-9 rounded-xl bg-[#e4ecf2] flex items-center justify-center">
                 <CheckCircle2 className="h-4.5 w-4.5 text-[#4a7fa5]" />
               </div>
-              <Badge variant="outline" className="text-[10px] bg-[#e4ecf2] text-cyan-600 border-[#a8cfe0]">95.4%</Badge>
+              <Badge variant="outline" className="text-[10px] bg-[#e4ecf2] text-cyan-600 border-[#a8cfe0]">
+                {porcentajeSesiones}%
+              </Badge>
             </div>
-            <p className="text-2xl font-bold text-[#1e2d3a]">124<span className="text-sm font-normal text-[#1e2d3a]/40">/130</span></p>
+            <p className="text-2xl font-bold text-[#1e2d3a]">
+              {data.kpis.sesionesCompletadas}
+              <span className="text-sm font-normal text-[#1e2d3a]/40">/{data.kpis.sesionesTotales}</span>
+            </p>
             <p className="text-[10px] text-[#1e2d3a]/50 mt-0.5">Sesiones Completadas</p>
           </CardContent>
         </Card>
@@ -216,11 +228,11 @@ export default function ReportesClient() {
         </CardHeader>
         <CardContent>
           <div className="flex items-end justify-between gap-3 h-44">
-            {INGRESOS_MENSUALES.map((m, i) => {
-              const pct = (m.valor / MAX_INGRESO) * 100;
-              const isActual = i === INGRESOS_MENSUALES.length - 1;
+            {data.ingresosMensuales.map((m, i) => {
+              const pct = (m.valor / maxIngreso) * 100;
+              const isActual = i === data.ingresosMensuales.length - 1;
               return (
-                <div key={m.mes} className="flex-1 flex flex-col items-center gap-1">
+                <div key={m.mes + i} className="flex-1 flex flex-col items-center gap-1">
                   <p className={`text-[10px] font-semibold ${isActual ? "text-[#4a7fa5]" : "text-[#1e2d3a]/40"}`}>
                     ${(m.valor / 1000).toFixed(1)}k
                   </p>
@@ -230,7 +242,7 @@ export default function ReportesClient() {
                     }`}
                     style={{ height: `${pct}%` }}
                   />
-                  <p className={`text-[10px] ${isActual ? "font-bold text-[#1e2d3a]" : "text-[#1e2d3a]/40"}`}>
+                  <p className={`text-[10px] capitalize ${isActual ? "font-bold text-[#1e2d3a]" : "text-[#1e2d3a]/40"}`}>
                     {m.mes}
                   </p>
                 </div>
@@ -248,16 +260,17 @@ export default function ReportesClient() {
             <CardDescription className="text-xs text-[#1e2d3a]/50">Progreso por sesión · Escala 0-10</CardDescription>
           </CardHeader>
           <CardContent>
-            <DolorChart />
-            {/* Leyenda */}
-            <div className="flex items-center gap-4 mt-3 justify-center">
-              {DOLOR_PACIENTES.map((p) => (
-                <div key={p.nombre} className="flex items-center gap-1.5">
-                  <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: p.color }} />
-                  <span className="text-[10px] text-[#1e2d3a]/60">{p.nombre}</span>
-                </div>
-              ))}
-            </div>
+            <DolorChart data={data.dolorPacientes} />
+            {data.dolorPacientes.length > 0 && (
+              <div className="flex items-center gap-4 mt-3 justify-center flex-wrap">
+                {data.dolorPacientes.map((p) => (
+                  <div key={p.nombre} className="flex items-center gap-1.5">
+                    <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: p.color }} />
+                    <span className="text-[10px] text-[#1e2d3a]/60">{p.nombre}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -268,19 +281,23 @@ export default function ReportesClient() {
             <CardDescription className="text-xs text-[#1e2d3a]/50">Por método de pago</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {DISTRIBUCION_PAGOS.map((d) => (
-              <div key={d.metodo} className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-[#1e2d3a]/70">{d.metodo}</span>
-                  <span className="text-xs font-bold text-[#1e2d3a]">
-                    ${d.monto.toLocaleString("es-MX")} <span className="text-[10px] font-normal text-[#1e2d3a]/40">({d.porcentaje}%)</span>
-                  </span>
+            {data.distribucionPagos.length === 0 ? (
+              <p className="text-xs text-[#1e2d3a]/40 text-center py-6">Sin pagos en este período</p>
+            ) : (
+              data.distribucionPagos.map((d) => (
+                <div key={d.metodo} className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-[#1e2d3a]/70">{d.metodo}</span>
+                    <span className="text-xs font-bold text-[#1e2d3a]">
+                      ${d.monto.toLocaleString("es-MX")} <span className="text-[10px] font-normal text-[#1e2d3a]/40">({d.porcentaje}%)</span>
+                    </span>
+                  </div>
+                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full ${d.color} transition-all duration-300`} style={{ width: `${d.porcentaje}%` }} />
+                  </div>
                 </div>
-                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div className={`h-full rounded-full ${d.color} transition-all duration-300`} style={{ width: `${d.porcentaje}%` }} />
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </CardContent>
         </Card>
       </div>
@@ -292,77 +309,46 @@ export default function ReportesClient() {
           <CardDescription className="text-xs text-[#1e2d3a]/50">Pacientes con más sesiones este período</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-[#c8dce8] bg-[#f0f4f7]/50">
-                <TableHead className="text-[10px] font-bold text-[#1e2d3a]/50 uppercase">Paciente</TableHead>
-                <TableHead className="text-[10px] font-bold text-[#1e2d3a]/50 uppercase">Sesiones</TableHead>
-                <TableHead className="text-[10px] font-bold text-[#1e2d3a]/50 uppercase hidden sm:table-cell">Ingresos</TableHead>
-                <TableHead className="text-[10px] font-bold text-[#1e2d3a]/50 uppercase hidden sm:table-cell">NPS</TableHead>
-                <TableHead className="text-[10px] font-bold text-[#1e2d3a]/50 uppercase text-right">Última Visita</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {TOP_PACIENTES.map((p, i) => (
-                <TableRow key={p.nombre} className="border-[#c8dce8] hover:bg-[#f0f4f7]/30 transition-colors">
-                  <TableCell className="py-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="h-6 w-6 rounded-full bg-[#4a7fa5]/10 flex items-center justify-center text-[9px] font-bold text-[#4a7fa5] shrink-0">
-                        {i + 1}
-                      </div>
-                      <Avatar className="h-7 w-7">
-                        <AvatarFallback className="bg-[#4a7fa5]/10 text-[#4a7fa5] text-[9px] font-bold">{p.iniciales}</AvatarFallback>
-                      </Avatar>
-                      <span className="text-xs font-semibold text-[#1e2d3a]">{p.nombre}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="py-3">
-                    <span className="text-xs font-bold text-[#1e2d3a]">{p.sesiones}</span>
-                  </TableCell>
-                  <TableCell className="py-3 hidden sm:table-cell">
-                    <span className="text-xs font-semibold text-[#1e2d3a]">${p.ingresos.toLocaleString("es-MX")}</span>
-                  </TableCell>
-                  <TableCell className="py-3 hidden sm:table-cell">
-                    <div className="flex items-center gap-1">
-                      <Star className="h-3 w-3 text-amber-400 fill-amber-400" />
-                      <span className="text-xs font-semibold text-[#1e2d3a]">{p.nps}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="py-3 text-right">
-                    <span className="text-xs text-[#1e2d3a]/50">{p.ultimaVisita}</span>
-                  </TableCell>
+          {data.topPacientes.length === 0 ? (
+            <p className="text-xs text-[#1e2d3a]/40 text-center py-8">Sin sesiones completadas en este período</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow className="border-[#c8dce8] bg-[#f0f4f7]/50">
+                  <TableHead className="text-[10px] font-bold text-[#1e2d3a]/50 uppercase">Paciente</TableHead>
+                  <TableHead className="text-[10px] font-bold text-[#1e2d3a]/50 uppercase">Sesiones</TableHead>
+                  <TableHead className="text-[10px] font-bold text-[#1e2d3a]/50 uppercase hidden sm:table-cell">Ingresos</TableHead>
+                  <TableHead className="text-[10px] font-bold text-[#1e2d3a]/50 uppercase text-right">Última Visita</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      {/* ── RETENCIÓN ── */}
-      <Card className="border-[#c8dce8] bg-white">
-        <CardContent className="p-5">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <p className="text-sm font-bold text-[#1e2d3a]">Tasa de Retención</p>
-              <p className="text-[10px] text-[#1e2d3a]/50 mt-0.5">
-                Pacientes que regresan después de completar su plan
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <p className="text-3xl font-bold text-emerald-600">87%</p>
-              <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-600 border-emerald-200">
-                <CheckCircle2 className="h-2.5 w-2.5 mr-0.5" />
-                ¡Excelente retención!
-              </Badge>
-            </div>
-          </div>
-          <Progress value={87} className="h-4 [&>div]:bg-emerald-500" />
-          <div className="flex justify-between text-[10px] text-[#1e2d3a]/30 mt-1.5">
-            <span>0%</span>
-            <span>50%</span>
-            <span>85% — Meta</span>
-            <span>100%</span>
-          </div>
+              </TableHeader>
+              <TableBody>
+                {data.topPacientes.map((p, i) => (
+                  <TableRow key={p.nombre + i} className="border-[#c8dce8] hover:bg-[#f0f4f7]/30 transition-colors">
+                    <TableCell className="py-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="h-6 w-6 rounded-full bg-[#4a7fa5]/10 flex items-center justify-center text-[9px] font-bold text-[#4a7fa5] shrink-0">
+                          {i + 1}
+                        </div>
+                        <Avatar className="h-7 w-7">
+                          <AvatarFallback className="bg-[#4a7fa5]/10 text-[#4a7fa5] text-[9px] font-bold">{p.iniciales}</AvatarFallback>
+                        </Avatar>
+                        <span className="text-xs font-semibold text-[#1e2d3a]">{p.nombre}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="py-3">
+                      <span className="text-xs font-bold text-[#1e2d3a]">{p.sesiones}</span>
+                    </TableCell>
+                    <TableCell className="py-3 hidden sm:table-cell">
+                      <span className="text-xs font-semibold text-[#1e2d3a]">${p.ingresos.toLocaleString("es-MX")}</span>
+                    </TableCell>
+                    <TableCell className="py-3 text-right">
+                      <span className="text-xs text-[#1e2d3a]/50">{p.ultimaVisita}</span>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>
