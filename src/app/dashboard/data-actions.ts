@@ -91,7 +91,7 @@ export async function getDashboardData() {
         tenantId,
         concepto: "Anticipo obligatorio",
         comprobanteUrl: { not: null },
-        cita: { estado: { in: ["confirmada", "agendada", "pendiente_anticipo"] } },
+        cita: { estado: "pendiente_anticipo" },
       },
       include: {
         paciente: { select: { nombre: true, apellido: true, telefono: true } },
