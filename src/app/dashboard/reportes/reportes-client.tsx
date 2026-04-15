@@ -8,6 +8,9 @@ import {
   CheckCircle2,
   Download,
   BarChart3,
+  Receipt,
+  CreditCard,
+  Wallet,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -109,6 +112,76 @@ export default function ReportesClient({ initialData }: { initialData: ReportesD
   const formatDelta = (d: number | null, suffix = "%") =>
     d == null ? "—" : `${d >= 0 ? "+" : ""}${d}${suffix}`;
 
+  const formatFechaCorta = (iso: string | null) => {
+    if (!iso) return "—";
+    return new Date(iso).toLocaleDateString("es-MX", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  const exportarCSV = () => {
+    const headers = [
+      "Fecha pago",
+      "Paciente",
+      "Teléfono",
+      "Concepto",
+      "Monto",
+      "Método",
+      "Estado",
+      "Referencia",
+      "Cita",
+      "Tipo sesión",
+      "Registrado por",
+    ];
+    const escape = (v: string) => `"${String(v).replace(/"/g, '""')}"`;
+    const rows = data.desgloseIngresos.map((r) =>
+      [
+        formatFechaCorta(r.fechaPago),
+        r.paciente,
+        r.telefono,
+        r.concepto,
+        r.monto.toFixed(2),
+        r.metodo,
+        r.estado,
+        r.referencia,
+        formatFechaCorta(r.citaFecha),
+        r.tipoSesion,
+        r.registradoPor,
+      ]
+        .map(escape)
+        .join(",")
+    );
+    const totalRow = [
+      "",
+      "",
+      "",
+      "TOTAL",
+      data.desgloseIngresos
+        .filter((r) => r.estado === "Pagado")
+        .reduce((s, r) => s + r.monto, 0)
+        .toFixed(2),
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+    ]
+      .map(escape)
+      .join(",");
+    const csv = "\uFEFF" + [headers.map(escape).join(","), ...rows, totalRow].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    const safeLabel = data.periodoLabel.replace(/\s+/g, "_");
+    a.download = `reporte_ingresos_${safeLabel}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="flex flex-col gap-5 p-4 md:p-6 bg-[#f0f4f7] min-h-full">
 
@@ -134,11 +207,13 @@ export default function ReportesClient({ initialData }: { initialData: ReportesD
             </SelectContent>
           </Select>
           <Button
+            onClick={exportarCSV}
+            disabled={data.desgloseIngresos.length === 0}
             variant="outline"
             className="cursor-pointer border-[#a8cfe0] text-[#1e2d3a] hover:bg-[#e4ecf2] transition-all duration-200 text-sm gap-1.5"
           >
             <Download className="h-4 w-4" />
-            Exportar PDF
+            Exportar Excel
           </Button>
         </div>
       </div>
@@ -348,6 +423,140 @@ export default function ReportesClient({ initialData }: { initialData: ReportesD
                 ))}
               </TableBody>
             </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ── RESUMEN ANTICIPOS ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Card className="border-[#c8dce8] bg-white">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="h-9 w-9 rounded-xl bg-emerald-50 flex items-center justify-center">
+                <CheckCircle2 className="h-4.5 w-4.5 text-emerald-500" />
+              </div>
+              <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-600 border-emerald-200">
+                {data.anticiposResumen.pagadosCount}
+              </Badge>
+            </div>
+            <p className="text-xl font-bold text-[#1e2d3a]">
+              ${data.anticiposResumen.pagadosMonto.toLocaleString("es-MX")}
+            </p>
+            <p className="text-[10px] text-[#1e2d3a]/50 mt-0.5">Anticipos validados</p>
+          </CardContent>
+        </Card>
+        <Card className="border-[#c8dce8] bg-white">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="h-9 w-9 rounded-xl bg-amber-50 flex items-center justify-center">
+                <CreditCard className="h-4.5 w-4.5 text-amber-500" />
+              </div>
+              <Badge variant="outline" className="text-[10px] bg-amber-50 text-amber-600 border-amber-200">
+                {data.anticiposResumen.pendientesCount}
+              </Badge>
+            </div>
+            <p className="text-xl font-bold text-[#1e2d3a]">
+              ${data.anticiposResumen.pendientesMonto.toLocaleString("es-MX")}
+            </p>
+            <p className="text-[10px] text-[#1e2d3a]/50 mt-0.5">Anticipos pendientes</p>
+          </CardContent>
+        </Card>
+        <Card className="border-[#c8dce8] bg-white">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="h-9 w-9 rounded-xl bg-[#4a7fa5]/10 flex items-center justify-center">
+                <Wallet className="h-4.5 w-4.5 text-[#4a7fa5]" />
+              </div>
+              <Badge variant="outline" className="text-[10px] bg-[#4a7fa5]/10 text-[#4a7fa5] border-[#4a7fa5]/30">
+                {data.anticiposResumen.totalCount}
+              </Badge>
+            </div>
+            <p className="text-xl font-bold text-[#1e2d3a]">
+              ${data.anticiposResumen.totalMonto.toLocaleString("es-MX")}
+            </p>
+            <p className="text-[10px] text-[#1e2d3a]/50 mt-0.5">Total anticipos del período</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* ── DESGLOSE COMPLETO DE INGRESOS ── */}
+      <Card className="border-[#c8dce8] bg-white">
+        <CardHeader className="pb-3 flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="text-sm font-bold text-[#1e2d3a] flex items-center gap-2">
+              <Receipt className="h-4 w-4 text-[#4a7fa5]" />
+              Desglose de Ingresos
+            </CardTitle>
+            <CardDescription className="text-xs text-[#1e2d3a]/50">
+              {data.desgloseIngresos.length} movimiento{data.desgloseIngresos.length !== 1 ? "s" : ""} en el período — descarga en Excel
+            </CardDescription>
+          </div>
+          <Button
+            onClick={exportarCSV}
+            disabled={data.desgloseIngresos.length === 0}
+            variant="outline"
+            size="sm"
+            className="cursor-pointer border-[#a8cfe0] text-[#1e2d3a] hover:bg-[#e4ecf2] text-xs gap-1.5"
+          >
+            <Download className="h-3.5 w-3.5" />
+            Excel
+          </Button>
+        </CardHeader>
+        <CardContent className="p-0">
+          {data.desgloseIngresos.length === 0 ? (
+            <p className="text-xs text-[#1e2d3a]/40 text-center py-8">Sin pagos registrados en este período</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-[#c8dce8] bg-[#f0f4f7]/50">
+                    <TableHead className="text-[10px] font-bold text-[#1e2d3a]/50 uppercase">Fecha</TableHead>
+                    <TableHead className="text-[10px] font-bold text-[#1e2d3a]/50 uppercase">Paciente</TableHead>
+                    <TableHead className="text-[10px] font-bold text-[#1e2d3a]/50 uppercase hidden md:table-cell">Concepto</TableHead>
+                    <TableHead className="text-[10px] font-bold text-[#1e2d3a]/50 uppercase hidden sm:table-cell">Método</TableHead>
+                    <TableHead className="text-[10px] font-bold text-[#1e2d3a]/50 uppercase">Estado</TableHead>
+                    <TableHead className="text-[10px] font-bold text-[#1e2d3a]/50 uppercase text-right">Monto</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.desgloseIngresos.map((r) => (
+                    <TableRow key={r.id} className="border-[#c8dce8] hover:bg-[#f0f4f7]/30 transition-colors">
+                      <TableCell className="py-2.5 text-xs text-[#1e2d3a]/70 whitespace-nowrap">
+                        {formatFechaCorta(r.fechaPago)}
+                      </TableCell>
+                      <TableCell className="py-2.5 text-xs font-semibold text-[#1e2d3a]">
+                        {r.paciente}
+                      </TableCell>
+                      <TableCell className="py-2.5 text-xs text-[#1e2d3a]/70 hidden md:table-cell">
+                        {r.concepto}
+                      </TableCell>
+                      <TableCell className="py-2.5 text-xs text-[#1e2d3a]/70 hidden sm:table-cell whitespace-nowrap">
+                        {r.metodo}
+                      </TableCell>
+                      <TableCell className="py-2.5">
+                        <Badge
+                          variant="outline"
+                          className={`text-[10px] border-none ${
+                            r.estado === "Pagado"
+                              ? "bg-emerald-50 text-emerald-600"
+                              : r.estado === "Pendiente"
+                              ? "bg-amber-50 text-amber-600"
+                              : r.estado === "Reembolsado"
+                              ? "bg-red-50 text-red-600"
+                              : "bg-blue-50 text-blue-600"
+                          }`}
+                        >
+                          {r.estado}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="py-2.5 text-xs font-bold text-[#1e2d3a] text-right whitespace-nowrap">
+                        ${r.monto.toLocaleString("es-MX")}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>

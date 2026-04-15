@@ -68,6 +68,8 @@ export async function getReportesData(periodo: Periodo = "este_mes") {
     ingresosUltimos6,
     topPacientes,
     progresoDolor,
+    desglosePagos,
+    anticiposAgg,
   ] = await Promise.all([
     // Ingresos totales (pagos "pagado" en el periodo)
     prisma.pago.aggregate({
@@ -195,6 +197,39 @@ export async function getReportesData(periodo: Periodo = "este_mes") {
       orderBy: { fecha: "asc" },
       take: 30,
     }),
+
+    // Desglose de todos los pagos del periodo
+    prisma.pago.findMany({
+      where: {
+        tenantId,
+        fechaPago: { gte: desde, lt: hasta },
+      },
+      select: {
+        id: true,
+        monto: true,
+        metodo: true,
+        estado: true,
+        concepto: true,
+        fechaPago: true,
+        referenciaExterna: true,
+        paciente: { select: { nombre: true, apellido: true, telefono: true } },
+        registrador: { select: { nombre: true, apellido: true } },
+        cita: { select: { fechaHoraInicio: true, tipoSesion: true } },
+      },
+      orderBy: { fechaPago: "desc" },
+    }),
+
+    // Resumen de anticipos del periodo
+    prisma.pago.groupBy({
+      by: ["estado"],
+      where: {
+        tenantId,
+        concepto: { in: ["Anticipo obligatorio", "Anticipo de sesión"] },
+        fechaPago: { gte: desde, lt: hasta },
+      },
+      _sum: { monto: true },
+      _count: true,
+    }),
   ]);
 
   // Ingresos por mes (últimos 6)
@@ -319,6 +354,53 @@ export async function getReportesData(periodo: Periodo = "este_mes") {
   const npsPrev = npsPrevAgg._avg.npsScore;
   const npsDelta = npsAvg != null && npsPrev != null ? Number((npsAvg - npsPrev).toFixed(1)) : null;
 
+  // Desglose de pagos (serializado)
+  const METODO_DESGLOSE: Record<string, string> = {
+    efectivo: "Efectivo",
+    transferencia: "Transferencia",
+    tarjeta_debito: "Tarjeta débito",
+    tarjeta_credito: "Tarjeta crédito",
+    otro: "Otro",
+  };
+  const ESTADO_DESGLOSE: Record<string, string> = {
+    pagado: "Pagado",
+    pendiente: "Pendiente",
+    parcial: "Parcial",
+    reembolsado: "Reembolsado",
+  };
+  const desgloseIngresos = desglosePagos.map((p) => ({
+    id: p.id,
+    paciente: `${p.paciente.nombre} ${p.paciente.apellido}`,
+    telefono: p.paciente.telefono ?? "",
+    fechaPago: p.fechaPago?.toISOString() ?? null,
+    concepto: p.concepto,
+    monto: Number(p.monto),
+    metodo: METODO_DESGLOSE[p.metodo] ?? p.metodo,
+    estado: ESTADO_DESGLOSE[p.estado ?? "pagado"] ?? (p.estado ?? ""),
+    referencia: p.referenciaExterna ?? "",
+    citaFecha: p.cita?.fechaHoraInicio?.toISOString() ?? null,
+    tipoSesion: p.cita?.tipoSesion ?? "",
+    registradoPor: p.registrador
+      ? `${p.registrador.nombre} ${p.registrador.apellido}`
+      : "",
+  }));
+
+  // Resumen anticipos
+  let anticiposPagadosMonto = 0;
+  let anticiposPagadosCount = 0;
+  let anticiposPendientesMonto = 0;
+  let anticiposPendientesCount = 0;
+  for (const row of anticiposAgg) {
+    const monto = Number(row._sum.monto ?? 0);
+    if (row.estado === "pagado") {
+      anticiposPagadosMonto += monto;
+      anticiposPagadosCount += row._count;
+    } else {
+      anticiposPendientesMonto += monto;
+      anticiposPendientesCount += row._count;
+    }
+  }
+
   return {
     periodoLabel: label,
     kpis: {
@@ -335,6 +417,15 @@ export async function getReportesData(periodo: Periodo = "este_mes") {
     topPacientes: topPacientesResuelto,
     distribucionPagos,
     dolorPacientes,
+    desgloseIngresos,
+    anticiposResumen: {
+      pagadosMonto: anticiposPagadosMonto,
+      pagadosCount: anticiposPagadosCount,
+      pendientesMonto: anticiposPendientesMonto,
+      pendientesCount: anticiposPendientesCount,
+      totalCount: anticiposPagadosCount + anticiposPendientesCount,
+      totalMonto: anticiposPagadosMonto + anticiposPendientesMonto,
+    },
   };
 }
 
