@@ -62,9 +62,8 @@ export default function LoginPage() {
                                     id="email"
                                     name="email"
                                     type="email"
-                                    placeholder="doctor@clinica.com"
+                                    placeholder="user@mail.com"
                                     required
-                                    defaultValue="doctor@clinica.com"
                                     className="h-12 focus-visible:ring-primary"
                                     disabled={isPending}
                                 />
@@ -72,7 +71,7 @@ export default function LoginPage() {
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between">
                                     <Label htmlFor="password">Contraseña</Label>
-                                    <Link href="#" className="text-sm font-medium text-primary hover:underline underline-offset-4 cursor-pointer">
+                                    <Link href="/forgot-password" className="text-sm font-medium text-primary hover:underline underline-offset-4 cursor-pointer">
                                         ¿Olvidaste tu contraseña?
                                     </Link>
                                 </div>
@@ -81,7 +80,7 @@ export default function LoginPage() {
                                     name="password"
                                     type="password"
                                     required
-                                    defaultValue="password123"
+                                    placeholder="••••••••"
                                     className="h-12 focus-visible:ring-primary"
                                     disabled={isPending}
                                 />
