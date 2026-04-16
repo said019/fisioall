@@ -1,11 +1,8 @@
 import { runAnticipos } from "@/lib/cron-jobs";
 
-export async function GET(req: Request) {
-  const secret = req.headers.get("x-cron-secret");
-  if (secret !== process.env.CRON_SECRET) {
-    return new Response("Unauthorized", { status: 401 });
-  }
-
+// Endpoint público — la lógica es idempotente.
+// El cron real corre en process via src/lib/scheduler.ts.
+export async function GET() {
   const result = await runAnticipos();
   return Response.json(result);
 }
