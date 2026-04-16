@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { crearPaciente } from "./actions";
 import {
   Plus,
   Search,
@@ -33,13 +35,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 
@@ -387,29 +382,50 @@ export default function PacientesClient({ initialPacientes }: { initialPacientes
     email: "",
     telefono: "",
     edad: "",
-    ciudad: "",
     diagnostico: "",
     cie10: "",
-    sesionesTotal: "10",
   });
+  const [savePending, startSaveTransition] = useTransition();
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const router = useRouter();
 
   const handleFormChange = (field: string, value: string) => {
     setFormNuevo((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleGuardarPaciente = () => {
-    // Mock save — solo cierra el modal y resetea el form
-    setModalNuevoPaciente(false);
+  const resetForm = () => {
     setFormNuevo({
       nombre: "",
       apellido: "",
       email: "",
       telefono: "",
       edad: "",
-      ciudad: "",
       diagnostico: "",
       cie10: "",
-      sesionesTotal: "10",
+    });
+    setSaveError(null);
+  };
+
+  const handleGuardarPaciente = () => {
+    setSaveError(null);
+    const fd = new FormData();
+    fd.set("nombre", formNuevo.nombre.trim());
+    fd.set("apellido", formNuevo.apellido.trim());
+    fd.set("email", formNuevo.email.trim());
+    fd.set("telefono", formNuevo.telefono.trim());
+    fd.set("edad", formNuevo.edad || "0");
+    fd.set("diagnostico", formNuevo.diagnostico.trim() || "Sin diagnóstico");
+    fd.set("cie10", formNuevo.cie10.trim());
+
+    startSaveTransition(async () => {
+      const result = await crearPaciente(null, fd);
+      if (result?.error) {
+        setSaveError(result.error);
+        return;
+      }
+      setModalNuevoPaciente(false);
+      resetForm();
+      router.refresh();
     });
   };
 
@@ -483,35 +499,16 @@ export default function PacientesClient({ initialPacientes }: { initialPacientes
               </div>
             </div>
 
-            {/* Edad + Ciudad */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-[#1e2d3a]">Edad</Label>
-                <Input
-                  type="number"
-                  placeholder="34"
-                  value={formNuevo.edad}
-                  onChange={(e) => handleFormChange("edad", e.target.value)}
-                  className="border-[#a8cfe0] focus:border-[#4a7fa5] focus:ring-[#4a7fa5]/20"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-[#1e2d3a]">Ciudad</Label>
-                <Select value={formNuevo.ciudad} onValueChange={(v) => handleFormChange("ciudad", v)}>
-                  <SelectTrigger className="cursor-pointer border-[#a8cfe0] focus:border-[#4a7fa5] focus:ring-[#4a7fa5]/20">
-                    <SelectValue placeholder="Seleccionar" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="CDMX" className="cursor-pointer">CDMX</SelectItem>
-                    <SelectItem value="Guadalajara" className="cursor-pointer">Guadalajara</SelectItem>
-                    <SelectItem value="Monterrey" className="cursor-pointer">Monterrey</SelectItem>
-                    <SelectItem value="Puebla" className="cursor-pointer">Puebla</SelectItem>
-                    <SelectItem value="Querétaro" className="cursor-pointer">Querétaro</SelectItem>
-                    <SelectItem value="Mérida" className="cursor-pointer">Mérida</SelectItem>
-                    <SelectItem value="Otra" className="cursor-pointer">Otra</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            {/* Edad */}
+            <div className="w-1/2 space-y-1.5">
+              <Label className="text-xs font-semibold text-[#1e2d3a]">Edad</Label>
+              <Input
+                type="number"
+                placeholder="34"
+                value={formNuevo.edad}
+                onChange={(e) => handleFormChange("edad", e.target.value)}
+                className="border-[#a8cfe0] focus:border-[#4a7fa5] focus:ring-[#4a7fa5]/20"
+              />
             </div>
 
             {/* Diagnóstico + CIE-10 */}
@@ -536,17 +533,9 @@ export default function PacientesClient({ initialPacientes }: { initialPacientes
               </div>
             </div>
 
-            {/* Sesiones totales */}
-            <div className="w-1/3 space-y-1.5">
-              <Label className="text-xs font-semibold text-[#1e2d3a]">Sesiones autorizadas</Label>
-              <Input
-                type="number"
-                placeholder="10"
-                value={formNuevo.sesionesTotal}
-                onChange={(e) => handleFormChange("sesionesTotal", e.target.value)}
-                className="border-[#a8cfe0] focus:border-[#4a7fa5] focus:ring-[#4a7fa5]/20"
-              />
-            </div>
+            {saveError && (
+              <p className="text-xs text-[#d9534f] bg-[#d9534f]/5 border border-[#d9534f]/20 rounded-md px-3 py-2">{saveError}</p>
+            )}
           </div>
 
           <DialogFooter className="gap-2 sm:gap-0">
@@ -559,11 +548,11 @@ export default function PacientesClient({ initialPacientes }: { initialPacientes
             </Button>
             <Button
               onClick={handleGuardarPaciente}
-              disabled={!formNuevo.nombre.trim() || !formNuevo.apellido.trim()}
+              disabled={savePending || !formNuevo.nombre.trim() || !formNuevo.apellido.trim()}
               className="cursor-pointer bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white transition-all duration-200 disabled:opacity-50"
             >
               <Plus className="h-4 w-4 mr-1.5" />
-              Guardar Paciente
+              {savePending ? "Guardando..." : "Guardar Paciente"}
             </Button>
           </DialogFooter>
         </DialogContent>
