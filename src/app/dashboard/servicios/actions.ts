@@ -34,11 +34,13 @@ export async function getServicios() {
 export type ServicioRow = Awaited<ReturnType<typeof getServicios>>[number];
 
 // ─── FETCH SERVICIOS PÚBLICOS (sin auth) ─────────────────────────────────────
-export async function getServiciosPublicos(tenantSlug?: string) {
-  // Por ahora solo hay un tenant — buscar el primero activo
-  const tenant = tenantSlug
-    ? await prisma.tenant.findUnique({ where: { slug: tenantSlug }, select: { id: true } })
-    : await prisma.tenant.findFirst({ where: { activo: true }, select: { id: true } });
+const DEFAULT_TENANT_SLUG = "kaya-kalp";
+
+export async function getServiciosPublicos(tenantSlug: string = DEFAULT_TENANT_SLUG) {
+  const tenant = await prisma.tenant.findUnique({
+    where: { slug: tenantSlug },
+    select: { id: true },
+  });
 
   if (!tenant) return [];
 
