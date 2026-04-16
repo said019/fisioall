@@ -1022,6 +1022,22 @@ export default function AgendaClient({
                       </Select>
                     </div>
 
+                    {/* Añadir a calendario (.ics) */}
+                    <a
+                      href={`/api/calendar/cita/${citaSeleccionada.id}/ics`}
+                      download={`cita-${citaSeleccionada.id.slice(0, 8)}.ics`}
+                      className="block"
+                    >
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full border-[#a8cfe0] text-[#4a7fa5] hover:bg-[#e4ecf2] cursor-pointer text-xs h-9"
+                      >
+                        <CalendarDays className="mr-1.5 h-3.5 w-3.5" />
+                        Añadir a Apple/Google Calendar (.ics)
+                      </Button>
+                    </a>
+
                     <div className="flex gap-2 pt-1">
                       <Button
                         onClick={() => handleStatusChange(citaSeleccionada.id, "completada")}

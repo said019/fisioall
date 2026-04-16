@@ -21,6 +21,7 @@ import {
   FileText,
   Sparkles,
   Award,
+  Apple,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +33,7 @@ const navSections = [
     items: [
       { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard", exact: true },
       { href: "/dashboard/agenda", icon: CalendarDays, label: "Agenda", exact: false },
+      { href: "/dashboard/calendar-subscribe", icon: Apple, label: "Calendario Apple", exact: false },
     ],
   },
   {
@@ -207,6 +209,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     "/dashboard/encuestas": "Encuestas NPS",
     "/dashboard/notificaciones": "Notificaciones",
     "/dashboard/reportes": "Reportes y Analítica",
+    "/dashboard/calendar-subscribe": "Calendario Apple",
     "/dashboard/configuracion": "Configuración",
   };
 
