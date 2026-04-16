@@ -150,6 +150,7 @@ model Tenant {
   expedientesEspecializados ExpedienteEspecializado[]
   tarjetasLealtad       TarjetaLealtad[]
   googleCalendarToken   GoogleCalendarToken?
+  servicios             Servicio[]
 
   @@index([slug])
   @@map("tenants")
@@ -803,6 +804,34 @@ model CubiculoUsuario {
 
   @@unique([tenantId, usuarioId, tipoSesion])
   @@map("cubiculos_usuario")
+}
+
+// ── Catálogo de servicios ────────────────────────────────────────────────── //
+
+model Servicio {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String   @map("tenant_id") @db.Uuid
+  nombre          String   @db.VarChar(120)
+  descripcion     String?
+  categoria       String   @db.VarChar(40) // "fisioterapia" | "faciales" | "suelo_pelvico" | "corporales" | "epilacion"
+  categoriaLabel  String?  @map("categoria_label") @db.VarChar(60) // "Fisioterapia", "Faciales", etc.
+  categoriaColor  String?  @map("categoria_color") @db.VarChar(20) // "#4a7fa5"
+  especialidad    String?  @db.VarChar(60) // para filtrar fisios
+  duracion        Int      @default(45) // en minutos
+  precio          Decimal  @db.Decimal(10, 2)
+  precioDescuento Decimal? @map("precio_descuento") @db.Decimal(10, 2)
+  sesiones        Int?     // si es paquete
+  popular         Boolean  @default(false)
+  activo          Boolean  @default(true)
+  orden           Int      @default(0) // para ordenar dentro de categoría
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, categoria])
+  @@index([tenantId, activo])
+  @@map("servicios")
 }
 
 // ── Expedientes especializados (Feature 3 — Kaya Kalp) ────────────────────── //

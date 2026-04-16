@@ -43,93 +43,19 @@ interface ConfigPublica {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// DATA — Kaya Kalp real services
+// TYPES — servicios from DB
 // ─────────────────────────────────────────────────────────────────────────────
-
-const serviciosFisio = [
-  {
-    id: "normal",
-    nombre: "Normal / Antiestrés",
-    desc: "Terapia manual en tren superior complementada con electroterapia, percusión y presoterapia.",
-    precio: "$400",
-    duracion: "50 min",
-  },
-  {
-    id: "descarga",
-    nombre: "Descarga de Esfuerzo",
-    desc: "Enfoque manual en cuerpo completo combinada con aparatología. Elimina fatiga y previene lesiones.",
-    precio: "$470",
-    duracion: "50 min",
-  },
-  {
-    id: "drenaje",
-    nombre: "Drenaje Linfático",
-    desc: "Manipulaciones suaves para mejorar circulación y funcionamiento del sistema linfático.",
-    precio: "$520",
-    duracion: "50 min",
-  },
-  {
-    id: "presoterapia",
-    nombre: "Presoterapia",
-    desc: "Retorno venoso, drenaje linfático y drenar ácido láctico con aparatología especializada.",
-    precio: "$420",
-    duracion: "50 min",
-  },
-  {
-    id: "ejercicio",
-    nombre: "Ejercicio Terapéutico",
-    desc: "Rehabilitación de lesiones deportivas, laborales y post-quirúrgicas personalizada.",
-    precio: "$350",
-    duracion: "50 min",
-  },
-  {
-    id: "valoracion",
-    nombre: "Valoración",
-    desc: "Evaluación de lesión, diagnóstico y propuesta de tratamiento. Incluye primera terapia.",
-    precio: "$450",
-    duracion: "50 min",
-  },
-  {
-    id: "pelvico",
-    nombre: "Suelo Pélvico",
-    desc: "Tratamiento para incontinencia urinaria, prolapsos, embarazo, previo y post-parto.",
-    precio: "$550",
-    duracion: "50 min",
-  },
-];
-
-const serviciosFaciales = [
-  {
-    nombre: "Masaje Revitalizante",
-    desc: "Levanta y tonifica la piel, promueve colágeno, mejora líneas de expresión.",
-    precio: "$450",
-    duracion: "60 min",
-  },
-  {
-    nombre: "Limpieza Profunda",
-    desc: "Elimina impurezas, previene acné, disminuye arrugas. Incluye alta frecuencia.",
-    precio: "$450",
-    duracion: "60 min",
-  },
-  {
-    nombre: "Hidratación Profunda",
-    desc: "Hidrofacial, nutrición, mascarilla, máscara LED. Piel luminosa y suave.",
-    precio: "$500",
-    duracion: "60 min",
-  },
-  {
-    nombre: "Rejuvenecimiento",
-    desc: "Microdermoabrasión, tonificación, efecto lifting, piel más firme.",
-    precio: "$550",
-    duracion: "60 min",
-  },
-  {
-    nombre: "Gold Threads",
-    desc: "Hilos de colágeno que eliminan arrugas, mejoran flacidez, retrasan el envejecimiento.",
-    precio: "$800",
-    duracion: "60 min",
-  },
-];
+type ServicioPublico = {
+  id: string;
+  nombre: string;
+  descripcion: string;
+  categoria: string;
+  duracion: number;
+  precio: number;
+  precioDescuento: number | null;
+  sesiones: number | null;
+  popular: boolean;
+};
 
 const equipo = [
   {
@@ -214,7 +140,29 @@ function getHorarioResumen(horarios: ConfigPublica["horarios"]) {
 // PAGE
 // ─────────────────────────────────────────────────────────────────────────────
 
-export default function LandingClient({ config }: { config: ConfigPublica | null }) {
+export default function LandingClient({ config, servicios = [] }: { config: ConfigPublica | null; servicios?: ServicioPublico[] }) {
+  // Derive category-based lists from DB data
+  const serviciosFisio = servicios
+    .filter((s) => s.categoria === "fisioterapia" || s.categoria === "suelo_pelvico")
+    .map((s) => ({
+      id: s.id,
+      nombre: s.nombre,
+      desc: s.descripcion,
+      precio: `$${s.precio.toLocaleString("es-MX")}`,
+      duracion: `${s.duracion} min`,
+    }));
+
+  const serviciosFaciales = servicios
+    .filter((s) => s.categoria === "faciales")
+    .map((s) => ({
+      nombre: s.nombre,
+      desc: s.descripcion,
+      precio: `$${s.precio.toLocaleString("es-MX")}`,
+      duracion: `${s.duracion} min`,
+    }));
+
+  const corporalServicio = servicios.find((s) => s.categoria === "corporales");
+  const epilacionServicios = servicios.filter((s) => s.categoria === "epilacion");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
 
@@ -580,14 +528,14 @@ export default function LandingClient({ config }: { config: ConfigPublica | null
               </div>
               <h3 className="font-semibold text-[#1e2d3a] text-lg mb-2">Tratamientos Corporales</h3>
               <p className="text-sm text-[#5a7080] leading-relaxed mb-4">
-                Celulitis, estrías, piel de naranja y grasa localizada. Cavitador, radiofrecuencia, lipoláser y vacum terapia.
+                {corporalServicio?.descripcion || "Celulitis, estrías, piel de naranja y grasa localizada. Cavitador, radiofrecuencia, lipoláser y vacum terapia."}
               </p>
               <div className="flex items-end justify-between pt-4 border-t border-[#c8dce8]/60">
                 <div>
-                  <span className="text-2xl font-bold text-[#1e2d3a]">$600</span>
+                  <span className="text-2xl font-bold text-[#1e2d3a]">${corporalServicio?.precio.toLocaleString("es-MX") ?? "600"}</span>
                   <span className="text-xs text-[#8fa8ba] ml-1">/ sesión</span>
                 </div>
-                <span className="text-xs text-[#8fa8ba]">60 min</span>
+                <span className="text-xs text-[#8fa8ba]">{corporalServicio?.duracion ?? 60} min</span>
               </div>
             </motion.div>
 
@@ -607,19 +555,26 @@ export default function LandingClient({ config }: { config: ConfigPublica | null
                 Aplicación suave y precisa, resultados duraderos. Ideal para todo tipo de piel.
               </p>
               <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
-                {[
-                  ["Piernas completas", "$400"],
-                  ["Media pierna", "$250"],
-                  ["Axila", "$200"],
-                  ["Bikini", "$250"],
-                  ["Bigote", "$150"],
-                  ["Barba", "$200"],
-                ].map(([zona, precio]) => (
-                  <div key={zona} className="flex justify-between">
-                    <span className="text-[#5a7080]">{zona}</span>
-                    <span className="font-semibold text-[#1e2d3a]">{precio}</span>
-                  </div>
-                ))}
+                {epilacionServicios.length > 0
+                  ? epilacionServicios.map((s) => (
+                      <div key={s.id} className="flex justify-between">
+                        <span className="text-[#5a7080]">{s.nombre}</span>
+                        <span className="font-semibold text-[#1e2d3a]">${s.precio.toLocaleString("es-MX")}</span>
+                      </div>
+                    ))
+                  : [
+                      ["Piernas completas", "$400"],
+                      ["Media pierna", "$250"],
+                      ["Axila", "$200"],
+                      ["Bikini", "$250"],
+                      ["Bigote", "$150"],
+                      ["Barba", "$200"],
+                    ].map(([zona, precio]) => (
+                      <div key={zona} className="flex justify-between">
+                        <span className="text-[#5a7080]">{zona}</span>
+                        <span className="font-semibold text-[#1e2d3a]">{precio}</span>
+                      </div>
+                    ))}
               </div>
             </motion.div>
           </div>
