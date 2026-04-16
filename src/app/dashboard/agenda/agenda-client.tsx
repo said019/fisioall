@@ -276,7 +276,7 @@ export default function AgendaClient({
 }) {
   const today = useMemo(() => new Date(todayISO), [todayISO]);
   const [monday, setMonday] = useState(() => getMondayFromISO(weekStartISO));
-  const diasSemana = buildWeekDays(monday);
+  const diasSemana = useMemo(() => buildWeekDays(monday), [monday]);
 
   // Determine today's index in the current week (or default 0)
   const todayIndex = diasSemana.findIndex((d) => sameDay(d.dateObj, today));
