@@ -230,6 +230,7 @@ export async function getDashboardData() {
       fisioterapeuta: `${c.fisioterapeuta.nombre} ${c.fisioterapeuta.apellido}`,
       motivo: c.tipoSesion ?? "Sesión",
       estado: c.estado,
+      anticipoPagado: c.anticipoPagado ?? false,
       sala: c.sala,
     })),
     equipo: equipoData.map((u) => ({

@@ -134,6 +134,7 @@ export async function getCitasPaciente(pacienteId: string) {
     sala: c.sala,
     esFutura: c.fechaHoraInicio > now,
     fechaISO: c.fechaHoraInicio.toISOString(),
+    anticipoPagado: c.anticipoPagado ?? false,
   }));
 }
 

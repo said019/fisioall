@@ -87,11 +87,20 @@ const accesosRapidos = [
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
-function EstadoBadge({ estado }: { estado: string }) {
+function EstadoBadge({ estado, anticipoPagado }: { estado: string; anticipoPagado?: boolean }) {
+  // Caso especial: agendada con anticipo validado pero paciente aún no confirma
+  if (estado === "agendada" && anticipoPagado) {
+    return (
+      <Badge variant="outline" className="text-[10px] font-semibold px-1.5 py-0.5 shrink-0 bg-[#e4ecf2] text-[#4a7fa5] border-[#a8cfe0]">
+        Anticipo OK
+      </Badge>
+    );
+  }
+
   const config: Record<string, { label: string; className: string }> = {
     pendiente_anticipo: { label: "Pendiente anticipo", className: "bg-amber-50 text-amber-700 border-amber-200" },
     agendada:   { label: "Agendada",   className: "bg-slate-100 text-slate-600 border-slate-200" },
-    confirmada: { label: "Confirmada", className: "bg-[#e4ecf2] text-[#4a7fa5] border-[#a8cfe0]" },
+    confirmada: { label: "Confirmada", className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
     en_curso:   { label: "En curso",   className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
     completada: { label: "Completada", className: "bg-green-50 text-green-700 border-green-200" },
     cancelada:  { label: "Cancelada",  className: "bg-red-50 text-red-600 border-red-200" },
@@ -162,6 +171,7 @@ export interface DashboardData {
     iniciales: string;
     motivo: string;
     estado: string;
+    anticipoPagado?: boolean;
     sala: string | null;
   }[];
   sesionesPorMes?: { mes: string; valor: number }[];
@@ -466,7 +476,7 @@ export default function DashboardClient({ data }: { data?: DashboardData }) {
                   <p className="text-xs font-semibold text-[#1e2d3a] truncate">{cita.paciente}</p>
                   <p className="text-[10px] text-[#1e2d3a]/50 truncate">{cita.motivo}</p>
                 </div>
-                <EstadoBadge estado={cita.estado as EstadoCita} />
+                <EstadoBadge estado={cita.estado} anticipoPagado={cita.anticipoPagado} />
               </div>
             ))}
 

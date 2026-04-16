@@ -65,6 +65,7 @@ type Cita = {
   sala: string;
   colorFisio: string;
   anticipoComprobanteUrl?: string | null;
+  anticipoPagado?: boolean;
 };
 
 type PacienteOption = {
@@ -99,11 +100,13 @@ type DBCita = {
   sesion: string | null;
   anticipoComprobanteUrl?: string | null;
   anticipoPagoId?: string | null;
+  anticipoPagado?: boolean | null;
 };
 
 // ── CONSTANTS ──────────────────────────────────────────────────────────────
 const estadoConfig: Record<string, { label: string; bg: string; border: string; text: string }> = {
-  agendada:            { label: "Agendada",           bg: "bg-[#4a7fa5]/10",  border: "border-[#4a7fa5]/30", text: "text-[#4a7fa5]" },
+  agendada:            { label: "Agendada",           bg: "bg-slate-100",     border: "border-slate-300",    text: "text-slate-600" },
+  anticipo_ok:         { label: "Anticipo OK",        bg: "bg-[#4a7fa5]/10",  border: "border-[#4a7fa5]/30", text: "text-[#4a7fa5]" },
   confirmada:          { label: "Confirmada",         bg: "bg-[#3fa87c]/10",  border: "border-[#3fa87c]/30", text: "text-[#3fa87c]" },
   en_curso:            { label: "En curso",           bg: "bg-[#4a7fa5]/15",  border: "border-[#4a7fa5]/40", text: "text-[#4a7fa5]" },
   pendiente:           { label: "Pendiente",          bg: "bg-[#F59E0B]/10",  border: "border-[#F59E0B]/30", text: "text-[#F59E0B]" },
@@ -207,6 +210,7 @@ function mapDBCitas(dbCitas: DBCita[], monday: Date): Cita[] {
       sala: c.sala ?? "—",
       colorFisio: c.colorFisio ?? "#4a7fa5",
       anticipoComprobanteUrl: c.anticipoComprobanteUrl ?? null,
+      anticipoPagado: c.anticipoPagado ?? false,
     };
   });
 }
@@ -453,7 +457,9 @@ export default function AgendaClient({
     .sort((a, b) => a.hora.localeCompare(b.hora));
 
   const totalSemana = citasData.filter(c => c.estado !== "cancelada").length;
-  const confirmadas = citasData.filter(c => c.estado === "confirmada" || c.estado === "agendada").length;
+  // "Confirmadas" = paciente confirmó por WhatsApp (estado: confirmada).
+  // Las que tienen anticipo pagado pero aún no confirma paciente quedan como "agendada" + anticipoPagado.
+  const confirmadas = citasData.filter(c => c.estado === "confirmada").length;
   const completadas = citasData.filter(c => c.estado === "completada").length;
   const canceladas = citasData.filter(c => c.estado === "cancelada").length;
 
@@ -678,7 +684,8 @@ export default function AgendaClient({
             ) : (
               <div className="divide-y divide-[#e4ecf2]">
                 {citasDia.map((cita) => {
-                  const conf = estadoConfig[cita.estado] ?? estadoConfig.agendada;
+                  const estadoEfectivo = (cita.estado === "agendada" && cita.anticipoPagado) ? "anticipo_ok" : cita.estado;
+                  const conf = estadoConfig[estadoEfectivo] ?? estadoConfig.agendada;
                   return (
                     <div
                       key={cita.id}
@@ -797,7 +804,8 @@ export default function AgendaClient({
       <Dialog open={!!citaSeleccionada} onOpenChange={() => { setCitaSeleccionada(null); setModalCobrar(false); }}>
         {citaSeleccionada && (() => {
           const diaInfo = diasSemana[citaSeleccionada.dayIndex];
-          const conf = estadoConfig[citaSeleccionada.estado] ?? estadoConfig.agendada;
+          const estadoEfectivo = (citaSeleccionada.estado === "agendada" && citaSeleccionada.anticipoPagado) ? "anticipo_ok" : citaSeleccionada.estado;
+          const conf = estadoConfig[estadoEfectivo] ?? estadoConfig.agendada;
           return (
             <DialogContent className="max-w-sm border-[#c8dce8]">
               <DialogHeader>

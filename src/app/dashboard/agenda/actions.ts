@@ -57,6 +57,7 @@ export async function getCitasSemana(fechaInicio: string, fechaFin: string) {
         : null,
       anticipoComprobanteUrl: anticipo?.comprobanteUrl ?? null,
       anticipoPagoId: anticipo?.id ?? null,
+      anticipoPagado: c.anticipoPagado ?? false,
     };
   });
 }
@@ -372,7 +373,10 @@ export async function confirmarAnticipo(citaId: string, metodo: string) {
     }),
     prisma.cita.update({
       where: { id: citaId },
-      data: { estado: "confirmada", anticipoPagado: true },
+      // estado se queda en "agendada" — la cita tiene anticipo pagado pero
+      // el paciente AÚN no confirma asistencia (eso pasa cuando responde
+      // al WhatsApp del recordatorio).
+      data: { estado: "agendada", anticipoPagado: true },
     }),
     prisma.paciente.update({
       where: { id: cita.paciente.id },
@@ -410,11 +414,11 @@ export async function confirmarAnticipo(citaId: string, metodo: string) {
     console.error("[WhatsApp] Anticipo confirmado send failed:", waErr);
   }
 
-  // Update Google Calendar color to green (confirmada)
+  // Update Google Calendar color (anticipo validado — paciente aún no confirma asistencia)
   if (cita.googleEventId) {
     try {
       const { updateCalendarEvent } = await import("@/lib/google-calendar");
-      await updateCalendarEvent(cita.tenantId, cita.googleEventId, { estado: "confirmada" });
+      await updateCalendarEvent(cita.tenantId, cita.googleEventId, { estado: "agendada" });
     } catch (gcalErr) {
       console.error("[GCal] Color update on anticipo confirmed:", gcalErr);
     }

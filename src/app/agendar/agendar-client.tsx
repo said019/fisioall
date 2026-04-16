@@ -77,6 +77,7 @@ type CitaPaciente = {
   sala: string | null;
   esFutura: boolean;
   fechaISO: string;
+  anticipoPagado?: boolean;
 };
 
 type Membresia = {
@@ -112,7 +113,8 @@ type CategoriaServicio = {
 
 const ESTADO_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
   pendiente_anticipo: { label: "Pendiente de validación", color: "text-[#e89b3f]", bg: "bg-[#e89b3f]/10" },
-  agendada:    { label: "Agendada",   color: "text-[#4a7fa5]", bg: "bg-[#4a7fa5]/10" },
+  agendada:    { label: "Agendada",   color: "text-slate-600", bg: "bg-slate-100" },
+  anticipo_ok: { label: "Anticipo OK", color: "text-[#4a7fa5]", bg: "bg-[#4a7fa5]/10" },
   confirmada:  { label: "Confirmada", color: "text-[#3fa87c]", bg: "bg-[#3fa87c]/10" },
   en_curso:    { label: "En curso",   color: "text-[#4a7fa5]", bg: "bg-[#4a7fa5]/15" },
   completada:  { label: "Completada", color: "text-[#1e2d3a]/50", bg: "bg-[#1e2d3a]/5" },
@@ -854,7 +856,8 @@ export default function AgendarPage({ categorias: CATEGORIAS }: { categorias: Ca
             <h3 className="text-sm font-bold text-[#1e2d3a] mb-3">Próximas Citas</h3>
             <div className="space-y-2.5">
               {citasFuturas.map((cita) => {
-                const conf = ESTADO_CONFIG[cita.estado] ?? ESTADO_CONFIG.agendada;
+                const estadoEfectivo = (cita.estado === "agendada" && cita.anticipoPagado) ? "anticipo_ok" : cita.estado;
+                const conf = ESTADO_CONFIG[estadoEfectivo] ?? ESTADO_CONFIG.agendada;
                 return (
                   <Card key={cita.id} className="border-[#c8dce8] bg-white">
                     <CardContent className="p-4">
