@@ -215,11 +215,6 @@ export default function LandingClient({ config, servicios = [] }: { config: Conf
           </div>
 
           <div className="flex items-center gap-4">
-            <Link href="/login" className="hidden md:block">
-              <span className="text-sm font-medium text-[#5a7080] hover:text-[#4a7fa5] transition-colors uppercase tracking-[0.15em] cursor-pointer">
-                Iniciar Sesión
-              </span>
-            </Link>
             <Link href="/agendar" className="hidden md:block">
               <button className="cursor-pointer bg-[#4a7fa5] text-white px-8 py-3 rounded-xl font-medium tracking-wide hover:bg-[#2d5f80] transition-all duration-300 active:scale-95 text-sm">
                 Agendar Cita
@@ -258,11 +253,6 @@ export default function LandingClient({ config, servicios = [] }: { config: Conf
               </a>
             ))}
             <div className="flex flex-col gap-3 pt-4 border-t border-[#c8dce8]/60">
-              <Link href="/login">
-                <button className="cursor-pointer w-full py-3 border border-[#c8dce8] rounded-xl text-sm font-medium text-[#5a7080]">
-                  Iniciar Sesión
-                </button>
-              </Link>
               <Link href="/agendar">
                 <button className="cursor-pointer w-full py-3 bg-[#4a7fa5] text-white rounded-xl text-sm font-medium">
                   Agendar Cita
