@@ -134,20 +134,38 @@ export async function getPaciente(id: string) {
 export async function crearPaciente(prevState: unknown, formData: FormData) {
   const { tenantId, userId } = await requireAuth();
 
+  // Normalizar teléfono a 10 dígitos (mismo formato que registrarPaciente público)
+  // para que /agendar pueda encontrar al paciente por su número.
+  const telefonoRaw = (formData.get("telefono") as string) ?? "";
+  const telefonoClean = telefonoRaw.replace(/\D/g, "").slice(-10);
+
   const raw = {
     nombre: formData.get("nombre") as string,
     apellido: formData.get("apellido") as string,
     email: (formData.get("email") as string) || undefined,
-    telefono: formData.get("telefono") as string,
+    telefono: telefonoClean,
     edad: Number(formData.get("edad")),
     diagnostico: formData.get("diagnostico") as string,
-    cie10: (formData.get("cie10") as string) || undefined,
-    ciudad: (formData.get("ciudad") as string) || undefined,
   };
+
+  if (!telefonoClean || telefonoClean.length !== 10) {
+    return { error: "El teléfono debe tener 10 dígitos" };
+  }
 
   const parsed = pacienteSchema.safeParse(raw);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
+  }
+
+  // Evitar duplicados: si ya existe un paciente con ese teléfono en el tenant
+  const existente = await prisma.paciente.findFirst({
+    where: { tenantId, telefono: { contains: telefonoClean } },
+    select: { id: true, nombre: true, apellido: true },
+  });
+  if (existente) {
+    return {
+      error: `Ya existe un paciente con ese teléfono: ${existente.nombre} ${existente.apellido}`,
+    };
   }
 
   try {
@@ -158,26 +176,26 @@ export async function crearPaciente(prevState: unknown, formData: FormData) {
         nombre: parsed.data.nombre,
         apellido: parsed.data.apellido,
         email: parsed.data.email || null,
-        telefono: parsed.data.telefono || "",
-        ocupacion: parsed.data.ciudad || null,
+        telefono: telefonoClean,
+        whatsapp: telefonoClean,
         fechaPrimeraCita: new Date(),
       },
     });
 
     // Create initial diagnosis if provided
-    if (parsed.data.diagnostico) {
+    if (parsed.data.diagnostico && parsed.data.diagnostico !== "Sin diagnóstico") {
       await prisma.diagnostico.create({
         data: {
           pacienteId: paciente.id,
           fisioterapeutaId: userId,
           motivoConsulta: parsed.data.diagnostico,
           diagnosticoPrincipal: parsed.data.diagnostico,
-          diagnosticoCie10: parsed.data.cie10 || null,
         },
       });
     }
 
     revalidatePath("/dashboard/pacientes");
+    revalidatePath("/agendar");
     return { success: true, pacienteId: paciente.id };
   } catch (error) {
     console.error("Error creating patient:", error);

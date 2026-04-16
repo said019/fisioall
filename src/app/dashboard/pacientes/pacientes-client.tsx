@@ -383,7 +383,6 @@ export default function PacientesClient({ initialPacientes }: { initialPacientes
     telefono: "",
     edad: "",
     diagnostico: "",
-    cie10: "",
   });
   const [savePending, startSaveTransition] = useTransition();
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -401,7 +400,6 @@ export default function PacientesClient({ initialPacientes }: { initialPacientes
       telefono: "",
       edad: "",
       diagnostico: "",
-      cie10: "",
     });
     setSaveError(null);
   };
@@ -415,7 +413,6 @@ export default function PacientesClient({ initialPacientes }: { initialPacientes
     fd.set("telefono", formNuevo.telefono.trim());
     fd.set("edad", formNuevo.edad || "0");
     fd.set("diagnostico", formNuevo.diagnostico.trim() || "Sin diagnóstico");
-    fd.set("cie10", formNuevo.cie10.trim());
 
     startSaveTransition(async () => {
       const result = await crearPaciente(null, fd);
@@ -489,9 +486,9 @@ export default function PacientesClient({ initialPacientes }: { initialPacientes
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-[#1e2d3a]">Teléfono</Label>
+                <Label className="text-xs font-semibold text-[#1e2d3a]">Teléfono *</Label>
                 <Input
-                  placeholder="+52 55 1234 5678"
+                  placeholder="4271234567"
                   value={formNuevo.telefono}
                   onChange={(e) => handleFormChange("telefono", e.target.value)}
                   className="border-[#a8cfe0] focus:border-[#4a7fa5] focus:ring-[#4a7fa5]/20"
@@ -511,26 +508,15 @@ export default function PacientesClient({ initialPacientes }: { initialPacientes
               />
             </div>
 
-            {/* Diagnóstico + CIE-10 */}
-            <div className="grid grid-cols-3 gap-3">
-              <div className="col-span-2 space-y-1.5">
-                <Label className="text-xs font-semibold text-[#1e2d3a]">Diagnóstico</Label>
-                <Input
-                  placeholder="Ej. Lumbalgia mecánica"
-                  value={formNuevo.diagnostico}
-                  onChange={(e) => handleFormChange("diagnostico", e.target.value)}
-                  className="border-[#a8cfe0] focus:border-[#4a7fa5] focus:ring-[#4a7fa5]/20"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-[#1e2d3a]">CIE-10</Label>
-                <Input
-                  placeholder="M54.5"
-                  value={formNuevo.cie10}
-                  onChange={(e) => handleFormChange("cie10", e.target.value)}
-                  className="border-[#a8cfe0] focus:border-[#4a7fa5] focus:ring-[#4a7fa5]/20"
-                />
-              </div>
+            {/* Diagnóstico */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-[#1e2d3a]">Diagnóstico</Label>
+              <Input
+                placeholder="Ej. Lumbalgia mecánica"
+                value={formNuevo.diagnostico}
+                onChange={(e) => handleFormChange("diagnostico", e.target.value)}
+                className="border-[#a8cfe0] focus:border-[#4a7fa5] focus:ring-[#4a7fa5]/20"
+              />
             </div>
 
             {saveError && (
@@ -548,7 +534,7 @@ export default function PacientesClient({ initialPacientes }: { initialPacientes
             </Button>
             <Button
               onClick={handleGuardarPaciente}
-              disabled={savePending || !formNuevo.nombre.trim() || !formNuevo.apellido.trim()}
+              disabled={savePending || !formNuevo.nombre.trim() || !formNuevo.apellido.trim() || formNuevo.telefono.replace(/\D/g, "").length < 10}
               className="cursor-pointer bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white transition-all duration-200 disabled:opacity-50"
             >
               <Plus className="h-4 w-4 mr-1.5" />
