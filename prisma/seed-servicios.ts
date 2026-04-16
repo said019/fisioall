@@ -3,10 +3,11 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
-  // Buscar el primer tenant activo
-  const tenant = await prisma.tenant.findFirst({ where: { activo: true } });
+  // Tomar slug del primer arg, default "kaya-kalp"
+  const slug = process.argv[2] ?? "kaya-kalp";
+  const tenant = await prisma.tenant.findUnique({ where: { slug } });
   if (!tenant) {
-    console.error("No hay tenant activo");
+    console.error(`No existe tenant con slug "${slug}"`);
     process.exit(1);
   }
 
