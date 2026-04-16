@@ -51,7 +51,7 @@ export async function getPacientes() {
     const proximaCitaObj = p.citas.find((c) => c.fechaHoraInicio > now && c.estado !== "cancelada");
 
     const formatFecha = (d: Date) =>
-      d.toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" });
+      d.toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric", timeZone: "America/Mexico_City" });
 
     let edad: number | null = null;
     if (p.fechaNacimiento) {
@@ -89,7 +89,7 @@ export async function getPacientes() {
         id: c.id,
         tipoSesion: c.tipoSesion ?? "Sesión",
         fecha: formatFecha(c.fechaHoraInicio),
-        hora: c.fechaHoraInicio.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" }),
+        hora: c.fechaHoraInicio.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City" }),
         estado: c.estado ?? "agendada",
         fisioterapeuta: `${c.fisioterapeuta.nombre} ${c.fisioterapeuta.apellido}`,
         esFutura: c.fechaHoraInicio > now,

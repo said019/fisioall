@@ -22,6 +22,7 @@ function formatFecha(date: Date): string {
     weekday: "long",
     day: "numeric",
     month: "long",
+    timeZone: "America/Mexico_City",
   });
 }
 

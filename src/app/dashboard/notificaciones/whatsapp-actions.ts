@@ -143,10 +143,12 @@ export async function sendAppointmentReminder(
       weekday: "long",
       day: "numeric",
       month: "long",
+      timeZone: "America/Mexico_City",
     });
     const hora = cita.fechaHoraInicio.toLocaleTimeString("es-MX", {
       hour: "2-digit",
       minute: "2-digit",
+      timeZone: "America/Mexico_City",
     });
     const fisio = `${cita.fisioterapeuta.nombre} ${cita.fisioterapeuta.apellido}`;
 

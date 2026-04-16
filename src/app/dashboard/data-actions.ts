@@ -223,6 +223,7 @@ export async function getDashboardData() {
       hora: c.fechaHoraInicio.toLocaleTimeString("es-MX", {
         hour: "2-digit",
         minute: "2-digit",
+        timeZone: "America/Mexico_City",
       }),
       paciente: `${c.paciente.nombre} ${c.paciente.apellido}`,
       iniciales: `${c.paciente.nombre[0]}${c.paciente.apellido[0]}`.toUpperCase(),
@@ -252,10 +253,12 @@ export async function getDashboardData() {
             fecha: a.cita.fechaHoraInicio.toLocaleDateString("es-MX", {
               day: "2-digit",
               month: "short",
+              timeZone: "America/Mexico_City",
             }),
             hora: a.cita.fechaHoraInicio.toLocaleTimeString("es-MX", {
               hour: "2-digit",
               minute: "2-digit",
+              timeZone: "America/Mexico_City",
             }),
             tipoSesion: a.cita.tipoSesion ?? "Sesión",
             estado: a.cita.estado,

@@ -207,6 +207,7 @@ export async function confirmarReagendar(
     weekday: "long",
     day: "numeric",
     month: "long",
+    timeZone: "America/Mexico_City",
   });
 
   // Send WhatsApp confirmation of new date
