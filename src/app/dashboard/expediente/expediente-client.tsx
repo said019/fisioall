@@ -141,6 +141,7 @@ function HistorialSesiones({
   historial: NonNullable<ExpedienteData["historialCitas"]>;
   citaActualId: string | null;
 }) {
+  const router = useRouter();
   const [abierto, setAbierto] = useState(false);
   const [filtroTipo, setFiltroTipo] = useState<string>("todos");
 
@@ -151,6 +152,18 @@ function HistorialSesiones({
   const filtrado = filtroTipo === "todos"
     ? historial
     : historial.filter((h) => h.tipoSesion === filtroTipo);
+
+  // Al hacer click en un tab, si hay 1 sola sesión de ese tipo y no es la actual, navega.
+  // Si hay varias, solo filtra y la lista de abajo permite escoger.
+  const handleClickTab = (tipo: string) => {
+    setFiltroTipo(tipo);
+    setAbierto(false);
+    if (tipo === "todos") return;
+    const sesionesTipo = historial.filter((h) => h.tipoSesion === tipo);
+    if (sesionesTipo.length === 1 && sesionesTipo[0].id !== citaActualId) {
+      router.push(`/dashboard/expediente?citaId=${sesionesTipo[0].id}`);
+    }
+  };
 
   const visibles = abierto ? filtrado : filtrado.slice(0, 4);
 
@@ -183,7 +196,7 @@ function HistorialSesiones({
         {tieneMuchosTipos && (
           <div className="flex gap-1.5 flex-wrap">
             <button
-              onClick={() => { setFiltroTipo("todos"); setAbierto(false); }}
+              onClick={() => handleClickTab("todos")}
               className={`px-2.5 py-1 rounded-md text-[10px] font-medium border cursor-pointer transition-all ${
                 filtroTipo === "todos"
                   ? "bg-[#4a7fa5] text-white border-[#4a7fa5]"
@@ -197,7 +210,7 @@ function HistorialSesiones({
               return (
                 <button
                   key={tipo}
-                  onClick={() => { setFiltroTipo(tipo); setAbierto(false); }}
+                  onClick={() => handleClickTab(tipo)}
                   className={`px-2.5 py-1 rounded-md text-[10px] font-medium border cursor-pointer transition-all ${
                     filtroTipo === tipo
                       ? "bg-[#4a7fa5] text-white border-[#4a7fa5]"

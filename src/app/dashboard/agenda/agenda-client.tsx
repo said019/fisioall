@@ -484,7 +484,10 @@ export default function AgendaClient({
     });
   }
 
-  function handleStatusChange(citaId: string, estado: "completada" | "cancelada") {
+  function handleStatusChange(
+    citaId: string,
+    estado: "agendada" | "confirmada" | "en_curso" | "completada" | "cancelada" | "no_show"
+  ) {
     startStatusTransition(async () => {
       await actualizarEstadoCita(citaId, estado);
       setCitaSeleccionada(null);
@@ -989,33 +992,64 @@ export default function AgendaClient({
                 )}
 
                 {!modalCobrar && (
-                  <div className="flex gap-2 pt-1">
-                    <Button
-                      onClick={() => handleStatusChange(citaSeleccionada.id, "completada")}
-                      disabled={statusPending || citaSeleccionada.estado === "completada"}
-                      className="flex-1 bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white cursor-pointer text-xs h-9"
-                    >
-                      {statusPending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />}
-                      Completar
-                    </Button>
-                    <Button
-                      onClick={() => handleReagendar(citaSeleccionada)}
-                      disabled={statusPending}
-                      variant="outline"
-                      className="flex-1 border-[#a8cfe0] hover:bg-[#e4ecf2] cursor-pointer text-xs h-9"
-                    >
-                      <RefreshCw className="mr-1.5 h-3.5 w-3.5 text-[#4a7fa5]" />
-                      Reagendar
-                    </Button>
-                    <Button
-                      onClick={() => handleStatusChange(citaSeleccionada.id, "cancelada")}
-                      disabled={statusPending || citaSeleccionada.estado === "cancelada"}
-                      variant="outline"
-                      className="border-[#d9534f]/20 text-[#d9534f] hover:bg-[#d9534f]/5 cursor-pointer text-xs h-9 px-2.5"
-                    >
-                      <XCircle className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
+                  <>
+                    {/* Cambiar estado manualmente */}
+                    <div className="pt-2 border-t border-[#c8dce8]">
+                      <Label className="text-[10px] font-semibold text-[#1e2d3a]/60 uppercase tracking-wider">
+                        Cambiar estado manualmente
+                      </Label>
+                      <Select
+                        value={citaSeleccionada.estado}
+                        onValueChange={(v) =>
+                          handleStatusChange(
+                            citaSeleccionada.id,
+                            v as "agendada" | "confirmada" | "en_curso" | "completada" | "cancelada" | "no_show",
+                          )
+                        }
+                        disabled={statusPending}
+                      >
+                        <SelectTrigger className="h-9 border-[#c8dce8] text-xs cursor-pointer mt-1.5">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="agendada" className="cursor-pointer text-xs">Agendada</SelectItem>
+                          <SelectItem value="confirmada" className="cursor-pointer text-xs">Confirmada</SelectItem>
+                          <SelectItem value="en_curso" className="cursor-pointer text-xs">En curso</SelectItem>
+                          <SelectItem value="completada" className="cursor-pointer text-xs">Completada</SelectItem>
+                          <SelectItem value="no_show" className="cursor-pointer text-xs">No asistió</SelectItem>
+                          <SelectItem value="cancelada" className="cursor-pointer text-xs">Cancelada</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="flex gap-2 pt-1">
+                      <Button
+                        onClick={() => handleStatusChange(citaSeleccionada.id, "completada")}
+                        disabled={statusPending || citaSeleccionada.estado === "completada"}
+                        className="flex-1 bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white cursor-pointer text-xs h-9"
+                      >
+                        {statusPending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />}
+                        Completar
+                      </Button>
+                      <Button
+                        onClick={() => handleReagendar(citaSeleccionada)}
+                        disabled={statusPending}
+                        variant="outline"
+                        className="flex-1 border-[#a8cfe0] hover:bg-[#e4ecf2] cursor-pointer text-xs h-9"
+                      >
+                        <RefreshCw className="mr-1.5 h-3.5 w-3.5 text-[#4a7fa5]" />
+                        Reagendar
+                      </Button>
+                      <Button
+                        onClick={() => handleStatusChange(citaSeleccionada.id, "cancelada")}
+                        disabled={statusPending || citaSeleccionada.estado === "cancelada"}
+                        variant="outline"
+                        className="border-[#d9534f]/20 text-[#d9534f] hover:bg-[#d9534f]/5 cursor-pointer text-xs h-9 px-2.5"
+                      >
+                        <XCircle className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </>
                 )}
               </div>
             </DialogContent>
