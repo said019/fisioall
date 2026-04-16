@@ -65,42 +65,14 @@ interface ActividadItem {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MOCK DATA
+// MOCK DATA (fallback cuando no hay DB)
 // ─────────────────────────────────────────────────────────────────────────────
-const citasHoy: Cita[] = [
-  { id: "1", hora: "08:00", duracion: 45, nombre: "María González Ruiz", tipo: "Rehabilitación columna", estado: "completada", iniciales: "MG" },
-  { id: "2", hora: "09:00", duracion: 60, nombre: "Carlos Mendoza López", tipo: "Terapia manual cervical", estado: "completada", iniciales: "CM" },
-  { id: "3", hora: "10:15", duracion: 45, nombre: "Ana Flores Torres", tipo: "Fisio deportiva rodilla", estado: "en_curso", iniciales: "AF" },
-  { id: "4", hora: "11:30", duracion: 30, nombre: "Roberto Sánchez Vega", tipo: "Evaluación inicial", estado: "confirmada", iniciales: "RS" },
-  { id: "5", hora: "13:00", duracion: 45, nombre: "Daniela Martínez Cruz", tipo: "Ejercicio terapéutico", estado: "agendada", iniciales: "DM" },
-  { id: "6", hora: "15:00", duracion: 60, nombre: "José Hernández Paz", tipo: "Rehabilitación post-op", estado: "agendada", iniciales: "JH" },
-  { id: "7", hora: "16:30", duracion: 45, nombre: "Sofía Reyes Castillo", tipo: "Neuro-rehabilitación", estado: "agendada", iniciales: "SR" },
-];
-
-const membresiasAlerta: MembresiasAlerta[] = [
-  { id: "1", nombre: "Patricia Morales", iniciales: "PM", plan: "Plan 10 sesiones", sesionesUsadas: 9, sesionesTotales: 10 },
-  { id: "2", nombre: "Luis Ángel Ramos", iniciales: "LR", plan: "Plan 12 sesiones", sesionesUsadas: 11, sesionesTotales: 12 },
-  { id: "3", nombre: "Valentina Ortega", iniciales: "VO", plan: "Plan 8 sesiones", sesionesUsadas: 7, sesionesTotales: 8 },
-  { id: "4", nombre: "Fernando Díaz", iniciales: "FD", plan: "Plan 10 sesiones", sesionesUsadas: 9, sesionesTotales: 10 },
-  { id: "5", nombre: "Camila Jiménez", iniciales: "CJ", plan: "Plan 6 sesiones", sesionesUsadas: 6, sesionesTotales: 6 },
-];
-
 const actividadReciente: ActividadItem[] = [
   { id: "1", icono: CheckCircle2, iconoBg: "bg-emerald-50", iconoColor: "text-emerald-500", texto: "Sesión completada con Ana Flores", detalle: "Fisio deportiva · Rodilla derecha", tiempo: "hace 5 min" },
   { id: "2", icono: UserPlus, iconoBg: "bg-[#e4ecf2]", iconoColor: "text-[#4a7fa5]", texto: "Nuevo paciente registrado", detalle: "Sebastián Cruz Medina · Evaluación inicial", tiempo: "hace 42 min" },
   { id: "3", icono: CreditCard, iconoBg: "bg-violet-50", iconoColor: "text-violet-500", texto: "Tarjeta de lealtad sellada", detalle: "Patricia Morales · 8/10 sellos completados", tiempo: "hace 1 h" },
   { id: "4", icono: FileEdit, iconoBg: "bg-amber-50", iconoColor: "text-amber-500", texto: "Nota SOAP actualizada", detalle: "Carlos Mendoza · Terapia manual C3-C5", tiempo: "hace 2 h" },
   { id: "5", icono: CalendarCheck, iconoBg: "bg-[#4a7fa5]/10", iconoColor: "text-[#4a7fa5]", texto: "Cita confirmada por WhatsApp", detalle: "Roberto Sánchez · 11:30 hrs", tiempo: "hace 3 h" },
-];
-
-const sesionesData = [
-  { mes: "Sep", valor: 62 },
-  { mes: "Oct", valor: 58 },
-  { mes: "Nov", valor: 71 },
-  { mes: "Dic", valor: 54 },
-  { mes: "Ene", valor: 68 },
-  { mes: "Feb", valor: 75 },
-  { mes: "Mar", valor: 87 },
 ];
 
 const accesosRapidos = [
@@ -115,15 +87,17 @@ const accesosRapidos = [
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
-function EstadoBadge({ estado }: { estado: EstadoCita }) {
-  const config: Record<EstadoCita, { label: string; className: string }> = {
+function EstadoBadge({ estado }: { estado: string }) {
+  const config: Record<string, { label: string; className: string }> = {
+    pendiente_anticipo: { label: "Pendiente anticipo", className: "bg-amber-50 text-amber-700 border-amber-200" },
     agendada:   { label: "Agendada",   className: "bg-slate-100 text-slate-600 border-slate-200" },
     confirmada: { label: "Confirmada", className: "bg-[#e4ecf2] text-[#4a7fa5] border-[#a8cfe0]" },
     en_curso:   { label: "En curso",   className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
     completada: { label: "Completada", className: "bg-green-50 text-green-700 border-green-200" },
     cancelada:  { label: "Cancelada",  className: "bg-red-50 text-red-600 border-red-200" },
+    no_show:    { label: "No asistió", className: "bg-red-50 text-red-600 border-red-200" },
   };
-  const { label, className } = config[estado];
+  const { label, className } = config[estado] ?? { label: estado, className: "bg-slate-100 text-slate-600 border-slate-200" };
   return (
     <Badge variant="outline" className={`text-[10px] font-semibold px-1.5 py-0.5 shrink-0 ${className}`}>
       {label}
@@ -153,26 +127,33 @@ function MiniBarChart({ data }: { data: { mes: string; valor: number }[] }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// FECHA DE HOY
+// FECHA DE HOY (derivada en runtime)
 // ─────────────────────────────────────────────────────────────────────────────
-const HOY = new Date(2026, 1, 24); // martes 24 feb 2026
-const fechaLabel = HOY.toLocaleDateString("es-MX", {
-  weekday: "long",
-  day: "numeric",
-  month: "long",
-  year: "numeric",
-});
-const fechaCapitalized = fechaLabel.charAt(0).toUpperCase() + fechaLabel.slice(1);
+function getFechaHoy(iso?: string) {
+  const d = iso ? new Date(iso) : new Date();
+  const label = d.toLocaleDateString("es-MX", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PAGE
 // ─────────────────────────────────────────────────────────────────────────────
 export interface DashboardData {
+  fechaHoy?: string;
   kpis?: {
     citasHoy: number;
+    citasDelta?: number;
     pacientesActivos: number;
+    pacientesDelta?: number;
     membresiasActivas: number;
+    membresiasPorVencer?: number;
     sesionesCompletadas: number;
+    sesionesDelta?: number;
   };
   citasHoy?: {
     id: string;
@@ -182,6 +163,16 @@ export interface DashboardData {
     motivo: string;
     estado: string;
     sala: string | null;
+  }[];
+  sesionesPorMes?: { mes: string; valor: number }[];
+  membresiasPorVencer?: {
+    id: string;
+    nombre: string;
+    iniciales: string;
+    plan: string;
+    sesionesUsadas: number;
+    sesionesTotales: number;
+    sesionesRestantes: number;
   }[];
   equipo?: {
     id: string;
@@ -209,6 +200,21 @@ export interface DashboardData {
 
 export default function DashboardClient({ data }: { data?: DashboardData }) {
   const [anticipoPending, startAnticipoTransition] = useTransition();
+
+  // Datos derivados (real DB → fallback a vacío)
+  const fechaCapitalized = getFechaHoy(data?.fechaHoy);
+  const citasAgenda = data?.citasHoy ?? [];
+  const membresiasAlerta = data?.membresiasPorVencer ?? [];
+  const sesionesData = data?.sesionesPorMes ?? [];
+  const sesionesMesActual = data?.kpis?.sesionesCompletadas ?? 0;
+  const sesionesMesAnterior = sesionesData.length >= 2 ? sesionesData[sesionesData.length - 2].valor : 0;
+  const sesionesDelta = sesionesMesActual - sesionesMesAnterior;
+  const mesActualLabel = sesionesData.length > 0
+    ? sesionesData[sesionesData.length - 1].mes.replace(/^./, (c) => c.toUpperCase()) + " " + new Date().getFullYear()
+    : new Date().toLocaleDateString("es-MX", { month: "short", year: "numeric" });
+  const mesAnteriorLabel = sesionesData.length >= 2
+    ? sesionesData[sesionesData.length - 2].mes
+    : "";
   const router = useRouter();
 
   const handleValidar = (citaId: string) => {
@@ -235,7 +241,7 @@ export default function DashboardClient({ data }: { data?: DashboardData }) {
         <div>
           <p className="text-sm font-semibold text-[#1e2d3a]">{fechaCapitalized}</p>
           <p className="text-xs text-[#1e2d3a]/50 mt-0.5">
-            {citasHoy.length} citas programadas · 10:15 hrs
+            {citasAgenda.length} cita{citasAgenda.length !== 1 ? "s" : ""} programada{citasAgenda.length !== 1 ? "s" : ""}
           </p>
         </div>
         {/* Botones de acción */}
@@ -272,11 +278,13 @@ export default function DashboardClient({ data }: { data?: DashboardData }) {
                 <CalendarDays className="h-5 w-5 text-[#4a7fa5]" />
               </div>
             </div>
-            <p className="text-2xl font-bold text-[#1e2d3a]">{data?.kpis?.citasHoy ?? 12}</p>
+            <p className="text-2xl font-bold text-[#1e2d3a]">{data?.kpis?.citasHoy ?? 0}</p>
             <p className="text-xs text-[#1e2d3a]/50 mt-0.5">Citas de Hoy</p>
-            <p className="text-[11px] text-emerald-600 font-medium mt-1.5 flex items-center gap-1">
-              <TrendingUp className="h-3 w-3" /> +3 desde ayer
-            </p>
+            {data?.kpis?.citasDelta !== undefined && (
+              <p className={`text-[11px] font-medium mt-1.5 flex items-center gap-1 ${data.kpis.citasDelta >= 0 ? "text-emerald-600" : "text-red-500"}`}>
+                <TrendingUp className="h-3 w-3" /> {data.kpis.citasDelta >= 0 ? "+" : ""}{data.kpis.citasDelta} desde ayer
+              </p>
+            )}
           </CardContent>
         </Card>
 
@@ -288,11 +296,13 @@ export default function DashboardClient({ data }: { data?: DashboardData }) {
                 <Users className="h-5 w-5 text-violet-500" />
               </div>
             </div>
-            <p className="text-2xl font-bold text-[#1e2d3a]">{data?.kpis?.pacientesActivos ?? 234}</p>
+            <p className="text-2xl font-bold text-[#1e2d3a]">{data?.kpis?.pacientesActivos ?? 0}</p>
             <p className="text-xs text-[#1e2d3a]/50 mt-0.5">Pacientes Activos</p>
-            <p className="text-[11px] text-emerald-600 font-medium mt-1.5 flex items-center gap-1">
-              <TrendingUp className="h-3 w-3" /> +18 este mes
-            </p>
+            {data?.kpis?.pacientesDelta !== undefined && data.kpis.pacientesDelta !== 0 && (
+              <p className={`text-[11px] font-medium mt-1.5 flex items-center gap-1 ${data.kpis.pacientesDelta >= 0 ? "text-emerald-600" : "text-red-500"}`}>
+                <TrendingUp className="h-3 w-3" /> {data.kpis.pacientesDelta >= 0 ? "+" : ""}{data.kpis.pacientesDelta} este mes
+              </p>
+            )}
           </CardContent>
         </Card>
 
@@ -304,10 +314,10 @@ export default function DashboardClient({ data }: { data?: DashboardData }) {
                 <AlertTriangle className="h-5 w-5 text-orange-500" />
               </div>
             </div>
-            <p className="text-2xl font-bold text-orange-600">{data?.kpis?.membresiasActivas ?? 8}</p>
+            <p className="text-2xl font-bold text-orange-600">{data?.kpis?.membresiasActivas ?? 0}</p>
             <p className="text-xs text-[#1e2d3a]/50 mt-0.5">Tarjetas Activas</p>
             <p className="text-[11px] text-orange-500 font-medium mt-1.5">
-              Requieren atención pronto
+              {data?.kpis?.membresiasPorVencer ? `${data.kpis.membresiasPorVencer} requiere${data.kpis.membresiasPorVencer !== 1 ? "n" : ""} atención` : "Sin alertas"}
             </p>
           </CardContent>
         </Card>
@@ -320,11 +330,13 @@ export default function DashboardClient({ data }: { data?: DashboardData }) {
                 <CheckCircle2 className="h-5 w-5 text-emerald-500" />
               </div>
             </div>
-            <p className="text-2xl font-bold text-[#1e2d3a]">{data?.kpis?.sesionesCompletadas ?? 87}</p>
+            <p className="text-2xl font-bold text-[#1e2d3a]">{data?.kpis?.sesionesCompletadas ?? 0}</p>
             <p className="text-xs text-[#1e2d3a]/50 mt-0.5">Sesiones del Mes</p>
-            <p className="text-[11px] text-emerald-600 font-medium mt-1.5 flex items-center gap-1">
-              <TrendingUp className="h-3 w-3" /> +12 vs mes anterior
-            </p>
+            {data?.kpis?.sesionesDelta !== undefined && data.kpis.sesionesDelta !== 0 && (
+              <p className={`text-[11px] font-medium mt-1.5 flex items-center gap-1 ${data.kpis.sesionesDelta >= 0 ? "text-emerald-600" : "text-red-500"}`}>
+                <TrendingUp className="h-3 w-3" /> {data.kpis.sesionesDelta >= 0 ? "+" : ""}{data.kpis.sesionesDelta} vs mes anterior
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -417,11 +429,13 @@ export default function DashboardClient({ data }: { data?: DashboardData }) {
               Agenda de Hoy
             </CardTitle>
             <Badge variant="outline" className="text-[10px] bg-[#e4ecf2] text-[#4a7fa5] border-[#a8cfe0]">
-              {citasHoy.length} citas
+              {citasAgenda.length} cita{citasAgenda.length !== 1 ? "s" : ""}
             </Badge>
           </CardHeader>
           <CardContent className="space-y-1.5">
-            {citasHoy.map((cita) => (
+            {citasAgenda.length === 0 ? (
+              <p className="text-xs text-[#1e2d3a]/40 text-center py-8">No hay citas programadas para hoy</p>
+            ) : citasAgenda.map((cita) => (
               <div
                 key={cita.id}
                 className={`flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 ${
@@ -432,7 +446,7 @@ export default function DashboardClient({ data }: { data?: DashboardData }) {
               >
                 <div className="min-w-[48px] text-right shrink-0">
                   <p className="text-xs font-bold text-[#1e2d3a]">{cita.hora}</p>
-                  <p className="text-[10px] text-[#1e2d3a]/40">{cita.duracion} min</p>
+                  {cita.sala && <p className="text-[10px] text-[#1e2d3a]/40">{cita.sala}</p>}
                 </div>
                 <div
                   className={`w-0.5 h-10 rounded-full shrink-0 ${
@@ -449,10 +463,10 @@ export default function DashboardClient({ data }: { data?: DashboardData }) {
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-[#1e2d3a] truncate">{cita.nombre}</p>
-                  <p className="text-[10px] text-[#1e2d3a]/50 truncate">{cita.tipo}</p>
+                  <p className="text-xs font-semibold text-[#1e2d3a] truncate">{cita.paciente}</p>
+                  <p className="text-[10px] text-[#1e2d3a]/50 truncate">{cita.motivo}</p>
                 </div>
-                <EstadoBadge estado={cita.estado} />
+                <EstadoBadge estado={cita.estado as EstadoCita} />
               </div>
             ))}
 
@@ -478,12 +492,14 @@ export default function DashboardClient({ data }: { data?: DashboardData }) {
                 Sesiones por Vencer
               </CardTitle>
               <Badge variant="outline" className="text-[10px] bg-orange-50 text-orange-600 border-orange-200">
-                {membresiasAlerta.length} alertas
+                {membresiasAlerta.length} alerta{membresiasAlerta.length !== 1 ? "s" : ""}
               </Badge>
             </CardHeader>
             <CardContent className="space-y-3">
-              {membresiasAlerta.map((m) => {
-                const restantes = m.sesionesTotales - m.sesionesUsadas;
+              {membresiasAlerta.length === 0 ? (
+                <p className="text-xs text-[#1e2d3a]/40 text-center py-6">Ninguna membresía por vencer</p>
+              ) : membresiasAlerta.map((m) => {
+                const restantes = m.sesionesRestantes;
                 const pct = Math.round((m.sesionesUsadas / m.sesionesTotales) * 100);
                 return (
                   <div key={m.id} className="flex items-center gap-3">
@@ -526,17 +542,24 @@ export default function DashboardClient({ data }: { data?: DashboardData }) {
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-bold text-[#1e2d3a]">Sesiones Mensuales</CardTitle>
-                <Badge variant="outline" className="text-[10px] bg-[#e4ecf2] text-[#4a7fa5] border-[#a8cfe0]">
-                  Mar 2026
+                <Badge variant="outline" className="text-[10px] bg-[#e4ecf2] text-[#4a7fa5] border-[#a8cfe0] capitalize">
+                  {mesActualLabel}
                 </Badge>
               </div>
-              <p className="text-2xl font-bold text-[#1e2d3a]">87</p>
-              <p className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
-                <TrendingUp className="h-3 w-3" /> +12 vs febrero · 75
-              </p>
+              <p className="text-2xl font-bold text-[#1e2d3a]">{sesionesMesActual}</p>
+              {sesionesData.length >= 2 && (
+                <p className={`text-[11px] font-medium flex items-center gap-1 ${sesionesDelta >= 0 ? "text-emerald-600" : "text-red-500"}`}>
+                  <TrendingUp className="h-3 w-3" />
+                  {sesionesDelta >= 0 ? "+" : ""}{sesionesDelta} vs {mesAnteriorLabel} · {sesionesMesAnterior}
+                </p>
+              )}
             </CardHeader>
             <CardContent className="pt-2">
-              <MiniBarChart data={sesionesData} />
+              {sesionesData.length === 0 ? (
+                <div className="h-20 flex items-center justify-center text-[10px] text-[#1e2d3a]/40">Sin datos</div>
+              ) : (
+                <MiniBarChart data={sesionesData} />
+              )}
             </CardContent>
           </Card>
 

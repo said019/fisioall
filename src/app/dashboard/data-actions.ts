@@ -12,16 +12,25 @@ export async function getDashboardData() {
   const hoy = new Date();
   const inicioHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
   const finHoy = new Date(inicioHoy.getTime() + 24 * 60 * 60 * 1000);
+  const inicioAyer = new Date(inicioHoy.getTime() - 24 * 60 * 60 * 1000);
   const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+  const inicioMesAnterior = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
+  const inicio6Meses = new Date(hoy.getFullYear(), hoy.getMonth() - 5, 1);
 
   const [
     citasHoy,
+    citasAyer,
     pacientesActivos,
+    pacientesActivosMesAnterior,
     membresiasActivas,
     ingresosMes,
+    sesionesCompletadasMes,
+    sesionesCompletadasMesAnterior,
     citasHoyData,
     equipoData,
     anticiposPendientesData,
+    membresiasPorVencerData,
+    sesionesUltimos6Raw,
   ] = await Promise.all([
     // Count today's appointments
     prisma.cita.count({
@@ -31,9 +40,22 @@ export async function getDashboardData() {
       },
     }),
 
+    // Count yesterday's appointments (delta)
+    prisma.cita.count({
+      where: {
+        tenantId,
+        fechaHoraInicio: { gte: inicioAyer, lt: inicioHoy },
+      },
+    }),
+
     // Count active patients
     prisma.paciente.count({
       where: { tenantId, activo: true },
+    }),
+
+    // Pacientes activos al cierre del mes anterior
+    prisma.paciente.count({
+      where: { tenantId, activo: true, createdAt: { lt: inicioMes } },
     }),
 
     // Count active memberships
@@ -49,6 +71,24 @@ export async function getDashboardData() {
         fechaPago: { gte: inicioMes },
       },
       _sum: { monto: true },
+    }),
+
+    // Sesiones completadas este mes
+    prisma.cita.count({
+      where: {
+        tenantId,
+        estado: "completada",
+        fechaHoraInicio: { gte: inicioMes },
+      },
+    }),
+
+    // Sesiones completadas mes anterior (delta)
+    prisma.cita.count({
+      where: {
+        tenantId,
+        estado: "completada",
+        fechaHoraInicio: { gte: inicioMesAnterior, lt: inicioMes },
+      },
     }),
 
     // Today's appointments with details
@@ -100,15 +140,84 @@ export async function getDashboardData() {
       orderBy: { createdAt: "desc" },
       take: 20,
     }),
+
+    // Membresías por vencer (sesiones restantes <= 2 y activas)
+    prisma.membresia.findMany({
+      where: {
+        tenantId,
+        estado: "activa",
+      },
+      select: {
+        id: true,
+        sesionesTotal: true,
+        sesionesUsadas: true,
+        paciente: { select: { nombre: true, apellido: true } },
+        paquete: { select: { nombre: true } },
+      },
+      take: 30,
+    }),
+
+    // Sesiones completadas — últimos 6 meses (para mini chart)
+    prisma.cita.findMany({
+      where: {
+        tenantId,
+        estado: "completada",
+        fechaHoraInicio: { gte: inicio6Meses },
+      },
+      select: { fechaHoraInicio: true },
+    }),
   ]);
 
+  // Derivar sesiones por mes (últimos 6)
+  const sesionesPorMes: { mes: string; valor: number }[] = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1);
+    sesionesPorMes.push({
+      mes: d.toLocaleDateString("es-MX", { month: "short" }).replace(".", ""),
+      valor: 0,
+    });
+  }
+  for (const s of sesionesUltimos6Raw) {
+    const d = s.fechaHoraInicio;
+    const diffMonths = (hoy.getFullYear() - d.getFullYear()) * 12 + (hoy.getMonth() - d.getMonth());
+    const idx = 5 - diffMonths;
+    if (idx >= 0 && idx < sesionesPorMes.length) sesionesPorMes[idx].valor++;
+  }
+
+  // Membresías por vencer (restantes <= 2, ordenadas por restantes asc)
+  const membresiasPorVencer = membresiasPorVencerData
+    .map((m) => ({
+      id: m.id,
+      nombre: `${m.paciente.nombre} ${m.paciente.apellido}`,
+      iniciales: `${m.paciente.nombre[0]}${m.paciente.apellido[0]}`.toUpperCase(),
+      plan: m.paquete.nombre,
+      sesionesUsadas: m.sesionesUsadas ?? 0,
+      sesionesTotales: m.sesionesTotal,
+      sesionesRestantes: m.sesionesTotal - (m.sesionesUsadas ?? 0),
+    }))
+    .filter((m) => m.sesionesRestantes <= 2)
+    .sort((a, b) => a.sesionesRestantes - b.sesionesRestantes)
+    .slice(0, 5);
+
+  const citasDelta = citasHoy - citasAyer;
+  const pacientesDelta = pacientesActivos - pacientesActivosMesAnterior;
+  const sesionesDelta = sesionesCompletadasMes - sesionesCompletadasMesAnterior;
+
   return {
+    fechaHoy: hoy.toISOString(),
     kpis: {
       citasHoy,
+      citasDelta,
       pacientesActivos,
+      pacientesDelta,
       membresiasActivas,
+      membresiasPorVencer: membresiasPorVencer.length,
       ingresosMes: Number(ingresosMes._sum.monto ?? 0),
+      sesionesCompletadas: sesionesCompletadasMes,
+      sesionesDelta,
     },
+    sesionesPorMes,
+    membresiasPorVencer,
     citasHoy: citasHoyData.map((c) => ({
       id: c.id,
       hora: c.fechaHoraInicio.toLocaleTimeString("es-MX", {
