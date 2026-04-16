@@ -168,15 +168,37 @@ class EvolutionClient {
     );
   }
 
-  /** Send a plain text message. */
+  /** Send a plain text message.
+   *
+   * Algunos números mexicanos (cuentas WA viejas) usan el formato 521 en lugar
+   * de 52. Si el primer intento falla con `exists: false`, reintenta con 521.
+   */
   async sendText(to: string, message: string): Promise<EvolutionSendResult> {
     const number = to.includes("@") ? to : formatPhone(to);
 
-    return this.request<EvolutionSendResult>(
-      "POST",
-      `/message/sendText/${this.instance}`,
-      { number, text: message },
-    );
+    try {
+      return await this.request<EvolutionSendResult>(
+        "POST",
+        `/message/sendText/${this.instance}`,
+        { number, text: message },
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      // Detectar "number doesn't exist" — reintentar con formato 521 legacy
+      const looksLikeNonExistent = /"exists"\s*:\s*false/.test(msg) || /400/.test(msg);
+      const digits = number.replace(/\D/g, "").replace(/s\.whatsapp\.net$/, "");
+
+      if (looksLikeNonExistent && digits.startsWith("52") && !digits.startsWith("521") && digits.length === 12) {
+        const legacyNumber = `521${digits.slice(2)}@s.whatsapp.net`;
+        console.warn(`[Evolution] ${number} no existe, reintentando con legacy ${legacyNumber}`);
+        return this.request<EvolutionSendResult>(
+          "POST",
+          `/message/sendText/${this.instance}`,
+          { number: legacyNumber, text: message },
+        );
+      }
+      throw err;
+    }
   }
 
   /** Send a poll / survey message. */
