@@ -823,7 +823,7 @@ export default function LandingClient({ config, servicios = [] }: { config: Conf
 
           <div className="space-y-3">
             {[
-              { q: "¿Se requiere anticipo?", a: "Sí, un anticipo de $100 MXN para confirmar tu cita. Se descuenta del costo total de la sesión." },
+              { q: "¿Se requiere anticipo?", a: "Sí, un anticipo de $200 MXN para confirmar tu cita. Se descuenta del costo total de la sesión." },
               { q: "¿Puedo cancelar mi cita?", a: "Sí, con un mínimo de 24 horas de anticipación. De lo contrario se pierde el anticipo." },
               { q: "¿Qué pasa si llego tarde?", a: "No se recuperan minutos perdidos. Te recomendamos llegar puntual para aprovechar tu sesión completa." },
               { q: "¿Qué métodos de pago aceptan?", a: "Aceptamos depósito, transferencia, efectivo y tarjeta de crédito." },
@@ -1018,7 +1018,7 @@ export default function LandingClient({ config, servicios = [] }: { config: Conf
                 </Link>
               </div>
               <p className="mt-8 text-[10px] text-white/30 uppercase tracking-[0.2em] leading-relaxed font-medium">
-                Anticipo de $100 MXN · Cancelación 24h antes<br />
+                Anticipo de $200 MXN · Cancelación 24h antes<br />
                 Aviso de privacidad · Art. 15 y 16 LFPDPPP
               </p>
             </motion.div>
