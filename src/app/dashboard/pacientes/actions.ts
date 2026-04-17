@@ -134,38 +134,30 @@ export async function getPaciente(id: string) {
 export async function crearPaciente(prevState: unknown, formData: FormData) {
   const { tenantId, userId } = await requireAuth();
 
-  // Normalizar teléfono a 10 dígitos (mismo formato que registrarPaciente público)
-  // para que /agendar pueda encontrar al paciente por su número.
   const telefonoRaw = (formData.get("telefono") as string) ?? "";
   const telefonoClean = telefonoRaw.replace(/\D/g, "").slice(-10);
+
+  const telefonoContactoRaw = (formData.get("telefonoContacto") as string) ?? "";
+  const telefonoContactoClean = telefonoContactoRaw.replace(/\D/g, "").slice(-10);
+
+  // Al menos uno de los dos debe ser válido
+  const telefonoParaWA = telefonoContactoClean.length === 10 ? telefonoContactoClean : telefonoClean;
+  if (!telefonoParaWA || telefonoParaWA.length !== 10) {
+    return { error: "Ingresa un teléfono del paciente o un teléfono de contacto válido (10 dígitos)" };
+  }
 
   const raw = {
     nombre: formData.get("nombre") as string,
     apellido: formData.get("apellido") as string,
     email: (formData.get("email") as string) || undefined,
-    telefono: telefonoClean,
+    telefono: telefonoClean || telefonoParaWA,
     edad: Number(formData.get("edad")),
     diagnostico: formData.get("diagnostico") as string,
   };
 
-  if (!telefonoClean || telefonoClean.length !== 10) {
-    return { error: "El teléfono debe tener 10 dígitos" };
-  }
-
   const parsed = pacienteSchema.safeParse(raw);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
-  }
-
-  // Evitar duplicados: si ya existe un paciente con ese teléfono en el tenant
-  const existente = await prisma.paciente.findFirst({
-    where: { tenantId, telefono: { contains: telefonoClean } },
-    select: { id: true, nombre: true, apellido: true },
-  });
-  if (existente) {
-    return {
-      error: `Ya existe un paciente con ese teléfono: ${existente.nombre} ${existente.apellido}`,
-    };
   }
 
   try {
@@ -176,8 +168,9 @@ export async function crearPaciente(prevState: unknown, formData: FormData) {
         nombre: parsed.data.nombre,
         apellido: parsed.data.apellido,
         email: parsed.data.email || null,
-        telefono: telefonoClean,
-        whatsapp: telefonoClean,
+        telefono: telefonoClean || null,
+        telefonoContacto: telefonoContactoClean || null,
+        whatsapp: telefonoParaWA,
         fechaPrimeraCita: new Date(),
       },
     });

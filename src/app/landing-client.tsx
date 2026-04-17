@@ -824,7 +824,7 @@ export default function LandingClient({ config, servicios = [] }: { config: Conf
           <div className="space-y-3">
             {[
               { q: "¿Se requiere anticipo?", a: "Sí, un anticipo de $200 MXN para confirmar tu cita. Se descuenta del costo total de la sesión." },
-              { q: "¿Puedo cancelar mi cita?", a: "Sí, con un mínimo de 24 horas de anticipación. De lo contrario se pierde el anticipo." },
+              { q: "¿Puedo cancelar mi cita?", a: "Sí, con aviso antes de las 8:00 PM del día anterior a tu cita. Pasado ese horario el anticipo no aplica a sesiones futuras ni se reembolsa." },
               { q: "¿Qué pasa si llego tarde?", a: "No se recuperan minutos perdidos. Te recomendamos llegar puntual para aprovechar tu sesión completa." },
               { q: "¿Qué métodos de pago aceptan?", a: "Aceptamos depósito, transferencia, efectivo y tarjeta de crédito." },
               { q: "¿Qué debo llevar a mi sesión?", a: "Ropa cómoda para tu sesión de fisioterapia. Para faciales no es necesario nada especial." },
@@ -1018,7 +1018,7 @@ export default function LandingClient({ config, servicios = [] }: { config: Conf
                 </Link>
               </div>
               <p className="mt-8 text-[10px] text-white/30 uppercase tracking-[0.2em] leading-relaxed font-medium">
-                Anticipo de $200 MXN · Cancelación 24h antes<br />
+                Anticipo de $200 MXN · Cancelación hasta las 8 PM del día anterior<br />
                 Aviso de privacidad · Art. 15 y 16 LFPDPPP
               </p>
             </motion.div>

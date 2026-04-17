@@ -381,6 +381,7 @@ export default function PacientesClient({ initialPacientes }: { initialPacientes
     apellido: "",
     email: "",
     telefono: "",
+    telefonoContacto: "",
     edad: "",
     diagnostico: "",
   });
@@ -398,6 +399,7 @@ export default function PacientesClient({ initialPacientes }: { initialPacientes
       apellido: "",
       email: "",
       telefono: "",
+      telefonoContacto: "",
       edad: "",
       diagnostico: "",
     });
@@ -411,6 +413,7 @@ export default function PacientesClient({ initialPacientes }: { initialPacientes
     fd.set("apellido", formNuevo.apellido.trim());
     fd.set("email", formNuevo.email.trim());
     fd.set("telefono", formNuevo.telefono.trim());
+    fd.set("telefonoContacto", formNuevo.telefonoContacto.trim());
     fd.set("edad", formNuevo.edad || "0");
     fd.set("diagnostico", formNuevo.diagnostico.trim() || "Sin diagnóstico");
 
@@ -486,7 +489,7 @@ export default function PacientesClient({ initialPacientes }: { initialPacientes
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-[#1e2d3a]">Teléfono *</Label>
+                <Label className="text-xs font-semibold text-[#1e2d3a]">Teléfono del paciente</Label>
                 <Input
                   placeholder="4271234567"
                   value={formNuevo.telefono}
@@ -494,6 +497,20 @@ export default function PacientesClient({ initialPacientes }: { initialPacientes
                   className="border-[#a8cfe0] focus:border-[#4a7fa5] focus:ring-[#4a7fa5]/20"
                 />
               </div>
+            </div>
+
+            {/* Teléfono de contacto */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-[#1e2d3a]">
+                Teléfono de contacto / familiar
+                <span className="ml-1 font-normal text-[#8fa8ba]">(si el paciente no usa WhatsApp)</span>
+              </Label>
+              <Input
+                placeholder="Ej. número del hijo o familiar — recibe los recordatorios"
+                value={formNuevo.telefonoContacto}
+                onChange={(e) => handleFormChange("telefonoContacto", e.target.value)}
+                className="border-[#a8cfe0] focus:border-[#4a7fa5] focus:ring-[#4a7fa5]/20"
+              />
             </div>
 
             {/* Edad */}
@@ -534,7 +551,7 @@ export default function PacientesClient({ initialPacientes }: { initialPacientes
             </Button>
             <Button
               onClick={handleGuardarPaciente}
-              disabled={savePending || !formNuevo.nombre.trim() || !formNuevo.apellido.trim() || formNuevo.telefono.replace(/\D/g, "").length < 10}
+              disabled={savePending || !formNuevo.nombre.trim() || !formNuevo.apellido.trim() || (formNuevo.telefono.replace(/\D/g, "").length < 10 && formNuevo.telefonoContacto.replace(/\D/g, "").length < 10)}
               className="cursor-pointer bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white transition-all duration-200 disabled:opacity-50"
             >
               <Plus className="h-4 w-4 mr-1.5" />

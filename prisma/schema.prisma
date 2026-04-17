@@ -238,7 +238,8 @@ model Paciente {
   nombre                      String      @db.VarChar(100)
   apellido                    String      @db.VarChar(100)
   email                       String?     @db.VarChar(150)
-  telefono                    String      @db.VarChar(20)
+  telefono                    String?     @db.VarChar(20)
+  telefonoContacto            String?     @map("telefono_contacto") @db.VarChar(20)
   whatsapp                    String?     @db.VarChar(20)
   fechaNacimiento             DateTime?   @map("fecha_nacimiento") @db.Date
   genero                      GeneroTipo? @default(no_especificado)

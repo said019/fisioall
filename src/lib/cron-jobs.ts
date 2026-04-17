@@ -1,6 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { getEvolutionClient, formatPhone, isConfigured } from "@/lib/evolution";
 
+function waPhone(p: { telefono: string | null; telefonoContacto?: string | null }): string | null {
+  return p.telefonoContacto || p.telefono || null;
+}
+
 // ─── Recordatorios 24h antes ──────────────────────────────────────────────────
 // Manda WhatsApp a citas de mañana cuyo recordatorio aún no se envió.
 export async function runRecordatorios() {
@@ -20,7 +24,7 @@ export async function runRecordatorios() {
       recordatorioEnviado: { not: true },
     },
     include: {
-      paciente: { select: { nombre: true, telefono: true } },
+      paciente: { select: { nombre: true, telefono: true, telefonoContacto: true } },
       fisioterapeuta: { select: { nombre: true, apellido: true } },
     },
   });
@@ -30,7 +34,8 @@ export async function runRecordatorios() {
   let errores = 0;
 
   for (const cita of citas) {
-    if (!cita.paciente.telefono) continue;
+    const telefono = waPhone(cita.paciente);
+    if (!telefono) continue;
 
     const fecha = cita.fechaHoraInicio.toLocaleDateString("es-MX", {
       weekday: "long",
@@ -72,7 +77,7 @@ export async function runRecordatorios() {
       .join("\n");
 
     try {
-      await client.sendText(formatPhone(cita.paciente.telefono), mensaje);
+      await client.sendText(formatPhone(telefono), mensaje);
       await prisma.cita.update({
         where: { id: cita.id },
         data: { recordatorioEnviado: true, recordatorioAt: new Date() },
@@ -98,7 +103,7 @@ export async function runAnticipos() {
     select: {
       id: true,
       anticipoPagoId: true,
-      paciente: { select: { nombre: true, telefono: true } },
+      paciente: { select: { nombre: true, telefono: true, telefonoContacto: true } },
       fechaHoraInicio: true,
     },
   });
@@ -114,7 +119,8 @@ export async function runAnticipos() {
     ]);
     liberadas++;
 
-    if (isConfigured() && cita.paciente.telefono) {
+    const telVencida = waPhone(cita.paciente);
+    if (isConfigured() && telVencida) {
       try {
         const client = getEvolutionClient();
         const mensaje = [
@@ -124,7 +130,7 @@ export async function runAnticipos() {
           ``,
           `Si deseas reagendar, contáctanos. ¡Con gusto te ayudamos! 💙`,
         ].join("\n");
-        await client.sendText(formatPhone(cita.paciente.telefono), mensaje);
+        await client.sendText(formatPhone(telVencida), mensaje);
       } catch (err) {
         console.error(`[Anticipo Cron] WhatsApp error cita ${cita.id}:`, err);
       }
@@ -142,7 +148,7 @@ export async function runAnticipos() {
     },
     select: {
       id: true,
-      paciente: { select: { nombre: true, telefono: true } },
+      paciente: { select: { nombre: true, telefono: true, telefonoContacto: true } },
       fechaHoraInicio: true,
     },
   });
@@ -152,7 +158,8 @@ export async function runAnticipos() {
   if (isConfigured()) {
     const client = getEvolutionClient();
     for (const cita of porVencer) {
-      if (!cita.paciente.telefono) continue;
+      const telPorVencer = waPhone(cita.paciente);
+      if (!telPorVencer) continue;
 
       const fecha = cita.fechaHoraInicio.toLocaleDateString("es-MX", {
         weekday: "long",
@@ -178,7 +185,7 @@ export async function runAnticipos() {
       ].join("\n");
 
       try {
-        await client.sendText(formatPhone(cita.paciente.telefono), mensaje);
+        await client.sendText(formatPhone(telPorVencer), mensaje);
         recordatoriosEnviados++;
       } catch (err) {
         console.error(`[Anticipo Cron] Recordatorio error cita ${cita.id}:`, err);
