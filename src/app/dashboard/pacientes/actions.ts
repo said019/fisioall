@@ -72,6 +72,7 @@ export async function getPacientes() {
       iniciales: `${p.nombre[0]}${p.apellido[0]}`.toUpperCase(),
       email: p.email ?? "",
       telefono: p.telefono ?? "",
+      telefonoContacto: p.telefonoContacto ?? null,
       edad,
       diagnostico: p.diagnosticos[0]?.diagnosticoPrincipal ?? null,
       cie10: p.diagnosticos[0]?.diagnosticoCie10 ?? null,
@@ -217,5 +218,52 @@ export async function actualizarPaciente(id: string, formData: FormData) {
   } catch (error) {
     console.error("Error updating patient:", error);
     return { error: "Error al actualizar el paciente." };
+  }
+}
+
+// ─── EDIT PATIENT (desde panel de perfil) ─────────────────────────────────────
+export async function editarPaciente(formData: FormData) {
+  const { tenantId } = await requireAuth();
+
+  const id = formData.get("id") as string;
+  if (!id) return { error: "ID del paciente requerido" };
+
+  const telefonoRaw = (formData.get("telefono") as string) ?? "";
+  const telefonoClean = telefonoRaw.replace(/\D/g, "").slice(-10);
+
+  const telefonoContactoRaw = (formData.get("telefonoContacto") as string) ?? "";
+  const telefonoContactoClean = telefonoContactoRaw.replace(/\D/g, "").slice(-10);
+
+  const telefonoParaWA = telefonoContactoClean.length === 10 ? telefonoContactoClean : telefonoClean;
+  if (!telefonoParaWA) return { error: "Ingresa al menos un teléfono válido (10 dígitos)" };
+
+  const nombre = (formData.get("nombre") as string)?.trim();
+  const apellido = (formData.get("apellido") as string)?.trim();
+  if (!nombre || !apellido) return { error: "Nombre y apellido son requeridos" };
+
+  const edadNum = Number(formData.get("edad"));
+  const fechaNacimiento = edadNum > 0
+    ? new Date(new Date().getFullYear() - edadNum, 0, 1)
+    : null;
+
+  try {
+    await prisma.paciente.update({
+      where: { id, tenantId },
+      data: {
+        nombre,
+        apellido,
+        email: (formData.get("email") as string)?.trim() || null,
+        telefono: telefonoClean || null,
+        telefonoContacto: telefonoContactoClean || null,
+        whatsapp: telefonoParaWA,
+        ...(fechaNacimiento ? { fechaNacimiento } : {}),
+      },
+    });
+
+    revalidatePath("/dashboard/pacientes");
+    return { success: true };
+  } catch (error) {
+    console.error("Error editando paciente:", error);
+    return { error: "Error al guardar los cambios." };
   }
 }

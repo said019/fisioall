@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { crearPaciente } from "./actions";
+import { crearPaciente, editarPaciente } from "./actions";
+import { Pencil } from "lucide-react";
 import {
   Plus,
   Search,
@@ -74,6 +75,7 @@ interface Paciente {
   iniciales: string;
   email: string | null;
   telefono: string;
+  telefonoContacto?: string | null;
   edad: number | null;
   diagnostico: string | null;
   cie10: string | null;
@@ -117,6 +119,38 @@ function EmptyTabState({ icono: Icono, mensaje, submensaje }: { icono: React.Ele
 function PerfilPaciente({ paciente, onClose }: { paciente: Paciente; onClose: () => void }) {
   const [tab, setTab] = useState<"expediente" | "soap" | "pagos" | "progreso">("expediente");
   const alerta = paciente.sesionesRestantes <= 2;
+  const router = useRouter();
+
+  const [modalEditar, setModalEditar] = useState(false);
+  const [formEditar, setFormEditar] = useState({
+    nombre: paciente.nombre,
+    apellido: paciente.apellido,
+    email: paciente.email ?? "",
+    telefono: paciente.telefono ?? "",
+    telefonoContacto: paciente.telefonoContacto ?? "",
+    edad: paciente.edad?.toString() ?? "",
+    diagnostico: paciente.diagnostico ?? "",
+  });
+  const [editPending, startEditTransition] = useTransition();
+  const [editError, setEditError] = useState<string | null>(null);
+
+  const handleGuardarEdicion = () => {
+    setEditError(null);
+    const fd = new FormData();
+    fd.set("id", paciente.id);
+    fd.set("nombre", formEditar.nombre.trim());
+    fd.set("apellido", formEditar.apellido.trim());
+    fd.set("email", formEditar.email.trim());
+    fd.set("telefono", formEditar.telefono.trim());
+    fd.set("telefonoContacto", formEditar.telefonoContacto.trim());
+    fd.set("edad", formEditar.edad || "0");
+    startEditTransition(async () => {
+      const result = await editarPaciente(fd);
+      if (result?.error) { setEditError(result.error); return; }
+      setModalEditar(false);
+      router.refresh();
+    });
+  };
 
   const tabs = [
     { key: "expediente", label: "Expediente", icono: User },
@@ -147,6 +181,10 @@ function PerfilPaciente({ paciente, onClose }: { paciente: Paciente; onClose: ()
             Volver
           </button>
           <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={() => setModalEditar(true)} className="cursor-pointer border-[#a8cfe0] text-[#1e2d3a] hover:bg-[#e4ecf2] transition-all duration-200 gap-1.5 text-xs">
+              <Pencil className="h-3.5 w-3.5" />
+              Editar
+            </Button>
             <Link href={`/dashboard/agenda?pacienteId=${paciente.id}`}>
               <Button size="sm" variant="outline" className="cursor-pointer border-[#a8cfe0] text-[#1e2d3a] hover:bg-[#e4ecf2] transition-all duration-200 gap-1.5 text-xs">
                 <CalendarDays className="h-3.5 w-3.5" />
@@ -160,6 +198,55 @@ function PerfilPaciente({ paciente, onClose }: { paciente: Paciente; onClose: ()
               </Button>
             </Link>
           </div>
+
+          {/* Modal Editar Paciente */}
+          <Dialog open={modalEditar} onOpenChange={setModalEditar}>
+            <DialogContent className="max-w-lg border-[#c8dce8] bg-white">
+              <DialogHeader>
+                <DialogTitle className="text-lg font-bold text-[#1e2d3a]">Editar Paciente</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-4 py-2">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold text-[#1e2d3a]">Nombre *</Label>
+                    <Input value={formEditar.nombre} onChange={(e) => setFormEditar(p => ({ ...p, nombre: e.target.value }))} className="border-[#a8cfe0] focus:border-[#4a7fa5]" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold text-[#1e2d3a]">Apellido *</Label>
+                    <Input value={formEditar.apellido} onChange={(e) => setFormEditar(p => ({ ...p, apellido: e.target.value }))} className="border-[#a8cfe0] focus:border-[#4a7fa5]" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold text-[#1e2d3a]">Email</Label>
+                    <Input type="email" value={formEditar.email} onChange={(e) => setFormEditar(p => ({ ...p, email: e.target.value }))} className="border-[#a8cfe0] focus:border-[#4a7fa5]" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold text-[#1e2d3a]">Teléfono del paciente</Label>
+                    <Input placeholder="4271234567" value={formEditar.telefono} onChange={(e) => setFormEditar(p => ({ ...p, telefono: e.target.value }))} className="border-[#a8cfe0] focus:border-[#4a7fa5]" />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-[#1e2d3a]">
+                    Teléfono de contacto / familiar
+                    <span className="ml-1 font-normal text-[#8fa8ba]">(recibe los recordatorios de WhatsApp)</span>
+                  </Label>
+                  <Input placeholder="Número del familiar — si el paciente no usa WhatsApp" value={formEditar.telefonoContacto} onChange={(e) => setFormEditar(p => ({ ...p, telefonoContacto: e.target.value }))} className="border-[#a8cfe0] focus:border-[#4a7fa5]" />
+                </div>
+                <div className="w-1/2 space-y-1.5">
+                  <Label className="text-xs font-semibold text-[#1e2d3a]">Edad</Label>
+                  <Input type="number" placeholder="34" value={formEditar.edad} onChange={(e) => setFormEditar(p => ({ ...p, edad: e.target.value }))} className="border-[#a8cfe0] focus:border-[#4a7fa5]" />
+                </div>
+                {editError && <p className="text-xs text-[#d9534f] bg-[#d9534f]/5 border border-[#d9534f]/20 rounded-md px-3 py-2">{editError}</p>}
+              </div>
+              <DialogFooter className="gap-2 sm:gap-0">
+                <Button variant="outline" onClick={() => setModalEditar(false)} className="cursor-pointer border-[#a8cfe0] text-[#1e2d3a] hover:bg-[#e4ecf2]">Cancelar</Button>
+                <Button onClick={handleGuardarEdicion} disabled={editPending || !formEditar.nombre.trim() || !formEditar.apellido.trim()} className="cursor-pointer bg-[#4a7fa5] hover:bg-[#4a7fa5]/90 text-white disabled:opacity-50">
+                  {editPending ? "Guardando..." : "Guardar cambios"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
 
         {/* Hero del paciente */}
@@ -224,8 +311,8 @@ function PerfilPaciente({ paciente, onClose }: { paciente: Paciente; onClose: ()
               {/* Info de contacto */}
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { icono: Phone, label: "Teléfono", valor: paciente.telefono },
-                  { icono: Mail, label: "Email", valor: paciente.email },
+                  { icono: Phone, label: "Teléfono", valor: paciente.telefono || "—" },
+                  { icono: Mail, label: "Email", valor: paciente.email || "—" },
                   { icono: CalendarDays, label: "Última cita", valor: paciente.ultimaCita || "—" },
                   { icono: CalendarDays, label: "Próxima cita", valor: paciente.proximaCita || "—" },
                 ].map((item) => (
@@ -239,6 +326,17 @@ function PerfilPaciente({ paciente, onClose }: { paciente: Paciente; onClose: ()
                     </div>
                   </div>
                 ))}
+                {paciente.telefonoContacto && (
+                  <div className="col-span-2 bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2.5">
+                    <div className="h-7 w-7 rounded-lg bg-white flex items-center justify-center shrink-0">
+                      <Phone className="h-3.5 w-3.5 text-amber-600" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[10px] text-amber-700/70 font-medium">Tel. contacto / familiar (WhatsApp)</p>
+                      <p className="text-xs font-semibold text-amber-900">{paciente.telefonoContacto}</p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Mapa Corporal */}
