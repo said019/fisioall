@@ -49,7 +49,7 @@ interface Alerta {
 interface PacienteOption {
   id: string;
   nombre: string;
-  telefono: string;
+  telefono: string | null;
 }
 
 const TIPO_CONFIG: Record<Alerta["tipo"], { color: string; bgIcon: string; icon: React.ElementType }> = {

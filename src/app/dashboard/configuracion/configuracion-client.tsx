@@ -52,7 +52,7 @@ interface GCalStatus {
 interface PacienteOption {
   id: string;
   nombre: string;
-  telefono: string;
+  telefono: string | null;
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

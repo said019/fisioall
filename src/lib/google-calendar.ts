@@ -350,7 +350,7 @@ export async function syncCitasToGoogle(tenantId: string): Promise<{ synced: num
         fechaHoraInicio: cita.fechaHoraInicio,
         fechaHoraFin: cita.fechaHoraFin,
         pacienteNombre: `${cita.paciente.nombre} ${cita.paciente.apellido}`.trim(),
-        pacienteTelefono: cita.paciente.telefono,
+        pacienteTelefono: cita.paciente.telefono ?? "",
         tipoSesion: cita.tipoSesion ?? "Sesión",
       });
 

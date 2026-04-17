@@ -42,7 +42,7 @@ import {
 interface PacienteOption {
   id: string;
   nombre: string;
-  telefono: string;
+  telefono: string | null;
 }
 
 type ConnectionState = "open" | "close" | "connecting" | "unknown";

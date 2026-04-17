@@ -72,7 +72,7 @@ type PacienteOption = {
   id: string;
   nombre: string;
   iniciales: string;
-  telefono: string;
+  telefono: string | null;
 };
 
 type FisioOption = {
@@ -88,7 +88,7 @@ type DBCita = {
   pacienteId: string;
   paciente: string;
   iniciales: string;
-  telefono: string;
+  telefono: string | null;
   fisioterapeuta: string;
   colorFisio: string;
   motivo: string;
@@ -449,7 +449,7 @@ export default function AgendaClient({
 
   const pacientesFiltrados = (pacientes ?? []).filter((p) =>
     p.nombre.toLowerCase().includes(busquedaPaciente.toLowerCase()) ||
-    p.telefono.includes(busquedaPaciente)
+    (p.telefono ?? "").includes(busquedaPaciente)
   );
 
   const citasDia = citasData

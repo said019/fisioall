@@ -60,7 +60,7 @@ type Paciente = {
   id: string;
   nombre: string;
   iniciales: string;
-  telefono: string;
+  telefono: string | null;
   email: string | null;
   totalSesiones: number;
   miembroDesde: string | null;

@@ -20,7 +20,7 @@ interface Paciente {
   id: string;
   nombre: string;
   apellido: string;
-  telefono: string;
+  telefono: string | null;
   tenantId: string;
 }
 
