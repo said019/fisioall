@@ -187,7 +187,7 @@ const paquetes = [
 
 const pasos = [
   { num: "01", titulo: "Elige tu sesión", desc: "Selecciona el tipo de sesión que necesitas de nuestro catálogo." },
-  { num: "02", titulo: "Realiza el anticipo", desc: "Transfiere $100 (o 50% para paquetes) para confirmar tu cita vía WhatsApp." },
+  { num: "02", titulo: "Realiza el anticipo", desc: "Transfiere $200 (o 50% para paquetes) para confirmar tu cita vía WhatsApp." },
   { num: "03", titulo: "Confirma por WhatsApp", desc: "Un día antes recibes recordatorio. Cancela con 24 h de anticipación para no perder tu anticipo." },
   { num: "04", titulo: "¡Llega puntual!", desc: "Porta ropa cómoda, llega puntual. Las sesiones son de 50 minutos, no se recuperan tiempos perdidos." },
 ];
@@ -824,7 +824,7 @@ export default function KayaKalpLanding() {
                   <p className="text-lg font-mono font-bold tracking-widest" style={{ color: "#FFD080" }}>
                     4152 3145 1397 1146
                   </p>
-                  <p className="text-xs text-white/40 mt-1">Anticipo $100 · Paquetes 50%</p>
+                  <p className="text-xs text-white/40 mt-1">Anticipo $200 · Paquetes 50%</p>
                 </div>
               </div>
 

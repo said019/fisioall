@@ -782,7 +782,7 @@ export default function LandingClient({ config, servicios = [] }: { config: Conf
                 { num: "01", titulo: "Regístrate", desc: "Crea tu cuenta con tu número de teléfono" },
                 { num: "02", titulo: "Elige tu servicio", desc: "Explora nuestro catálogo de terapias y faciales" },
                 { num: "03", titulo: "Agenda tu cita", desc: "Escoge fecha, hora y terapeuta" },
-                { num: "04", titulo: "Confirma", desc: "Anticipo de $100 y listo — te esperamos" },
+                { num: "04", titulo: "Confirma", desc: "Anticipo de $200 y listo — te esperamos" },
               ].map((paso, i) => (
                 <motion.div
                   key={paso.num}
