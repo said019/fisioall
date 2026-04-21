@@ -274,29 +274,17 @@ export async function actualizarEstadoCita(
     }
 
     // Auto-create NPS survey + send completada email when cita is completed
+    // (crearEncuesta envía su propio WhatsApp con fecha/hora — no duplicar)
     if (estado === "completada") {
       try {
         const { crearEncuesta } = await import("@/app/dashboard/encuestas/actions");
         const result = await crearEncuesta(citaId);
-        // Send completada email with encuesta link
         const encuestaToken = result && "token" in result ? (result.token as string) : undefined;
-        // Email
         try {
           const { sendCitaCompletadaEmail } = await import("@/lib/send-email");
           await sendCitaCompletadaEmail({ ...emailData, encuestaToken });
         } catch (emailErr) {
           console.error("[Email] Completada send failed:", emailErr);
-        }
-        // WhatsApp
-        try {
-          const { sendCitaCompletadaWhatsApp } = await import("@/lib/send-whatsapp");
-          await sendCitaCompletadaWhatsApp({
-            ...emailData,
-            pacienteTelefono: cita.paciente.telefono ?? "",
-            encuestaToken,
-          });
-        } catch (waErr) {
-          console.error("[WhatsApp] Completada send failed:", waErr);
         }
       } catch (encErr) {
         console.error("[Encuesta] Auto-create failed:", encErr);
