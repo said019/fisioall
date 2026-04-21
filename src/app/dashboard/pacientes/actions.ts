@@ -221,6 +221,43 @@ export async function actualizarPaciente(id: string, formData: FormData) {
   }
 }
 
+// ─── DELETE PATIENT (soft delete) ────────────────────────────────────────────
+// Marca el paciente como inactivo. Mantiene citas, pagos y expediente intactos
+// para integridad histórica. No aparece más en listas ni selectores.
+export async function eliminarPaciente(id: string) {
+  const { tenantId } = await requireAuth();
+
+  try {
+    const paciente = await prisma.paciente.findFirst({
+      where: { id, tenantId },
+      select: { id: true, nombre: true, apellido: true },
+    });
+    if (!paciente) return { error: "Paciente no encontrado" };
+
+    // Cancelar citas futuras (no pasadas, para no tocar el historial)
+    await prisma.cita.updateMany({
+      where: {
+        pacienteId: id,
+        fechaHoraInicio: { gte: new Date() },
+        estado: { notIn: ["cancelada", "completada", "no_show"] },
+      },
+      data: { estado: "cancelada" },
+    });
+
+    await prisma.paciente.update({
+      where: { id, tenantId },
+      data: { activo: false },
+    });
+
+    revalidatePath("/dashboard/pacientes");
+    revalidatePath("/dashboard/agenda");
+    return { success: true };
+  } catch (error) {
+    console.error("Error eliminando paciente:", error);
+    return { error: "Error al eliminar el paciente." };
+  }
+}
+
 // ─── EDIT PATIENT (desde panel de perfil) ─────────────────────────────────────
 export async function editarPaciente(formData: FormData) {
   const { tenantId } = await requireAuth();

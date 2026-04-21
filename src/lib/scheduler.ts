@@ -1,5 +1,5 @@
 import cron from "node-cron";
-import { runRecordatorios, runAnticipos } from "@/lib/cron-jobs";
+import { runRecordatorios, runAnticipos, runAutoCompletar } from "@/lib/cron-jobs";
 
 let started = false;
 
@@ -41,7 +41,24 @@ export function startScheduler() {
     { timezone: "UTC" },
   );
 
+  // Auto-completar citas pasadas + encuesta NPS — cada hora en minuto 30
+  cron.schedule(
+    "30 * * * *",
+    async () => {
+      const t0 = Date.now();
+      console.log("[Scheduler] runAutoCompletar — inicio");
+      try {
+        const result = await runAutoCompletar();
+        console.log("[Scheduler] runAutoCompletar — fin", result, `(${Date.now() - t0}ms)`);
+      } catch (err) {
+        console.error("[Scheduler] runAutoCompletar — error", err);
+      }
+    },
+    { timezone: "UTC" },
+  );
+
   console.log("[Scheduler] Jobs registrados:");
-  console.log("  - Recordatorios: 0 15 * * * UTC (9:00 AM CDMX)");
-  console.log("  - Anticipos:     0 * * * * UTC (cada hora)");
+  console.log("  - Recordatorios:  0 15 * * * UTC  (9:00 AM CDMX)");
+  console.log("  - Anticipos:      0 * * * * UTC   (cada hora)");
+  console.log("  - AutoCompletar:  30 * * * * UTC  (cada hora en :30)");
 }

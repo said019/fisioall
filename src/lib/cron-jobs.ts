@@ -6,20 +6,22 @@ function waPhone(p: { telefono: string | null; telefonoContacto?: string | null 
 }
 
 // ─── Recordatorios 24h antes ──────────────────────────────────────────────────
-// Manda WhatsApp a citas de mañana cuyo recordatorio aún no se envió.
+// Manda WhatsApp a citas de mañana (en CDMX) cuyo recordatorio aún no se envió.
 export async function runRecordatorios() {
   if (!isConfigured()) {
     return { skipped: true, reason: "Evolution API no configurado" } as const;
   }
 
-  const manana = new Date();
-  manana.setDate(manana.getDate() + 1);
-  const inicioManana = new Date(manana.getFullYear(), manana.getMonth(), manana.getDate(), 0, 0, 0);
-  const finManana = new Date(manana.getFullYear(), manana.getMonth(), manana.getDate(), 23, 59, 59);
+  // Rango "mañana en CDMX" (UTC-6): [mañana 06:00 UTC, día siguiente 06:00 UTC)
+  const inicioManana = new Date();
+  inicioManana.setUTCDate(inicioManana.getUTCDate() + 1);
+  inicioManana.setUTCHours(6, 0, 0, 0);
+  const finManana = new Date(inicioManana);
+  finManana.setUTCDate(finManana.getUTCDate() + 1);
 
   const citas = await prisma.cita.findMany({
     where: {
-      fechaHoraInicio: { gte: inicioManana, lte: finManana },
+      fechaHoraInicio: { gte: inicioManana, lt: finManana },
       estado: { in: ["confirmada", "agendada"] },
       recordatorioEnviado: { not: true },
     },
@@ -199,4 +201,65 @@ export async function runAnticipos() {
     totalVencidas: vencidas.length,
     totalPorVencer: porVencer.length,
   } as const;
+}
+
+// ─── Auto-completar citas pasadas + enviar encuesta NPS ──────────────────────
+// Marca como "completada" citas cuyo fechaHoraFin ya pasó (>=1h atrás),
+// y dispara el envío de encuesta de satisfacción por WhatsApp.
+export async function runAutoCompletar() {
+  const unaHoraAtras = new Date(Date.now() - 60 * 60 * 1000);
+
+  const pendientes = await prisma.cita.findMany({
+    where: {
+      estado: { in: ["confirmada", "agendada", "en_curso"] },
+      fechaHoraFin: { lte: unaHoraAtras },
+    },
+    include: {
+      paciente: { select: { id: true, nombre: true, apellido: true, email: true, telefono: true, telefonoContacto: true } },
+      fisioterapeuta: { select: { nombre: true, apellido: true } },
+    },
+  });
+
+  let completadas = 0;
+  let encuestasEnviadas = 0;
+
+  for (const cita of pendientes) {
+    try {
+      await prisma.cita.update({
+        where: { id: cita.id },
+        data: { estado: "completada" },
+      });
+      completadas++;
+
+      // Crear encuesta y enviar WhatsApp
+      try {
+        const { crearEncuesta } = await import("@/app/dashboard/encuestas/actions");
+        const result = await crearEncuesta(cita.id);
+        const encuestaToken = result && "token" in result ? (result.token as string) : undefined;
+
+        const telefono = waPhone(cita.paciente);
+        if (telefono && isConfigured()) {
+          const { sendCitaCompletadaWhatsApp } = await import("@/lib/send-whatsapp");
+          await sendCitaCompletadaWhatsApp({
+            pacienteNombre: `${cita.paciente.nombre} ${cita.paciente.apellido}`.trim(),
+            pacienteTelefono: telefono,
+            tipoSesion: cita.tipoSesion ?? "Sesión",
+            fisioterapeuta: `${cita.fisioterapeuta.nombre} ${cita.fisioterapeuta.apellido}`.trim(),
+            fechaHoraInicio: cita.fechaHoraInicio,
+            fechaHoraFin: cita.fechaHoraFin,
+            sala: cita.sala,
+            citaId: cita.id,
+            encuestaToken,
+          });
+          encuestasEnviadas++;
+        }
+      } catch (encErr) {
+        console.error(`[AutoCompletar] Encuesta error cita ${cita.id}:`, encErr);
+      }
+    } catch (err) {
+      console.error(`[AutoCompletar] Error cita ${cita.id}:`, err);
+    }
+  }
+
+  return { completadas, encuestasEnviadas, total: pendientes.length } as const;
 }

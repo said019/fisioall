@@ -2,8 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { crearPaciente, editarPaciente } from "./actions";
-import { Pencil } from "lucide-react";
+import { crearPaciente, editarPaciente, eliminarPaciente } from "./actions";
+import { Pencil, Trash2 } from "lucide-react";
 import {
   Plus,
   Search,
@@ -134,6 +134,18 @@ function PerfilPaciente({ paciente, onClose }: { paciente: Paciente; onClose: ()
   const [editPending, startEditTransition] = useTransition();
   const [editError, setEditError] = useState<string | null>(null);
 
+  const [deletePending, startDeleteTransition] = useTransition();
+
+  const handleEliminar = () => {
+    if (!confirm(`¿Eliminar a ${paciente.nombre} ${paciente.apellido}?\n\nSe cancelarán sus citas futuras y ya no aparecerá en las listas. El historial se conserva.`)) return;
+    startDeleteTransition(async () => {
+      const result = await eliminarPaciente(paciente.id);
+      if (result?.error) { alert(result.error); return; }
+      onClose();
+      router.refresh();
+    });
+  };
+
   const handleGuardarEdicion = () => {
     setEditError(null);
     const fd = new FormData();
@@ -181,6 +193,10 @@ function PerfilPaciente({ paciente, onClose }: { paciente: Paciente; onClose: ()
             Volver
           </button>
           <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={handleEliminar} disabled={deletePending} className="cursor-pointer border-[#d9534f]/30 text-[#d9534f] hover:bg-[#d9534f]/10 transition-all duration-200 gap-1.5 text-xs disabled:opacity-50">
+              <Trash2 className="h-3.5 w-3.5" />
+              {deletePending ? "Eliminando..." : "Eliminar"}
+            </Button>
             <Button size="sm" variant="outline" onClick={() => setModalEditar(true)} className="cursor-pointer border-[#a8cfe0] text-[#1e2d3a] hover:bg-[#e4ecf2] transition-all duration-200 gap-1.5 text-xs">
               <Pencil className="h-3.5 w-3.5" />
               Editar
