@@ -81,6 +81,7 @@ type FisioOption = {
   iniciales: string;
   colorAgenda?: string;
   rol?: string;
+  especialidades?: string[];
 };
 
 type DBCita = {
@@ -150,13 +151,20 @@ const SERVICIOS_FISIOTERAPIA = new Set([
   "Masaje Terapéutico", "Masaje Relajante", "Masaje Descontracturante",
 ]);
 
+const ESPECIALIDADES_COSMETOLOGIA = new Set(["Tratamientos Faciales", "Tratamientos Corporales"]);
+const ESPECIALIDADES_FISIOTERAPIA = new Set(["Fisioterapia", "Suelo Pélvico", "Rehabilitación", "Masajes Terapéuticos"]);
+
 function filterFisiosByServicio(fisios: FisioOption[], servicio: string): FisioOption[] {
   if (!servicio) return fisios;
   if (SERVICIOS_COSMETOLOGIA.has(servicio)) {
-    return fisios.filter((f) => f.rol === "cosmiatra" || f.rol === "admin");
+    return fisios.filter(
+      (f) => f.rol === "admin" || f.especialidades?.some((e) => ESPECIALIDADES_COSMETOLOGIA.has(e))
+    );
   }
   if (SERVICIOS_FISIOTERAPIA.has(servicio)) {
-    return fisios.filter((f) => f.rol === "fisioterapeuta" || f.rol === "admin");
+    return fisios.filter(
+      (f) => f.rol === "admin" || f.especialidades?.some((e) => ESPECIALIDADES_FISIOTERAPIA.has(e))
+    );
   }
   return fisios; // unknown service → show all
 }

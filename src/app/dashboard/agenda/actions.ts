@@ -306,7 +306,7 @@ export async function getFisioterapeutas() {
 
   const fisios = await prisma.usuario.findMany({
     where: { tenantId, activo: true },
-    select: { id: true, nombre: true, apellido: true, rol: true, colorAgenda: true },
+    select: { id: true, nombre: true, apellido: true, rol: true, colorAgenda: true, especialidades: true },
     orderBy: { nombre: "asc" },
   });
 
@@ -315,6 +315,7 @@ export async function getFisioterapeutas() {
     nombre: `${f.nombre} ${f.apellido}`,
     iniciales: `${f.nombre[0]}${f.apellido[0]}`.toUpperCase(),
     rol: f.rol,
+    especialidades: f.especialidades,
     colorAgenda: f.colorAgenda ?? "#4a7fa5",
   }));
 }
