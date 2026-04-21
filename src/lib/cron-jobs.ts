@@ -204,15 +204,15 @@ export async function runAnticipos() {
 }
 
 // ─── Auto-completar citas pasadas + enviar encuesta NPS ──────────────────────
-// Marca como "completada" citas cuyo fechaHoraFin ya pasó (>=1h atrás),
+// Marca como "completada" citas cuyo fechaHoraFin pasó hace >=15 min,
 // y dispara el envío de encuesta de satisfacción por WhatsApp.
 export async function runAutoCompletar() {
-  const unaHoraAtras = new Date(Date.now() - 60 * 60 * 1000);
+  const quinceMinAtras = new Date(Date.now() - 15 * 60 * 1000);
 
   const pendientes = await prisma.cita.findMany({
     where: {
       estado: { in: ["confirmada", "agendada", "en_curso"] },
-      fechaHoraFin: { lte: unaHoraAtras },
+      fechaHoraFin: { lte: quinceMinAtras },
     },
     include: {
       paciente: { select: { id: true, nombre: true, apellido: true, email: true, telefono: true, telefonoContacto: true } },

@@ -41,9 +41,9 @@ export function startScheduler() {
     { timezone: "UTC" },
   );
 
-  // Auto-completar citas pasadas + encuesta NPS — cada hora en minuto 30
+  // Auto-completar citas pasadas + encuesta NPS — cada 15 min
   cron.schedule(
-    "30 * * * *",
+    "*/15 * * * *",
     async () => {
       const t0 = Date.now();
       console.log("[Scheduler] runAutoCompletar — inicio");
@@ -60,5 +60,5 @@ export function startScheduler() {
   console.log("[Scheduler] Jobs registrados:");
   console.log("  - Recordatorios:  0 15 * * * UTC  (9:00 AM CDMX)");
   console.log("  - Anticipos:      0 * * * * UTC   (cada hora)");
-  console.log("  - AutoCompletar:  30 * * * * UTC  (cada hora en :30)");
+  console.log("  - AutoCompletar:  */15 * * * * UTC (cada 15 min, encuesta ~15 min tras fin de cita)");
 }
