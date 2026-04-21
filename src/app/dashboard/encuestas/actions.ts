@@ -105,7 +105,7 @@ export async function crearEncuesta(citaId: string) {
   const cita = await prisma.cita.findUnique({
     where: { id: citaId },
     include: {
-      paciente: { select: { id: true, nombre: true, telefono: true } },
+      paciente: { select: { id: true, nombre: true, telefono: true, telefonoContacto: true } },
       tenant: { select: { nombre: true } },
     },
   });
@@ -128,25 +128,35 @@ export async function crearEncuesta(citaId: string) {
     select: { id: true, token: true },
   });
 
-  // Send WhatsApp link (best-effort)
-  if (cita.paciente.telefono) {
+  // Send WhatsApp link (best-effort) — usa telefonoContacto si existe
+  const telefonoWA = cita.paciente.telefonoContacto || cita.paciente.telefono;
+  if (telefonoWA) {
     try {
-      const { isConfigured, getEvolutionClient } = await import("@/lib/evolution");
+      const { isConfigured, getEvolutionClient, formatPhone } = await import("@/lib/evolution");
       if (isConfigured()) {
         const baseUrl =
-          process.env.NEXT_PUBLIC_APP_URL ??
-          process.env.VERCEL_URL
-            ? `https://${process.env.VERCEL_URL}`
-            : "http://localhost:3000";
+          process.env.NEXT_PUBLIC_APP_URL ||
+          (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://www.kayakalp.com.mx");
         const surveyUrl = `${baseUrl}/encuesta/${encuesta.token}`;
+        const fecha = cita.fechaHoraInicio.toLocaleDateString("es-MX", {
+          weekday: "long",
+          day: "numeric",
+          month: "long",
+          timeZone: "America/Mexico_City",
+        });
+        const hora = cita.fechaHoraInicio.toLocaleTimeString("es-MX", {
+          hour: "2-digit",
+          minute: "2-digit",
+          timeZone: "America/Mexico_City",
+        });
         const msg =
           `¡Hola ${cita.paciente.nombre}! 😊\n\n` +
-          `Gracias por tu sesión en *${cita.tenant?.nombre ?? "FisioAll"}*. ` +
+          `Gracias por tu sesión del *${fecha}* a las *${hora}* en *${cita.tenant?.nombre ?? "Kaya Kalp"}*. ` +
           `Nos importa saber cómo te sientes.\n\n` +
           `Por favor, tómate 1 minuto para responder nuestra breve encuesta:\n` +
           `👉 ${surveyUrl}\n\n` +
           `Tu opinión nos ayuda a mejorar. ¡Muchas gracias!`;
-        await getEvolutionClient().sendText(cita.paciente.telefono, msg);
+        await getEvolutionClient().sendText(formatPhone(telefonoWA), msg);
       }
     } catch (err) {
       console.error("[Encuesta] WhatsApp send failed:", err);
@@ -208,26 +218,27 @@ export async function reenviarEncuesta(encuestaId: string) {
     select: {
       id: true,
       token: true,
-      paciente: { select: { nombre: true, telefono: true } },
+      paciente: { select: { nombre: true, telefono: true, telefonoContacto: true } },
       cita: { select: { tenant: { select: { nombre: true } } } },
     },
   });
   if (!encuesta) return { error: "Encuesta no encontrada" };
 
-  if (encuesta.paciente.telefono) {
+  const telefonoWA = encuesta.paciente.telefonoContacto || encuesta.paciente.telefono;
+  if (telefonoWA) {
     try {
-      const { isConfigured, getEvolutionClient } = await import("@/lib/evolution");
+      const { isConfigured, getEvolutionClient, formatPhone } = await import("@/lib/evolution");
       if (isConfigured()) {
         const baseUrl =
-          process.env.NEXT_PUBLIC_APP_URL ??
-          (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+          process.env.NEXT_PUBLIC_APP_URL ||
+          (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://www.kayakalp.com.mx");
         const surveyUrl = `${baseUrl}/encuesta/${encuesta.token}`;
         const msg =
           `¡Hola ${encuesta.paciente.nombre}! 😊\n\n` +
           `Te reenviamos el link de nuestra encuesta de satisfacción:\n` +
           `👉 ${surveyUrl}\n\n` +
           `¡Gracias por tu tiempo!`;
-        await getEvolutionClient().sendText(encuesta.paciente.telefono, msg);
+        await getEvolutionClient().sendText(formatPhone(telefonoWA), msg);
       }
     } catch (err) {
       console.error("[Encuesta] Reenvío WhatsApp failed:", err);

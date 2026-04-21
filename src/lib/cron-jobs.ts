@@ -231,28 +231,11 @@ export async function runAutoCompletar() {
       });
       completadas++;
 
-      // Crear encuesta y enviar WhatsApp
+      // Crear encuesta — crearEncuesta envía su propio WhatsApp con el link
       try {
         const { crearEncuesta } = await import("@/app/dashboard/encuestas/actions");
         const result = await crearEncuesta(cita.id);
-        const encuestaToken = result && "token" in result ? (result.token as string) : undefined;
-
-        const telefono = waPhone(cita.paciente);
-        if (telefono && isConfigured()) {
-          const { sendCitaCompletadaWhatsApp } = await import("@/lib/send-whatsapp");
-          await sendCitaCompletadaWhatsApp({
-            pacienteNombre: `${cita.paciente.nombre} ${cita.paciente.apellido}`.trim(),
-            pacienteTelefono: telefono,
-            tipoSesion: cita.tipoSesion ?? "Sesión",
-            fisioterapeuta: `${cita.fisioterapeuta.nombre} ${cita.fisioterapeuta.apellido}`.trim(),
-            fechaHoraInicio: cita.fechaHoraInicio,
-            fechaHoraFin: cita.fechaHoraFin,
-            sala: cita.sala,
-            citaId: cita.id,
-            encuestaToken,
-          });
-          encuestasEnviadas++;
-        }
+        if (result && "ok" in result && result.ok) encuestasEnviadas++;
       } catch (encErr) {
         console.error(`[AutoCompletar] Encuesta error cita ${cita.id}:`, encErr);
       }
