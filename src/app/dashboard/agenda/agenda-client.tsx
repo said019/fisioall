@@ -183,9 +183,7 @@ function filterFisiosByServicio(fisios: FisioOption[], servicio: string): FisioO
   if (!servicio) return fisios;
   const required = SERVICIO_ESPECIALIDAD[servicio];
   if (!required) return fisios; // unknown service → show all
-  return fisios.filter(
-    (f) => f.rol === "admin" || f.especialidades?.includes(required)
-  );
+  return fisios.filter((f) => f.especialidades?.includes(required));
 }
 
 const HORAS_DISPONIBLES = [
