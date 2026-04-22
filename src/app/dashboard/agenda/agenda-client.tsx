@@ -134,39 +134,58 @@ const TIPOS_SESION = [
   "Epilación Axila", "Epilación Bigote/Barbilla", "Epilación Barba", "Epilación Bikini",
 ];
 
-// Services that belong to cosmetología (Gaby-only)
-const SERVICIOS_COSMETOLOGIA = new Set([
-  "Masaje Revitalizante Facial", "Limpieza Facial Básica", "Limpieza Facial Profunda",
-  "Hidratación Profunda", "Rejuvenecimiento Facial", "Hilos de Colágeno",
-  "Tratamiento Corporal",
-  "Epilación Media Pierna Inf", "Epilación Media Pierna Sup", "Epilación Piernas Completas",
-  "Epilación Axila", "Epilación Bigote/Barbilla", "Epilación Barba", "Epilación Bikini",
-]);
 
-// Services that belong to fisioterapia (Paola/Jenni only)
-const SERVICIOS_FISIOTERAPIA = new Set([
-  "Fisioterapia", "Fisioterapia Antiestrés", "Descarga Muscular",
-  "Drenaje Linfático", "Presoterapia", "Ejercicio Terapéutico",
-  "Valoración Fisioterapéutica", "Suelo Pélvico", "Rehabilitación",
-  "Masaje Terapéutico", "Masaje Relajante", "Masaje Descontracturante",
-]);
-
-const ESPECIALIDADES_COSMETOLOGIA = new Set(["Tratamientos Faciales", "Tratamientos Corporales"]);
-const ESPECIALIDADES_FISIOTERAPIA = new Set(["Fisioterapia", "Suelo Pélvico", "Rehabilitación", "Masajes Terapéuticos"]);
+// Maps tipoSesion name → required especialidad tag on Usuario.especialidades
+const SERVICIO_ESPECIALIDAD: Record<string, string> = {
+  // Fisioterapia general (Paola + Jenni)
+  "Fisioterapia": "Fisioterapia",
+  "Fisioterapia Antiestrés": "Fisioterapia",
+  "Descarga Muscular": "Fisioterapia",
+  "Drenaje Linfático": "Fisioterapia",
+  "Presoterapia": "Fisioterapia",
+  "Ejercicio Terapéutico": "Fisioterapia",
+  "Valoración Fisioterapéutica": "Fisioterapia",
+  "Rehabilitación": "Fisioterapia",
+  "Masaje Terapéutico": "Masajes Terapéuticos",
+  "Masaje Relajante": "Masajes Terapéuticos",
+  "Masaje Descontracturante": "Masajes Terapéuticos",
+  // Suelo Pélvico — solo Paola
+  "Suelo Pélvico": "Suelo Pélvico",
+  "Sesión Suelo Pélvico": "Suelo Pélvico",
+  // Faciales — Gaby
+  "Masaje Revitalizante Facial": "Tratamientos Faciales",
+  "Masaje Facial Revitalizante": "Tratamientos Faciales",
+  "Limpieza Facial Básica": "Tratamientos Faciales",
+  "Limpieza Facial Profunda": "Tratamientos Faciales",
+  "Hidratación Profunda": "Tratamientos Faciales",
+  "Rejuvenecimiento Facial": "Tratamientos Faciales",
+  "Hilos de Colágeno": "Tratamientos Faciales",
+  // Corporales/Epilación — Gaby
+  "Tratamiento Corporal": "Tratamientos Corporales",
+  "Epilación Media Pierna Inf": "Tratamientos Corporales",
+  "Epilación Media Pierna Sup": "Tratamientos Corporales",
+  "Epilación Piernas Completas": "Tratamientos Corporales",
+  "Epilación Axila": "Tratamientos Corporales",
+  "Epilación Bigote/Barbilla": "Tratamientos Corporales",
+  "Epilación Barba": "Tratamientos Corporales",
+  "Epilación Bikini": "Tratamientos Corporales",
+  "Media Pierna Inferior": "Tratamientos Corporales",
+  "Media Pierna Superior": "Tratamientos Corporales",
+  "Piernas Completas": "Tratamientos Corporales",
+  "Axila": "Tratamientos Corporales",
+  "Bigote": "Tratamientos Corporales",
+  "Barbilla": "Tratamientos Corporales",
+  "Barba Completa": "Tratamientos Corporales",
+  "Área de Bikini": "Tratamientos Corporales",
+};
 
 function filterFisiosByServicio(fisios: FisioOption[], servicio: string): FisioOption[] {
   if (!servicio) return fisios;
-  if (SERVICIOS_COSMETOLOGIA.has(servicio)) {
-    return fisios.filter(
-      (f) => f.rol === "admin" || f.especialidades?.some((e) => ESPECIALIDADES_COSMETOLOGIA.has(e))
-    );
-  }
-  if (SERVICIOS_FISIOTERAPIA.has(servicio)) {
-    return fisios.filter(
-      (f) => f.rol === "admin" || f.especialidades?.some((e) => ESPECIALIDADES_FISIOTERAPIA.has(e))
-    );
-  }
-  return fisios; // unknown service → show all
+  const required = SERVICIO_ESPECIALIDAD[servicio];
+  if (!required) return fisios; // unknown service → show all
+  return fisios.filter(
+    (f) => f.rol === "admin" || f.especialidades?.includes(required)
+  );
 }
 
 const HORAS_DISPONIBLES = [
