@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import {
   Building2,
   Save,
@@ -16,7 +15,6 @@ import {
   Instagram,
   AlertCircle,
   CalendarOff,
-  Apple,
   Plus,
   Trash2,
   Unplug,
@@ -59,7 +57,13 @@ interface ConfiguracionClientProps {
 export default function ConfiguracionClient({ initial, pacientes, terapeutas = [] }: ConfiguracionClientProps) {
   const [config, setConfig] = useState<ConfigClinica>(initial.clinica);
   const [diasBloqueados, setDiasBloqueados] = useState<DiaBloqueadoData[]>(initial.diasBloqueados);
-  const [nuevoBloqueo, setNuevoBloqueo] = useState({ fecha: "", motivo: "" });
+  const [nuevoBloqueo, setNuevoBloqueo] = useState<{
+    fecha: string;
+    motivo: string;
+    fisioIds: string[];
+    horaInicio: string;
+    horaFin: string;
+  }>({ fecha: "", motivo: "", fisioIds: [], horaInicio: "", horaFin: "" });
   const [guardado, setGuardado] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -321,14 +325,13 @@ export default function ConfiguracionClient({ initial, pacientes, terapeutas = [
                 Días Bloqueados
               </CardTitle>
               <CardDescription className="text-[11px] text-[#1e2d3a]/50">
-                Vacaciones, festivos y cierres — no se podrán agendar citas estos días
+                Bloquea por terapeuta y por rango horario — útil para citas médicas, descansos parciales, vacaciones, etc.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
-
-                <div className="flex items-end gap-2">
-                  <div className="flex-1">
+              <div className="space-y-2.5">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
                     <Label className="text-[10px] font-semibold text-[#1e2d3a]/60">Fecha</Label>
                     <Input
                       type="date"
@@ -337,40 +340,127 @@ export default function ConfiguracionClient({ initial, pacientes, terapeutas = [
                       className="border-[#c8dce8] text-sm h-8 mt-0.5"
                     />
                   </div>
-                  <div className="flex-1">
+                  <div>
                     <Label className="text-[10px] font-semibold text-[#1e2d3a]/60">Motivo</Label>
                     <Input
                       value={nuevoBloqueo.motivo}
                       onChange={(e) => setNuevoBloqueo((p) => ({ ...p, motivo: e.target.value }))}
-                      placeholder="Ej. Vacaciones, día festivo"
+                      placeholder="Ej. Consulta médica, vacaciones"
                       className="border-[#c8dce8] text-sm h-8 mt-0.5"
                     />
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="cursor-pointer h-8 px-2.5 border-[#c8dce8] text-[#4a7fa5] hover:bg-[#4a7fa5]/10"
-                    disabled={!nuevoBloqueo.fecha}
-                    onClick={() => {
-                      if (!nuevoBloqueo.fecha) return;
-                      if (diasBloqueados.some((d) => d.fecha === nuevoBloqueo.fecha)) return;
-                      setDiasBloqueados((prev) => [...prev, { fecha: nuevoBloqueo.fecha, motivo: nuevoBloqueo.motivo || "Bloqueado" }]);
-                      setNuevoBloqueo({ fecha: "", motivo: "" });
-                    }}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
                 </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-[10px] font-semibold text-[#1e2d3a]/60">Desde (opcional)</Label>
+                    <Input
+                      type="time"
+                      value={nuevoBloqueo.horaInicio}
+                      onChange={(e) => setNuevoBloqueo((p) => ({ ...p, horaInicio: e.target.value }))}
+                      className="border-[#c8dce8] text-sm h-8 mt-0.5"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-[10px] font-semibold text-[#1e2d3a]/60">Hasta (opcional)</Label>
+                    <Input
+                      type="time"
+                      value={nuevoBloqueo.horaFin}
+                      onChange={(e) => setNuevoBloqueo((p) => ({ ...p, horaFin: e.target.value }))}
+                      className="border-[#c8dce8] text-sm h-8 mt-0.5"
+                    />
+                  </div>
+                </div>
+                <p className="text-[10px] text-[#1e2d3a]/40 -mt-1">Si dejas las horas vacías, se bloquea el día completo.</p>
+
+                {terapeutas.length > 0 && (
+                  <div>
+                    <Label className="text-[10px] font-semibold text-[#1e2d3a]/60">Terapeutas afectados</Label>
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      <button
+                        type="button"
+                        onClick={() => setNuevoBloqueo((p) => ({ ...p, fisioIds: [] }))}
+                        className={`cursor-pointer text-[11px] px-2.5 py-1 rounded-full border transition-colors ${
+                          nuevoBloqueo.fisioIds.length === 0
+                            ? "bg-[#4a7fa5] border-[#4a7fa5] text-white"
+                            : "bg-white border-[#c8dce8] text-[#1e2d3a]/70 hover:bg-[#f0f4f7]"
+                        }`}
+                      >
+                        Todos
+                      </button>
+                      {terapeutas.map((t) => {
+                        const selected = nuevoBloqueo.fisioIds.includes(t.id);
+                        return (
+                          <button
+                            key={t.id}
+                            type="button"
+                            onClick={() =>
+                              setNuevoBloqueo((p) => ({
+                                ...p,
+                                fisioIds: selected
+                                  ? p.fisioIds.filter((id) => id !== t.id)
+                                  : [...p.fisioIds, t.id],
+                              }))
+                            }
+                            className={`cursor-pointer text-[11px] px-2.5 py-1 rounded-full border transition-colors ${
+                              selected
+                                ? "bg-[#4a7fa5] border-[#4a7fa5] text-white"
+                                : "bg-white border-[#c8dce8] text-[#1e2d3a]/70 hover:bg-[#f0f4f7]"
+                            }`}
+                          >
+                            {t.nombre}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="cursor-pointer h-8 w-full border-[#c8dce8] text-[#4a7fa5] hover:bg-[#4a7fa5]/10 gap-1.5"
+                  disabled={!nuevoBloqueo.fecha}
+                  onClick={() => {
+                    if (!nuevoBloqueo.fecha) return;
+                    const horaInicio = nuevoBloqueo.horaInicio || undefined;
+                    const horaFin = nuevoBloqueo.horaFin || undefined;
+                    if ((horaInicio && !horaFin) || (!horaInicio && horaFin)) {
+                      setError("Debes definir ambas horas o dejar las dos vacías");
+                      return;
+                    }
+                    if (horaInicio && horaFin && horaInicio >= horaFin) {
+                      setError("La hora de inicio debe ser anterior a la hora de fin");
+                      return;
+                    }
+                    setError(null);
+                    setDiasBloqueados((prev) => [
+                      ...prev,
+                      {
+                        fecha: nuevoBloqueo.fecha,
+                        motivo: nuevoBloqueo.motivo || "Bloqueado",
+                        fisioIds: nuevoBloqueo.fisioIds.length > 0 ? nuevoBloqueo.fisioIds : undefined,
+                        horaInicio,
+                        horaFin,
+                      },
+                    ]);
+                    setNuevoBloqueo({ fecha: "", motivo: "", fisioIds: [], horaInicio: "", horaFin: "" });
+                  }}
+                >
+                  <Plus className="h-4 w-4" />
+                  Agregar bloqueo
+                </Button>
 
                 {diasBloqueados.length === 0 ? (
                   <p className="text-[11px] text-[#1e2d3a]/30 text-center py-3">
                     No hay días bloqueados
                   </p>
                 ) : (
-                  <div className="space-y-1.5 max-h-[200px] overflow-y-auto mt-3">
+                  <div className="space-y-1.5 max-h-[260px] overflow-y-auto mt-2">
                     {diasBloqueados
+                      .slice()
                       .sort((a, b) => a.fecha.localeCompare(b.fecha))
-                      .map((d) => {
+                      .map((d, idx) => {
                         const dateObj = new Date(d.fecha + "T12:00:00");
                         const label = dateObj.toLocaleDateString("es-MX", {
                           weekday: "short",
@@ -378,18 +468,36 @@ export default function ConfiguracionClient({ initial, pacientes, terapeutas = [
                           month: "short",
                           year: "numeric",
                         });
+                        const fisioLabel =
+                          !d.fisioIds || d.fisioIds.length === 0
+                            ? "Todos"
+                            : terapeutas
+                                .filter((t) => d.fisioIds!.includes(t.id))
+                                .map((t) => t.nombre)
+                                .join(", ");
+                        const horarioLabel =
+                          d.horaInicio && d.horaFin ? `${d.horaInicio}–${d.horaFin}` : "Día completo";
                         return (
                           <div
-                            key={d.fecha}
-                            className="flex items-center gap-3 bg-[#d9534f]/5 border border-[#d9534f]/10 rounded-lg px-3 py-2"
+                            key={`${d.fecha}-${idx}`}
+                            className="flex items-start gap-3 bg-[#d9534f]/5 border border-[#d9534f]/10 rounded-lg px-3 py-2"
                           >
-                            <CalendarOff className="h-3.5 w-3.5 text-[#d9534f] shrink-0" />
+                            <CalendarOff className="h-3.5 w-3.5 text-[#d9534f] shrink-0 mt-0.5" />
                             <div className="flex-1 min-w-0">
-                              <span className="text-xs font-semibold text-[#1e2d3a] capitalize">{label}</span>
-                              <span className="text-[10px] text-[#1e2d3a]/40 ml-2">{d.motivo}</span>
+                              <div className="text-xs font-semibold text-[#1e2d3a] capitalize">{label}</div>
+                              <div className="text-[10px] text-[#1e2d3a]/60 mt-0.5">
+                                {horarioLabel} · {fisioLabel}
+                              </div>
+                              {d.motivo && d.motivo !== "Bloqueado" && (
+                                <div className="text-[10px] text-[#1e2d3a]/40 mt-0.5 italic">{d.motivo}</div>
+                              )}
                             </div>
                             <button
-                              onClick={() => setDiasBloqueados((prev) => prev.filter((x) => x.fecha !== d.fecha))}
+                              onClick={() =>
+                                setDiasBloqueados((prev) =>
+                                  prev.filter((_, i) => i !== prev.indexOf(d))
+                                )
+                              }
                               className="cursor-pointer text-[#1e2d3a]/25 hover:text-[#d9534f] transition-colors shrink-0"
                               aria-label={`Eliminar bloqueo ${label}`}
                             >
@@ -407,51 +515,14 @@ export default function ConfiguracionClient({ initial, pacientes, terapeutas = [
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════════ */}
-      {/* INTEGRACIONES — full width, 2 cols */}
+      {/* INTEGRACIONES */}
       {/* ══════════════════════════════════════════════════════════════════════ */}
       <div>
         <h2 className="text-sm font-bold text-[#1e2d3a] mb-3 flex items-center gap-2">
           <Unplug className="h-4 w-4 text-[#4a7fa5]" />
           Integraciones
         </h2>
-        <div className="grid lg:grid-cols-2 gap-3">
-          {/* ── Apple Calendar / Suscripción de agenda ── */}
-          <Card className="border-[#c8dce8] bg-white">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-bold text-[#1e2d3a] flex items-center gap-2">
-                <Apple className="h-4 w-4 text-[#1e2d3a]" />
-                Calendario en tu dispositivo
-              </CardTitle>
-              <CardDescription className="text-[11px] text-[#1e2d3a]/50">
-                Suscribe esta agenda a tu Apple Calendar, Google Calendar u Outlook — se actualiza sola.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <ol className="space-y-1.5 text-xs text-[#1e2d3a]/70 list-decimal pl-5">
-                  <li>Abre la página de suscripción.</li>
-                  <li>Copia la URL (<code className="bg-[#f0f4f7] px-1 rounded text-[10px]">webcal://</code> para Apple o <code className="bg-[#f0f4f7] px-1 rounded text-[10px]">https://</code> para Google).</li>
-                  <li>Pégala en tu app de calendario. Tus citas aparecerán automáticamente.</li>
-                </ol>
-                <Link href="/dashboard/calendar-subscribe" className="block">
-                  <Button
-                    variant="outline"
-                    className="cursor-pointer w-full gap-2 border-[#c8dce8] text-[#1e2d3a] hover:bg-[#1e2d3a]/5 transition-all"
-                  >
-                    <Apple className="h-4 w-4" />
-                    Abrir suscripción de calendario
-                  </Button>
-                </Link>
-                <p className="text-[10px] text-[#1e2d3a]/35">
-                  Funciona con iPhone, Mac, Android y cualquier cliente que soporte iCalendar (.ics).
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* ── WhatsApp (Evolution API) ── */}
-          <WhatsAppPanel pacientes={pacientes} />
-        </div>
+        <WhatsAppPanel pacientes={pacientes} />
       </div>
 
       {/* ── FULL WIDTH: Horarios del Equipo ── */}

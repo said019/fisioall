@@ -42,6 +42,9 @@ export interface ConfigClinicaData {
 export interface DiaBloqueadoData {
   fecha: string; // YYYY-MM-DD
   motivo: string;
+  fisioIds?: string[]; // si vacío/undefined → aplica a todos
+  horaInicio?: string; // HH:MM, si undefined → todo el día
+  horaFin?: string;    // HH:MM
 }
 
 export interface ConfigCompleta {

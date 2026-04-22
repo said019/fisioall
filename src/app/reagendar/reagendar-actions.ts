@@ -69,10 +69,31 @@ export async function getSlotsReagendar(
   if (!tenant) return [];
 
   const cfg = (tenant.configuracion ?? {}) as Record<string, unknown>;
-  const diasBloqueados = (cfg.diasBloqueados as { fecha: string }[]) ?? [];
+  type BloqueoRaw = {
+    fecha: string;
+    motivo?: string;
+    fisioIds?: string[];
+    horaInicio?: string;
+    horaFin?: string;
+  };
+  const diasBloqueados = (cfg.diasBloqueados as BloqueoRaw[]) ?? [];
+  const bloqueosDelDia = diasBloqueados.filter((b) => b.fecha === fecha);
+  const bloqueosAplicables = bloqueosDelDia.filter(
+    (b) => !b.fisioIds || b.fisioIds.length === 0 || b.fisioIds.includes(fisioterapeutaId)
+  );
 
-  // Check if date is blocked
-  if (diasBloqueados.some((d) => d.fecha === fecha)) return [];
+  // Si hay un bloqueo full-day para este fisio → sin slots
+  const bloqueadoFullDay = bloqueosAplicables.some((b) => !b.horaInicio || !b.horaFin);
+  if (bloqueadoFullDay) return [];
+
+  // Rangos de bloqueo parcial (en minutos) que aplican a este fisio
+  const toMin = (hhmm: string) => {
+    const [h, m] = hhmm.split(":").map(Number);
+    return h * 60 + m;
+  };
+  const rangosBloqueo = bloqueosAplicables
+    .filter((b) => b.horaInicio && b.horaFin)
+    .map((b) => ({ inicio: toMin(b.horaInicio!), fin: toMin(b.horaFin!) }));
 
   const dateObj = new Date(fecha + "T12:00:00");
   const diasSemana = ["domingo", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado"];
@@ -149,7 +170,11 @@ export async function getSlotsReagendar(
         return slotStart < c.fechaHoraFin && slotEnd > c.fechaHoraInicio;
       });
 
-      slots.push({ hora, disponible: !ocupado });
+      // Bloqueo parcial por hora
+      const slotFinMin = cursor + duracion;
+      const bloqueado = rangosBloqueo.some((r) => cursor < r.fin && slotFinMin > r.inicio);
+
+      slots.push({ hora, disponible: !ocupado && !bloqueado });
 
       cursor += intervalo;
     }

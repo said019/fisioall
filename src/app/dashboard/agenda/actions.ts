@@ -489,6 +489,28 @@ export async function getSlotsDisponibles(params: {
   const fechaObj = new Date(fecha + "T00:00:00-06:00");
   const diaKey = ["domingo", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado"][fechaObj.getDay()];
 
+  // 0. Verificar bloqueos del día para este fisio
+  const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
+  const cfg = (tenant?.configuracion ?? {}) as Record<string, unknown>;
+  type BloqueoRaw = {
+    fecha: string;
+    motivo?: string;
+    fisioIds?: string[];
+    horaInicio?: string;
+    horaFin?: string;
+  };
+  const bloqueosDelDia = ((cfg.diasBloqueados as BloqueoRaw[]) ?? []).filter(
+    (b) => b.fecha === fecha && (!b.fisioIds || b.fisioIds.length === 0 || b.fisioIds.includes(fisioterapeutaId))
+  );
+  if (bloqueosDelDia.some((b) => !b.horaInicio || !b.horaFin)) return [];
+  const toMin = (hhmm: string) => {
+    const [h, m] = hhmm.split(":").map(Number);
+    return h * 60 + m;
+  };
+  const rangosBloqueo = bloqueosDelDia
+    .filter((b) => b.horaInicio && b.horaFin)
+    .map((b) => ({ inicio: toMin(b.horaInicio!), fin: toMin(b.horaFin!) }));
+
   // 1. Obtener horario del terapeuta para ese día
   const horario = await prisma.horarioUsuario.findFirst({
     where: { tenantId, usuarioId: fisioterapeutaId, diaKey, activo: true },
@@ -551,7 +573,13 @@ export async function getSlotsDisponibles(params: {
       }
 
       const hora = `${String(Math.floor(minutos / 60)).padStart(2, "0")}:${String(minutos % 60).padStart(2, "0")}`;
-      slots.push({ hora, cubiculo: cubiculoLibre ?? 0, disponible: cubiculoLibre !== null });
+      const slotFinMin = minutos + duracionMin;
+      const bloqueado = rangosBloqueo.some((r) => minutos < r.fin && slotFinMin > r.inicio);
+      slots.push({
+        hora,
+        cubiculo: cubiculoLibre ?? 0,
+        disponible: cubiculoLibre !== null && !bloqueado,
+      });
       minutos += INTERVALO;
     }
   }

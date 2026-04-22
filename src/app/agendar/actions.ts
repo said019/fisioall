@@ -162,13 +162,31 @@ export async function getMembresiasPaciente(pacienteId: string) {
 // Si se pasa una especialidad (sin fisioId), une los días de todos los
 // terapeutas con esa especialidad. Un día está activo si AL MENOS un
 // terapeuta tiene franjas ese día.
+type BloqueoRaw = {
+  fecha: string;
+  motivo: string;
+  fisioIds?: string[];
+  horaInicio?: string;
+  horaFin?: string;
+};
+
+// Bloqueo aplica a un fisio si: no tiene fisioIds (global) o lo incluye
+function bloqueoAplicaAFisio(b: BloqueoRaw, fisioId: string): boolean {
+  return !b.fisioIds || b.fisioIds.length === 0 || b.fisioIds.includes(fisioId);
+}
+
+// Bloqueo cubre todo el día (sin rango horario)
+function bloqueoEsFullDay(b: BloqueoRaw): boolean {
+  return !b.horaInicio || !b.horaFin;
+}
+
 export async function getScheduleConfig(fisioId?: string, especialidad?: string) {
   const tenantId = await getTenantId();
 
   // Días bloqueados del tenant
   const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
   const cfg = (tenant?.configuracion ?? {}) as Record<string, unknown>;
-  const diasBloqueados = (cfg.diasBloqueados as { fecha: string; motivo: string }[]) ?? [];
+  const diasBloqueados = (cfg.diasBloqueados as BloqueoRaw[]) ?? [];
 
   // Determinar qué usuarios considerar
   let usuarioIds: string[] = [];
@@ -204,9 +222,23 @@ export async function getScheduleConfig(fisioId?: string, especialidad?: string)
   // Todos los días de la semana que NO tienen horario → inactivos
   const diasInactivos = [0, 1, 2, 3, 4, 5, 6].filter((d) => !diasActivos.has(d));
 
+  // Solo marcar día como fully blocked si TODOS los fisios relevantes tienen
+  // un bloqueo full-day para esa fecha. Un bloqueo parcial (con horas) no
+  // bloquea el día — sólo filtra slots en getHorariosDisponibles.
+  const fechasBloqueadas = new Set<string>();
+  const fechasUnicas = new Set(diasBloqueados.map((b) => b.fecha));
+  for (const fecha of fechasUnicas) {
+    const bloqueosDelDia = diasBloqueados.filter((b) => b.fecha === fecha && bloqueoEsFullDay(b));
+    if (bloqueosDelDia.length === 0) continue;
+    const todosBloqueados = usuarioIds.every((uid) =>
+      bloqueosDelDia.some((b) => bloqueoAplicaAFisio(b, uid))
+    );
+    if (todosBloqueados) fechasBloqueadas.add(fecha);
+  }
+
   return {
     diasInactivos,
-    diasBloqueados: diasBloqueados.map((d) => d.fecha),
+    diasBloqueados: Array.from(fechasBloqueadas),
   };
 }
 
@@ -234,11 +266,11 @@ export async function getHorariosDisponibles(
   const diaKey = diasSemana[dia.getDay()];
   const fechaISO = `${dia.getFullYear()}-${String(dia.getMonth() + 1).padStart(2, "0")}-${String(dia.getDate()).padStart(2, "0")}`;
 
-  // Verificar días bloqueados
+  // Cargar bloqueos del tenant
   const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
   const cfg = (tenant?.configuracion ?? {}) as Record<string, unknown>;
-  const diasBloqueados = (cfg.diasBloqueados as { fecha: string; motivo: string }[]) ?? [];
-  if (diasBloqueados.some((d) => d.fecha === fechaISO)) return [];
+  const diasBloqueados = (cfg.diasBloqueados as BloqueoRaw[]) ?? [];
+  const bloqueosDelDia = diasBloqueados.filter((b) => b.fecha === fechaISO);
 
   // Determinar usuarios a considerar
   let usuarioIds: string[] = [];
@@ -260,6 +292,12 @@ export async function getHorariosDisponibles(
 
   if (usuarioIds.length === 0) return [];
 
+  // Si TODOS los fisios relevantes tienen bloqueo full-day → no hay slots
+  const todosBloqueadosFullDay = usuarioIds.every((uid) =>
+    bloqueosDelDia.some((b) => bloqueoEsFullDay(b) && bloqueoAplicaAFisio(b, uid))
+  );
+  if (todosBloqueadosFullDay && bloqueosDelDia.length > 0) return [];
+
   // Obtener franjas de todos los terapeutas para este día
   const horarios = await prisma.horarioUsuario.findMany({
     where: { tenantId, usuarioId: { in: usuarioIds }, diaKey, activo: true },
@@ -267,14 +305,6 @@ export async function getHorariosDisponibles(
   });
 
   if (horarios.length === 0) return [];
-
-  // Recolectar todas las franjas (unión de todos los terapeutas)
-  type Franja = { inicio: string; fin: string };
-  const todasFranjas: Franja[] = [];
-  for (const h of horarios) {
-    const franjas = h.franjas as Franja[];
-    todasFranjas.push(...franjas);
-  }
 
   // Hora actual en CDMX para filtrar slots pasados
   const ahoraMx = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Mexico_City" }));
@@ -317,33 +347,68 @@ export async function getHorariosDisponibles(
 
   const todasOcupadas = [...horasOcupadas, ...gcalOcupadas];
 
-  // Generar slots cada hora en punto (9:00, 10:00, 11:00...)
-  // El intervalo es SIEMPRE 60 min — la duración solo se usa para verificar
-  // que la sesión cabe dentro de la franja, no para espaciar los slots.
-  const INTERVALO = 60;
-  const slotsSet = new Set<string>();
-  const slotsResult: { hora: string; disponible: boolean }[] = [];
+  // Helper: parse "HH:MM" → minutos
+  const toMin = (hhmm: string) => {
+    const [h, m] = hhmm.split(":").map(Number);
+    return h * 60 + m;
+  };
 
-  for (const franja of todasFranjas) {
-    const [hIni, mIni] = franja.inicio.split(":").map(Number);
-    const [hFin, mFin] = franja.fin.split(":").map(Number);
-    // Arrancar siempre en la hora en punto más próxima >= inicio de la franja
-    let minutos = (hIni * 60 + mIni);
-    if (mIni > 0) minutos = (hIni + 1) * 60; // redondear a la siguiente hora entera
-    const finMinutos = hFin * 60 + mFin;
-
-    while (minutos + duracionMin <= finMinutos) {
-      const hora = `${String(Math.floor(minutos / 60)).padStart(2, "0")}:${String(minutos % 60).padStart(2, "0")}`;
-
-      if (!slotsSet.has(hora)) {
-        slotsSet.add(hora);
-        const yaPaso = esHoy && minutos <= minutosActuales;
-        const ocupado = todasOcupadas.some((o) => minutos >= o.inicio && minutos < o.fin);
-        slotsResult.push({ hora, disponible: !ocupado && !yaPaso });
+  // Bloqueos por fisio (rango horario en minutos). Bloqueos full-day se
+  // tratan como rango 0-1440.
+  const bloqueosPorFisio = new Map<string, { inicio: number; fin: number }[]>();
+  for (const uid of usuarioIds) {
+    const rangos: { inicio: number; fin: number }[] = [];
+    for (const b of bloqueosDelDia) {
+      if (!bloqueoAplicaAFisio(b, uid)) continue;
+      if (bloqueoEsFullDay(b)) {
+        rangos.push({ inicio: 0, fin: 24 * 60 });
+      } else {
+        rangos.push({ inicio: toMin(b.horaInicio!), fin: toMin(b.horaFin!) });
       }
-      minutos += INTERVALO;
+    }
+    bloqueosPorFisio.set(uid, rangos);
+  }
+
+  // Generar slots por fisio y unirlos. Un slot está disponible si AL MENOS
+  // un fisio puede tomarlo (para el caso de unión por especialidad).
+  type SlotInfo = { hora: string; minutos: number; disponible: boolean };
+  const slotMap = new Map<string, SlotInfo>();
+  const INTERVALO = 60;
+
+  for (const h of horarios) {
+    const fisioBloqueos = bloqueosPorFisio.get(h.usuarioId) ?? [];
+    type Franja = { inicio: string; fin: string };
+    const franjas = h.franjas as Franja[];
+    for (const franja of franjas) {
+      const [hIni, mIni] = franja.inicio.split(":").map(Number);
+      const [hFin, mFin] = franja.fin.split(":").map(Number);
+      let minutos = hIni * 60 + mIni;
+      if (mIni > 0) minutos = (hIni + 1) * 60;
+      const finMinutos = hFin * 60 + mFin;
+
+      while (minutos + duracionMin <= finMinutos) {
+        const hora = `${String(Math.floor(minutos / 60)).padStart(2, "0")}:${String(minutos % 60).padStart(2, "0")}`;
+        const slotFin = minutos + duracionMin;
+        const yaPaso = esHoy && minutos <= minutosActuales;
+        const ocupado = todasOcupadas.some((o) => minutos < o.fin && slotFin > o.inicio);
+        const bloqueado = fisioBloqueos.some((r) => minutos < r.fin && slotFin > r.inicio);
+        const disponibleParaEsteFisio = !ocupado && !yaPaso && !bloqueado;
+
+        const existente = slotMap.get(hora);
+        if (!existente) {
+          slotMap.set(hora, { hora, minutos, disponible: disponibleParaEsteFisio });
+        } else if (disponibleParaEsteFisio && !existente.disponible) {
+          existente.disponible = true;
+        }
+        minutos += INTERVALO;
+      }
     }
   }
+
+  const slotsResult = Array.from(slotMap.values()).map((s) => ({
+    hora: s.hora,
+    disponible: s.disponible,
+  }));
 
   // Ordenar por hora
   slotsResult.sort((a, b) => a.hora.localeCompare(b.hora));
