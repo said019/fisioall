@@ -198,30 +198,68 @@ const MONTH_NAMES_FULL = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Juli
 
 // ── HELPERS ────────────────────────────────────────────────────────────────
 function buildWeekDays(monday: Date) {
+  // Tomamos las partes del lunes EN CDMX, luego construimos los siguientes
+  // 5 días aritméticamente (sin depender de getDate/getDay locales que
+  // varían entre SSR en UTC y cliente en CDMX).
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Mexico_City",
+    year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(monday);
+  const m: Record<string, string> = {};
+  for (const p of parts) m[p.type] = p.value;
+  const baseY = Number(m.year);
+  const baseM = Number(m.month);
+  const baseD = Number(m.day);
+
   const days = [];
   for (let i = 0; i < 6; i++) {
-    const d = new Date(monday);
-    d.setDate(monday.getDate() + i);
+    // Date.UTC normaliza overflow de día (ej. 30 + 3 → mes siguiente)
+    const utc = new Date(Date.UTC(baseY, baseM - 1, baseD + i, 12, 0, 0));
+    const yy = utc.getUTCFullYear();
+    const mm = utc.getUTCMonth();
+    const dd = utc.getUTCDate();
+    const dayOfWeek = (1 + i) % 7; // lunes(1) → sábado(6)
     days.push({
-      label: DAY_LABELS[d.getDay()],
-      fecha: `${d.getDate()} ${MONTH_NAMES[d.getMonth()]}`,
+      label: DAY_LABELS[dayOfWeek],
+      fecha: `${dd} ${MONTH_NAMES[mm]}`,
       dayIndex: i,
-      isoDate: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`,
-      dateObj: d,
+      isoDate: `${yy}-${String(mm + 1).padStart(2, "0")}-${String(dd).padStart(2, "0")}`,
+      dateObj: utc,
     });
   }
   return days;
 }
 
+// Extrae partes de fecha en CDMX, deterministicamente en SSR y en cliente.
+function partsInMx(d: Date): { year: number; month: number; day: number; hour: number; minute: number } {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Mexico_City",
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit",
+    hour12: false,
+  }).formatToParts(d);
+  const map: Record<string, string> = {};
+  for (const p of parts) map[p.type] = p.value;
+  return {
+    year: Number(map.year),
+    month: Number(map.month),
+    day: Number(map.day),
+    hour: Number(map.hour) === 24 ? 0 : Number(map.hour),
+    minute: Number(map.minute),
+  };
+}
+
 function mapDBCitas(dbCitas: DBCita[], monday: Date): Cita[] {
-  const mondayStart = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate());
+  const mp = partsInMx(monday);
+  const mondayStartMs = Date.UTC(mp.year, mp.month - 1, mp.day);
   return dbCitas.map((c) => {
     const inicio = new Date(c.fechaHoraInicio);
     const fin    = new Date(c.fechaHoraFin);
-    const hora   = `${String(inicio.getHours()).padStart(2, "0")}:${String(inicio.getMinutes()).padStart(2, "0")}`;
+    const ip     = partsInMx(inicio);
+    const hora   = `${String(ip.hour).padStart(2, "0")}:${String(ip.minute).padStart(2, "0")}`;
     const dur    = Math.round((fin.getTime() - inicio.getTime()) / 60000);
-    const citaDay = new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate());
-    const dayIdx  = Math.round((citaDay.getTime() - mondayStart.getTime()) / 86400000);
+    const citaDayMs = Date.UTC(ip.year, ip.month - 1, ip.day);
+    const dayIdx  = Math.round((citaDayMs - mondayStartMs) / 86400000);
     return {
       id: c.id,
       pacienteId: c.pacienteId,
