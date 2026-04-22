@@ -257,7 +257,7 @@ export async function getExpedientePorCita(citaId: string) {
 
 // ─── CREATE NOTA SOAP ────────────────────────────────────────────────────────
 export async function crearNotaSesion(prevState: unknown, formData: FormData) {
-  const { userId } = await requireAuth();
+  const { userId, tenantId } = await requireAuth();
 
   const citaId = formData.get("citaId") as string;
   const pacienteId = formData.get("pacienteId") as string;
@@ -276,6 +276,23 @@ export async function crearNotaSesion(prevState: unknown, formData: FormData) {
     return { error: "Cita y paciente son obligatorios" };
   }
 
+  // Validar UUIDs y existencia
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!UUID_RE.test(citaId) || !UUID_RE.test(pacienteId)) {
+    return { error: "Identificadores inválidos." };
+  }
+
+  const cita = await prisma.cita.findFirst({
+    where: { id: citaId, tenantId },
+    select: { id: true, numeroSesion: true, pacienteId: true },
+  });
+  if (!cita) {
+    return { error: "La cita no existe o no pertenece a tu clínica." };
+  }
+  if (cita.pacienteId !== pacienteId) {
+    return { error: "Paciente no coincide con la cita." };
+  }
+
   const toDolorEnum = (val: string | null): DolorEscala | null => {
     if (!val) return null;
     const n = parseInt(val, 10);
@@ -285,8 +302,16 @@ export async function crearNotaSesion(prevState: unknown, formData: FormData) {
 
   const dolorInicio = toDolorEnum(dolorInicioRaw);
   const dolorFin = toDolorEnum(dolorFinRaw);
-  const tecnicas: string[] = tecnicasRaw ? JSON.parse(tecnicasRaw) : [];
+  let tecnicas: string[] = [];
+  try {
+    tecnicas = tecnicasRaw ? JSON.parse(tecnicasRaw) : [];
+    if (!Array.isArray(tecnicas)) tecnicas = [];
+  } catch {
+    tecnicas = [];
+  }
   const porcentajeObjetivo = porcentajeRaw ? parseInt(porcentajeRaw, 10) : null;
+  // Truncar evolucion a 30 chars (varchar(30) en BD)
+  const evolucionSafe = (evolucion || "sin_cambios").slice(0, 30);
 
   try {
     await prisma.notaSesion.create({
@@ -301,7 +326,7 @@ export async function crearNotaSesion(prevState: unknown, formData: FormData) {
         dolorInicio,
         dolorFin,
         tecnicasUtilizadas: tecnicas,
-        evolucion: evolucion || "sin_cambios",
+        evolucion: evolucionSafe,
         porcentajeObjetivo,
         notasAdicionales: notasAdicionales || null,
       },
@@ -309,10 +334,6 @@ export async function crearNotaSesion(prevState: unknown, formData: FormData) {
 
     // Create ProgresoDolor entry for tracking
     if (dolorInicio !== null || dolorFin !== null) {
-      const cita = await prisma.cita.findUnique({
-        where: { id: citaId },
-        select: { numeroSesion: true },
-      });
       const dolorInicioNum = dolorInicioRaw ? parseInt(dolorInicioRaw, 10) : null;
       const dolorFinNum = dolorFinRaw ? parseInt(dolorFinRaw, 10) : null;
       await prisma.progresoDolor.create({
@@ -322,8 +343,8 @@ export async function crearNotaSesion(prevState: unknown, formData: FormData) {
           fecha: new Date(),
           dolorInicio: dolorInicioNum,
           dolorFin: dolorFinNum,
-          evolucion: evolucion || "sin_cambios",
-          numeroSesion: cita?.numeroSesion ?? null,
+          evolucion: evolucionSafe,
+          numeroSesion: cita.numeroSesion ?? null,
         },
       });
     }
@@ -331,7 +352,8 @@ export async function crearNotaSesion(prevState: unknown, formData: FormData) {
     revalidatePath("/dashboard/expediente");
     return { success: true };
   } catch (error) {
-    console.error("Error creating SOAP note:", error);
-    return { error: "Error al crear la nota SOAP." };
+    console.error("[SOAP] Error creating nota:", error);
+    const msg = error instanceof Error ? error.message : "Error desconocido";
+    return { error: `No se pudo guardar la nota: ${msg}` };
   }
 }

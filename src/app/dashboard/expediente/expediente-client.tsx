@@ -343,28 +343,36 @@ export default function ExpedienteClient({
     }
 
     setGuardando(true);
-    const fd = new FormData();
-    fd.set("citaId", citaId);
-    fd.set("pacienteId", paciente.id);
-    fd.set("subjetivo", subjetivo);
-    fd.set("objetivo", objetivo);
-    fd.set("analisis", analisis);
-    fd.set("plan", plan);
-    fd.set("dolorInicio", String(dolorInicio));
-    fd.set("dolorFin", String(dolorFin));
-    fd.set("tecnicas", JSON.stringify(tecnicas));
-    fd.set("evolucion", evolucion);
-    fd.set("porcentajeObjetivo", String(porcentajeObjetivo));
-    fd.set("notasAdicionales", notasAdicionales);
+    try {
+      const fd = new FormData();
+      fd.set("citaId", citaId);
+      fd.set("pacienteId", paciente.id);
+      fd.set("subjetivo", subjetivo);
+      fd.set("objetivo", objetivo);
+      fd.set("analisis", analisis);
+      fd.set("plan", plan);
+      fd.set("dolorInicio", String(dolorInicio));
+      fd.set("dolorFin", String(dolorFin));
+      fd.set("tecnicas", JSON.stringify(tecnicas));
+      fd.set("evolucion", evolucion || "sin_cambios");
+      fd.set("porcentajeObjetivo", String(porcentajeObjetivo));
+      fd.set("notasAdicionales", notasAdicionales);
 
-    const result = await crearNotaSesion(null, fd);
-    setGuardando(false);
+      const result = await crearNotaSesion(null, fd);
 
-    if (result.success) {
-      toast.success("Nota SOAP guardada correctamente");
-      router.back();
-    } else {
-      toast.error(result.error ?? "Error al guardar la nota");
+      if (result && "success" in result && result.success) {
+        toast.success("Nota SOAP guardada correctamente");
+        router.back();
+      } else {
+        const msg = (result && "error" in result && result.error) || "Error al guardar la nota";
+        toast.error(msg);
+        console.error("[SOAP] guardado falló:", result);
+      }
+    } catch (err) {
+      console.error("[SOAP] excepción al guardar:", err);
+      toast.error(err instanceof Error ? err.message : "Error inesperado al guardar");
+    } finally {
+      setGuardando(false);
     }
   };
 
