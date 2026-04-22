@@ -365,7 +365,15 @@ export async function confirmarAnticipo(citaId: string, metodo: string) {
       // estado se queda en "agendada" — la cita tiene anticipo pagado pero
       // el paciente AÚN no confirma asistencia (eso pasa cuando responde
       // al WhatsApp del recordatorio).
-      data: { estado: "agendada", anticipoPagado: true },
+      // Reset de flags de recordatorio para que el cron del día siguiente
+      // pueda mandar su recordatorio (esos flags fueron usados por el cron
+      // de anticipo pendiente).
+      data: {
+        estado: "agendada",
+        anticipoPagado: true,
+        recordatorioEnviado: false,
+        recordatorioAt: null,
+      },
     }),
     prisma.paciente.update({
       where: { id: cita.paciente.id },

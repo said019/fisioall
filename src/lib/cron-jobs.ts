@@ -94,113 +94,82 @@ export async function runRecordatorios() {
   return { enviados, errores, total: citas.length } as const;
 }
 
-// ─── Anticipos vencidos + recordatorio de 12h ────────────────────────────────
+// ─── Recordatorios de anticipo pendiente ─────────────────────────────────────
+// Política:
+//   - 1er recordatorio: 12h después de creada la cita (si sigue sin pagar).
+//   - Recordatorios subsiguientes: cada 6h después del último.
+//   - No se auto-cancela la cita por anticipo vencido. Sigue mandando hasta
+//     que el admin apruebe el pago o cancele manualmente.
 export async function runAnticipos() {
-  // 1. Liberar citas vencidas (anticipo no pagado en 24h)
-  const vencidas = await prisma.cita.findMany({
-    where: {
-      estado: "pendiente_anticipo",
-      anticipoVenceAt: { lte: new Date() },
-    },
-    select: {
-      id: true,
-      anticipoPagoId: true,
-      paciente: { select: { nombre: true, telefono: true, telefonoContacto: true } },
-      fechaHoraInicio: true,
-    },
-  });
-
-  let liberadas = 0;
-
-  for (const cita of vencidas) {
-    await prisma.$transaction([
-      prisma.cita.update({ where: { id: cita.id }, data: { estado: "cancelada" } }),
-      ...(cita.anticipoPagoId
-        ? [prisma.pago.update({ where: { id: cita.anticipoPagoId }, data: { estado: "reembolsado" } })]
-        : []),
-    ]);
-    liberadas++;
-
-    const telVencida = waPhone(cita.paciente);
-    if (isConfigured() && telVencida) {
-      try {
-        const client = getEvolutionClient();
-        const mensaje = [
-          `Hola ${cita.paciente.nombre} 👋`,
-          ``,
-          `Tu cita en *Kaya Kalp* fue cancelada porque no recibimos el anticipo de *$200 MXN* a tiempo.`,
-          ``,
-          `Si deseas reagendar, contáctanos. ¡Con gusto te ayudamos! 💙`,
-        ].join("\n");
-        await client.sendText(formatPhone(telVencida), mensaje);
-      } catch (err) {
-        console.error(`[Anticipo Cron] WhatsApp error cita ${cita.id}:`, err);
-      }
-    }
+  if (!isConfigured()) {
+    return { recordatoriosEnviados: 0, total: 0, skipped: true } as const;
   }
 
-  // 2. Recordatorio a citas con 12h+ sin pagar anticipo
-  const doceHorasAtras = new Date(Date.now() - 12 * 60 * 60 * 1000);
-  const porVencer = await prisma.cita.findMany({
+  const ahora = new Date();
+  const HACE_12H = new Date(ahora.getTime() - 12 * 60 * 60 * 1000);
+  const HACE_6H  = new Date(ahora.getTime() - 6  * 60 * 60 * 1000);
+
+  // Citas pendientes de anticipo que califican para un recordatorio:
+  //   a) Nunca se les envió y la cita lleva ≥12h creada, O
+  //   b) Ya se les envió uno y han pasado ≥6h desde el último.
+  const candidatas = await prisma.cita.findMany({
     where: {
       estado: "pendiente_anticipo",
-      anticipoVenceAt: { gt: new Date() },
-      createdAt: { lte: doceHorasAtras },
-      recordatorioEnviado: { not: true },
+      OR: [
+        { recordatorioEnviado: { not: true }, createdAt: { lte: HACE_12H } },
+        { recordatorioEnviado: true, recordatorioAt: { lte: HACE_6H } },
+      ],
     },
     select: {
       id: true,
       paciente: { select: { nombre: true, telefono: true, telefonoContacto: true } },
       fechaHoraInicio: true,
+      recordatorioEnviado: true,
     },
   });
 
+  const client = getEvolutionClient();
   let recordatoriosEnviados = 0;
 
-  if (isConfigured()) {
-    const client = getEvolutionClient();
-    for (const cita of porVencer) {
-      const telPorVencer = waPhone(cita.paciente);
-      if (!telPorVencer) continue;
+  for (const cita of candidatas) {
+    const tel = waPhone(cita.paciente);
+    if (!tel) continue;
 
-      const fecha = cita.fechaHoraInicio.toLocaleDateString("es-MX", {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-        timeZone: "America/Mexico_City",
+    const fecha = cita.fechaHoraInicio.toLocaleDateString("es-MX", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      timeZone: "America/Mexico_City",
+    });
+    const hora = cita.fechaHoraInicio.toLocaleTimeString("es-MX", {
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "America/Mexico_City",
+    });
+
+    const mensaje = [
+      `Hola ${cita.paciente.nombre} 👋`,
+      ``,
+      `Tu cita del *${fecha}* a las *${hora}* en *Kaya Kalp* sigue con el anticipo pendiente de *$200 MXN*.`,
+      ``,
+      `Para confirmar tu lugar, realiza el pago y envíanos el comprobante por aquí.`,
+      ``,
+      `¿Necesitas ayuda? Escríbenos. 💙`,
+    ].join("\n");
+
+    try {
+      await client.sendText(formatPhone(tel), mensaje);
+      await prisma.cita.update({
+        where: { id: cita.id },
+        data: { recordatorioEnviado: true, recordatorioAt: ahora },
       });
-      const hora = cita.fechaHoraInicio.toLocaleTimeString("es-MX", {
-        hour: "2-digit",
-        minute: "2-digit",
-        timeZone: "America/Mexico_City",
-      });
-
-      const mensaje = [
-        `Hola ${cita.paciente.nombre} 👋`,
-        ``,
-        `Notamos que tu cita del *${fecha}* a las *${hora}* aún tiene el anticipo pendiente de *$200 MXN*.`,
-        ``,
-        `Para confirmar tu lugar, realiza el pago y envíanos el comprobante.`,
-        `Si no recibimos el anticipo en las próximas *12 horas*, el slot se liberará automáticamente.`,
-        ``,
-        `¿Necesitas ayuda? Escríbenos aquí mismo. 💙`,
-      ].join("\n");
-
-      try {
-        await client.sendText(formatPhone(telPorVencer), mensaje);
-        recordatoriosEnviados++;
-      } catch (err) {
-        console.error(`[Anticipo Cron] Recordatorio error cita ${cita.id}:`, err);
-      }
+      recordatoriosEnviados++;
+    } catch (err) {
+      console.error(`[Anticipo Cron] Recordatorio error cita ${cita.id}:`, err);
     }
   }
 
-  return {
-    liberadas,
-    recordatoriosEnviados,
-    totalVencidas: vencidas.length,
-    totalPorVencer: porVencer.length,
-  } as const;
+  return { recordatoriosEnviados, total: candidatas.length } as const;
 }
 
 // ─── Auto-completar citas pasadas + enviar encuesta NPS ──────────────────────
