@@ -318,8 +318,16 @@ function buildMonthGrid(firstOfMonth: Date) {
 }
 
 function getMondayFromISO(iso: string) {
-  const d = new Date(iso);
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  // Extraer las partes en CDMX para no depender de la zona horaria local
+  // del runtime (Railway = UTC, navegador = CDMX). Devolvemos un Date que
+  // representa mediodía CDMX (18:00 UTC) del lunes.
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Mexico_City",
+    year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(new Date(iso));
+  const m: Record<string, string> = {};
+  for (const p of parts) m[p.type] = p.value;
+  return new Date(Date.UTC(Number(m.year), Number(m.month) - 1, Number(m.day), 18, 0, 0));
 }
 
 // ── COMPONENT ──────────────────────────────────────────────────────────────

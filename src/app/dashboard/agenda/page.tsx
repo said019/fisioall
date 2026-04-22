@@ -7,23 +7,29 @@ export default async function AgendaPage(props: {
   const searchParams = await props.searchParams;
   const preselectedPacienteId = searchParams.pacienteId ?? null;
 
-  // Compute current week Mon-Sat in Mexico City timezone
+  // Compute current week Mon-Sat in Mexico City timezone.
+  // Las fechas para display se construyen como mediodía CDMX (18:00 UTC) para
+  // que su ISO represente sin ambigüedad el mismo día calendario al ser
+  // parseado en CDMX, sin importar la zona horaria del runtime.
+  // El rango de query usa 00:00 CDMX a inicio del Domingo CDMX para abarcar
+  // el día completo en zona horaria local.
   const now = new Date();
-  // Get "today" in Mexico City (handles UTC vs local offset on Vercel)
-  const mxDateStr = now.toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" }); // "YYYY-MM-DD"
-  const mxNow = new Date(mxDateStr + "T12:00:00-06:00");
-  const dayOfWeek = mxNow.getDay(); // 0=Sun
+  const mxDateStr = now.toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" });
+  const [yMx, mMx, dMx] = mxDateStr.split("-").map(Number);
+  const mxNow = new Date(Date.UTC(yMx, mMx - 1, dMx, 18, 0, 0)); // noon CDMX
+  const dayOfWeek = mxNow.getUTCDay();
   const diffToMon = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-  const monday = new Date(mxNow.getFullYear(), mxNow.getMonth(), mxNow.getDate() + diffToMon);
-  const saturday = new Date(monday);
-  saturday.setDate(monday.getDate() + 5);
-  saturday.setHours(23, 59, 59, 999);
+  // Display dates (noon CDMX)
+  const monday = new Date(Date.UTC(yMx, mMx - 1, dMx + diffToMon, 18, 0, 0));
+  // Query range (00:00 CDMX = 06:00 UTC del lunes; 00:00 CDMX domingo = fin de sábado)
+  const mondayQueryStart = new Date(Date.UTC(yMx, mMx - 1, dMx + diffToMon, 6, 0, 0));
+  const saturdayQueryEnd = new Date(Date.UTC(yMx, mMx - 1, dMx + diffToMon + 6, 5, 59, 59, 999));
 
   let citas, pacientes, fisioterapeutas;
 
   try {
     [citas, pacientes, fisioterapeutas] = await Promise.all([
-      getCitasSemana(monday.toISOString(), saturday.toISOString()),
+      getCitasSemana(mondayQueryStart.toISOString(), saturdayQueryEnd.toISOString()),
       getPacientesLite(),
       getFisioterapeutas(),
     ]);
