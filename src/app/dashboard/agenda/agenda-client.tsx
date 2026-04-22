@@ -182,8 +182,9 @@ const SERVICIO_ESPECIALIDAD: Record<string, string> = {
 function filterFisiosByServicio(fisios: FisioOption[], servicio: string): FisioOption[] {
   if (!servicio) return fisios;
   const required = SERVICIO_ESPECIALIDAD[servicio];
-  if (!required) return fisios; // unknown service → show all
-  return fisios.filter((f) => f.especialidades?.includes(required));
+  if (!required) return fisios;
+  const filtered = fisios.filter((f) => f.especialidades?.includes(required));
+  return filtered.length > 0 ? filtered : fisios; // fallback: show all if no match
 }
 
 const HORAS_DISPONIBLES = [
