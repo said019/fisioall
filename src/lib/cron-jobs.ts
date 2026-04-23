@@ -5,11 +5,39 @@ function waPhone(p: { telefono: string | null; telefonoContacto?: string | null 
   return p.telefonoContacto || p.telefono || null;
 }
 
+// ─── HORARIO HÁBIL CDMX (9 AM – 9 PM) ────────────────────────────────────────
+// Ningún mensaje automático sale fuera de este rango.
+const HORA_INICIO_CDMX = 9;   // 9 AM
+const HORA_FIN_CDMX = 21;     // 21:00 = 9 PM (no envía a partir de las 21:00)
+
+function horaActualCDMX(): number {
+  const partes = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Mexico_City",
+    hour: "2-digit",
+    hour12: false,
+  }).formatToParts(new Date());
+  const h = partes.find((p) => p.type === "hour")?.value ?? "0";
+  const n = Number(h);
+  return n === 24 ? 0 : n;
+}
+
+export function dentroDeHorarioHabil(): boolean {
+  const h = horaActualCDMX();
+  return h >= HORA_INICIO_CDMX && h < HORA_FIN_CDMX;
+}
+
 // ─── Recordatorios 24h antes ──────────────────────────────────────────────────
 // Manda WhatsApp a citas de mañana (en CDMX) cuyo recordatorio aún no se envió.
 export async function runRecordatorios() {
   if (!isConfigured()) {
     return { skipped: true, reason: "Evolution API no configurado" } as const;
+  }
+
+  if (!dentroDeHorarioHabil()) {
+    return {
+      skipped: true,
+      reason: `fuera de horario hábil (${horaActualCDMX()}h CDMX)`,
+    } as const;
   }
 
   // Rango "mañana en CDMX" (UTC-6): [mañana 06:00 UTC, día siguiente 06:00 UTC)
@@ -98,37 +126,20 @@ export async function runRecordatorios() {
 // Política:
 //   - 1er recordatorio: 12h después de creada la cita (si sigue sin pagar).
 //   - Recordatorios subsiguientes: cada 6h después del último.
-//   - Solo se envían entre 9 AM y 9 PM CDMX (horario hábil) para no
-//     molestar al paciente de madrugada.
+//   - Solo se envían dentro del horario hábil (9 AM – 9 PM CDMX).
 //   - No se auto-cancela la cita por anticipo vencido. Sigue mandando hasta
 //     que el admin apruebe el pago o cancele manualmente.
-const ANTICIPO_HORA_INICIO_CDMX = 9;  // 9 AM
-const ANTICIPO_HORA_FIN_CDMX = 21;    // 9 PM (no envía a partir de las 21:00)
-
-function horaActualCDMX(): number {
-  const partes = new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/Mexico_City",
-    hour: "2-digit",
-    hour12: false,
-  }).formatToParts(new Date());
-  const h = partes.find((p) => p.type === "hour")?.value ?? "0";
-  const n = Number(h);
-  return n === 24 ? 0 : n;
-}
-
 export async function runAnticipos() {
   if (!isConfigured()) {
     return { recordatoriosEnviados: 0, total: 0, skipped: true } as const;
   }
 
-  // Quiet hours — no enviar de madrugada
-  const horaCDMX = horaActualCDMX();
-  if (horaCDMX < ANTICIPO_HORA_INICIO_CDMX || horaCDMX >= ANTICIPO_HORA_FIN_CDMX) {
+  if (!dentroDeHorarioHabil()) {
     return {
       recordatoriosEnviados: 0,
       total: 0,
       skipped: true,
-      reason: `fuera de horario (${horaCDMX}h CDMX)`,
+      reason: `fuera de horario hábil (${horaActualCDMX()}h CDMX)`,
     } as const;
   }
 
@@ -227,11 +238,14 @@ export async function runAutoCompletar() {
       });
       completadas++;
 
-      // Crear encuesta — crearEncuesta envía su propio WhatsApp con el link
+      // Crear encuesta — si estamos fuera de horario hábil, crearEncuesta
+      // crea el registro pero pospone el envío de WhatsApp hasta el sweep.
       try {
         const { crearEncuesta } = await import("@/app/dashboard/encuestas/actions");
-        const result = await crearEncuesta(cita.id);
-        if (result && "ok" in result && result.ok) encuestasEnviadas++;
+        const result = await crearEncuesta(cita.id, { fromCron: true });
+        if (result && "ok" in result && result.ok && !("deferida" in result)) {
+          encuestasEnviadas++;
+        }
       } catch (encErr) {
         console.error(`[AutoCompletar] Encuesta error cita ${cita.id}:`, encErr);
       }
@@ -241,4 +255,75 @@ export async function runAutoCompletar() {
   }
 
   return { completadas, encuestasEnviadas, total: pendientes.length } as const;
+}
+
+// ─── Sweep de encuestas diferidas (creadas con enviadaAt: null) ──────────────
+// Envía el WhatsApp de las encuestas que se crearon fuera de horario hábil.
+// Solo actúa dentro del horario hábil (9 AM – 9 PM CDMX).
+export async function runEncuestasPendientes() {
+  if (!isConfigured()) {
+    return { enviadas: 0, total: 0, skipped: true } as const;
+  }
+  if (!dentroDeHorarioHabil()) {
+    return {
+      enviadas: 0,
+      total: 0,
+      skipped: true,
+      reason: `fuera de horario hábil (${horaActualCDMX()}h CDMX)`,
+    } as const;
+  }
+
+  const pendientes = await prisma.encuestaSesion.findMany({
+    where: { enviadaAt: null, respondida: { not: true } },
+    select: {
+      id: true,
+      token: true,
+      paciente: { select: { nombre: true, telefono: true, telefonoContacto: true } },
+      cita: {
+        select: {
+          fechaHoraInicio: true,
+          tenant: { select: { nombre: true } },
+        },
+      },
+    },
+  });
+
+  let enviadas = 0;
+  const client = getEvolutionClient();
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://www.kayakalp.com.mx");
+
+  for (const e of pendientes) {
+    const tel = waPhone(e.paciente);
+    if (!tel) continue;
+    const fecha = e.cita.fechaHoraInicio.toLocaleDateString("es-MX", {
+      weekday: "long", day: "numeric", month: "long",
+      timeZone: "America/Mexico_City",
+    });
+    const hora = e.cita.fechaHoraInicio.toLocaleTimeString("es-MX", {
+      hour: "2-digit", minute: "2-digit",
+      timeZone: "America/Mexico_City",
+    });
+    const surveyUrl = `${baseUrl}/encuesta/${e.token}`;
+    const msg =
+      `¡Hola ${e.paciente.nombre}! 😊\n\n` +
+      `Gracias por tu sesión del *${fecha}* a las *${hora}* en *${e.cita.tenant?.nombre ?? "Kaya Kalp"}*. ` +
+      `Nos importa saber cómo te sientes.\n\n` +
+      `Por favor, tómate 1 minuto para responder nuestra breve encuesta:\n` +
+      `👉 ${surveyUrl}\n\n` +
+      `Tu opinión nos ayuda a mejorar. ¡Muchas gracias!`;
+    try {
+      await client.sendText(formatPhone(tel), msg);
+      await prisma.encuestaSesion.update({
+        where: { id: e.id },
+        data: { enviadaAt: new Date() },
+      });
+      enviadas++;
+    } catch (err) {
+      console.error(`[EncuestasPendientes] error encuesta ${e.id}:`, err);
+    }
+  }
+
+  return { enviadas, total: pendientes.length } as const;
 }

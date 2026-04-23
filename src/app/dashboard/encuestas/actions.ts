@@ -100,7 +100,7 @@ export async function getEncuestasKPIs() {
 }
 
 // ─── CREAR ENCUESTA (triggered on cita completada) ──────────────────────────
-export async function crearEncuesta(citaId: string) {
+export async function crearEncuesta(citaId: string, opts?: { fromCron?: boolean }) {
   // Fetch cita + paciente (no auth check – called internally)
   const cita = await prisma.cita.findUnique({
     where: { id: citaId },
@@ -118,15 +118,28 @@ export async function crearEncuesta(citaId: string) {
   });
   if (existing) return { ok: true, encuestaId: existing.id, token: existing.token };
 
+  // Si es del cron y estamos fuera de horario hábil, creamos el registro
+  // pero NO mandamos WhatsApp todavía. Un sweep posterior lo enviará.
+  let puedeEnviarAhora = true;
+  if (opts?.fromCron) {
+    const { dentroDeHorarioHabil } = await import("@/lib/cron-jobs");
+    puedeEnviarAhora = dentroDeHorarioHabil();
+  }
+
   const encuesta = await prisma.encuestaSesion.create({
     data: {
       citaId,
       pacienteId: cita.paciente.id,
-      enviadaAt: new Date(),
+      enviadaAt: puedeEnviarAhora ? new Date() : null,
       respondida: false,
     },
     select: { id: true, token: true },
   });
+
+  if (!puedeEnviarAhora) {
+    revalidatePath("/dashboard/encuestas");
+    return { ok: true, encuestaId: encuesta.id, token: encuesta.token, deferida: true };
+  }
 
   // Send WhatsApp link (best-effort) — usa telefonoContacto si existe
   const telefonoWA = cita.paciente.telefonoContacto || cita.paciente.telefono;

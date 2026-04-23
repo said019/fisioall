@@ -1,5 +1,5 @@
 import cron from "node-cron";
-import { runRecordatorios, runAnticipos, runAutoCompletar } from "@/lib/cron-jobs";
+import { runRecordatorios, runAnticipos, runAutoCompletar, runEncuestasPendientes } from "@/lib/cron-jobs";
 
 let started = false;
 
@@ -57,8 +57,25 @@ export function startScheduler() {
     { timezone: "UTC" },
   );
 
+  // Sweep de encuestas diferidas (creadas fuera de horario hábil) — cada hora
+  cron.schedule(
+    "5 * * * *",
+    async () => {
+      const t0 = Date.now();
+      console.log("[Scheduler] runEncuestasPendientes — inicio");
+      try {
+        const result = await runEncuestasPendientes();
+        console.log("[Scheduler] runEncuestasPendientes — fin", result, `(${Date.now() - t0}ms)`);
+      } catch (err) {
+        console.error("[Scheduler] runEncuestasPendientes — error", err);
+      }
+    },
+    { timezone: "UTC" },
+  );
+
   console.log("[Scheduler] Jobs registrados:");
-  console.log("  - Recordatorios:  0 15 * * * UTC  (9:00 AM CDMX)");
-  console.log("  - Anticipos:      0 * * * * UTC   (cada hora)");
-  console.log("  - AutoCompletar:  */15 * * * * UTC (cada 15 min, encuesta ~15 min tras fin de cita)");
+  console.log("  - Recordatorios:       0 15 * * * UTC  (9:00 AM CDMX, con guard 9-21h CDMX)");
+  console.log("  - Anticipos:           0 * * * * UTC   (cada hora, guard 9-21h CDMX)");
+  console.log("  - AutoCompletar:       */15 * * * * UTC (cada 15 min)");
+  console.log("  - EncuestasPendientes: 5 * * * * UTC   (cada hora, guard 9-21h CDMX)");
 }
