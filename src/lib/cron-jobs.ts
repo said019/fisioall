@@ -98,11 +98,38 @@ export async function runRecordatorios() {
 // Política:
 //   - 1er recordatorio: 12h después de creada la cita (si sigue sin pagar).
 //   - Recordatorios subsiguientes: cada 6h después del último.
+//   - Solo se envían entre 9 AM y 9 PM CDMX (horario hábil) para no
+//     molestar al paciente de madrugada.
 //   - No se auto-cancela la cita por anticipo vencido. Sigue mandando hasta
 //     que el admin apruebe el pago o cancele manualmente.
+const ANTICIPO_HORA_INICIO_CDMX = 9;  // 9 AM
+const ANTICIPO_HORA_FIN_CDMX = 21;    // 9 PM (no envía a partir de las 21:00)
+
+function horaActualCDMX(): number {
+  const partes = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Mexico_City",
+    hour: "2-digit",
+    hour12: false,
+  }).formatToParts(new Date());
+  const h = partes.find((p) => p.type === "hour")?.value ?? "0";
+  const n = Number(h);
+  return n === 24 ? 0 : n;
+}
+
 export async function runAnticipos() {
   if (!isConfigured()) {
     return { recordatoriosEnviados: 0, total: 0, skipped: true } as const;
+  }
+
+  // Quiet hours — no enviar de madrugada
+  const horaCDMX = horaActualCDMX();
+  if (horaCDMX < ANTICIPO_HORA_INICIO_CDMX || horaCDMX >= ANTICIPO_HORA_FIN_CDMX) {
+    return {
+      recordatoriosEnviados: 0,
+      total: 0,
+      skipped: true,
+      reason: `fuera de horario (${horaCDMX}h CDMX)`,
+    } as const;
   }
 
   const ahora = new Date();
