@@ -16,6 +16,7 @@ import {
   ChevronUp,
   ClipboardCheck,
   CalendarDays,
+  X,
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -316,6 +317,43 @@ export default function ExpedienteClient({
   const [guardando, setGuardando] = useState(false);
   const yaGuardada = !!nota;
 
+  // Evidencia fotográfica
+  const [fotos, setFotos] = useState<{ url: string; uploading: boolean }[]>([]);
+  const [subiendoFoto, setSubiendoFoto] = useState(false);
+
+  const handleSubirFoto = async (file: File) => {
+    if (fotos.length >= 4) {
+      toast.error("Máximo 4 fotos por sesión");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("La foto excede 5 MB");
+      return;
+    }
+    setSubiendoFoto(true);
+    const tempIdx = fotos.length;
+    setFotos((prev) => [...prev, { url: "", uploading: true }]);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const json = await res.json();
+      if (!res.ok || !json.url) throw new Error(json.error || "Error al subir");
+      setFotos((prev) => prev.map((f, i) => (i === tempIdx ? { url: json.url, uploading: false } : f)));
+      toast.success("Foto subida");
+    } catch (err) {
+      console.error("[Evidencia] upload:", err);
+      toast.error(err instanceof Error ? err.message : "Error al subir foto");
+      setFotos((prev) => prev.filter((_, i) => i !== tempIdx));
+    } finally {
+      setSubiendoFoto(false);
+    }
+  };
+
+  const handleQuitarFoto = (idx: number) => {
+    setFotos((prev) => prev.filter((_, i) => i !== idx));
+  };
+
   const citaId = citaIdParam ?? sesion.citaId;
   const estadoInfo = ESTADO_LABELS[sesion.estado] ?? ESTADO_LABELS.agendada;
   const tipoExpediente: TipoExpediente = getTipoExpediente(sesion.tipoSesion);
@@ -345,6 +383,7 @@ export default function ExpedienteClient({
     setGuardando(true);
     try {
       const fd = new FormData();
+      if (nota?.id) fd.set("notaId", nota.id);
       fd.set("citaId", citaId);
       fd.set("pacienteId", paciente.id);
       fd.set("subjetivo", subjetivo);
@@ -357,11 +396,14 @@ export default function ExpedienteClient({
       fd.set("evolucion", evolucion || "sin_cambios");
       fd.set("porcentajeObjetivo", String(porcentajeObjetivo));
       fd.set("notasAdicionales", notasAdicionales);
+      const fotosUrls = fotos.filter((f) => !f.uploading && f.url).map((f) => f.url);
+      if (fotosUrls.length > 0) fd.set("fotosUrls", JSON.stringify(fotosUrls));
 
       const result = await crearNotaSesion(null, fd);
 
       if (result && "success" in result && result.success) {
-        toast.success("Nota SOAP guardada correctamente");
+        toast.success(nota?.id ? "Nota SOAP actualizada" : "Nota SOAP guardada correctamente");
+        router.refresh();
         router.back();
       } else {
         const msg = (result && "error" in result && result.error) || "Error al guardar la nota";
@@ -834,16 +876,62 @@ export default function ExpedienteClient({
             Evidencia Fotográfica
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="border-dashed border-2 border-[#a8cfe0] rounded-xl p-8 text-center cursor-pointer hover:border-[#4a7fa5] transition-all duration-200">
-            <Camera className="h-8 w-8 text-[#4a7fa5]/40 mx-auto mb-2" />
+        <CardContent className="space-y-3">
+          <label className={`block border-dashed border-2 rounded-xl p-6 text-center transition-all duration-200 ${fotos.length >= 4 ? "border-[#c8dce8] opacity-50 cursor-not-allowed" : "border-[#a8cfe0] cursor-pointer hover:border-[#4a7fa5]"}`}>
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/heic"
+              className="hidden"
+              disabled={subiendoFoto || fotos.length >= 4}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleSubirFoto(file);
+                e.target.value = "";
+              }}
+            />
+            {subiendoFoto ? (
+              <Loader2 className="h-8 w-8 text-[#4a7fa5] mx-auto mb-2 animate-spin" />
+            ) : (
+              <Camera className="h-8 w-8 text-[#4a7fa5]/40 mx-auto mb-2" />
+            )}
             <p className="text-xs font-semibold text-[#1e2d3a]/60">
-              Arrastra fotos aquí o haz clic para subir
+              {subiendoFoto
+                ? "Subiendo foto..."
+                : fotos.length >= 4
+                  ? "Máximo 4 fotos alcanzado"
+                  : "Haz clic para subir foto"}
             </p>
             <p className="text-[10px] text-[#1e2d3a]/30 mt-1">
-              JPG, PNG hasta 5 MB · máx 4 fotos
+              JPG, PNG, WebP hasta 5 MB · máx 4 fotos · {fotos.length}/4
             </p>
-          </div>
+          </label>
+
+          {fotos.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {fotos.map((f, i) => (
+                <div key={i} className="relative aspect-square rounded-lg overflow-hidden bg-[#f0f4f7] border border-[#c8dce8]">
+                  {f.uploading ? (
+                    <div className="flex items-center justify-center h-full">
+                      <Loader2 className="h-5 w-5 text-[#4a7fa5] animate-spin" />
+                    </div>
+                  ) : (
+                    <>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={f.url} alt={`Evidencia ${i + 1}`} className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => handleQuitarFoto(i)}
+                        className="absolute top-1 right-1 bg-black/60 hover:bg-black/80 text-white rounded-full p-1 cursor-pointer transition-colors"
+                        aria-label={`Quitar foto ${i + 1}`}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -876,7 +964,7 @@ export default function ExpedienteClient({
         </Button>
         <Button
           onClick={handleGuardar}
-          disabled={guardando || yaGuardada}
+          disabled={guardando}
           className="cursor-pointer bg-[#3fa87c] hover:bg-[#3fa87c]/90 text-white transition-all duration-200 text-sm gap-1.5 disabled:opacity-50"
         >
           {guardando ? (
@@ -886,7 +974,7 @@ export default function ExpedienteClient({
           ) : (
             <CheckCircle2 className="h-4 w-4" />
           )}
-          {yaGuardada ? "Nota ya guardada" : "Guardar Nota SOAP"}
+          {yaGuardada ? "Actualizar Nota SOAP" : "Guardar Nota SOAP"}
         </Button>
       </div>
       </>

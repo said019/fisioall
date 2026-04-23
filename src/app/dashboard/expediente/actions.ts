@@ -259,6 +259,7 @@ export async function getExpedientePorCita(citaId: string) {
 export async function crearNotaSesion(prevState: unknown, formData: FormData) {
   const { userId, tenantId } = await requireAuth();
 
+  const notaId = (formData.get("notaId") as string) || null;
   const citaId = formData.get("citaId") as string;
   const pacienteId = formData.get("pacienteId") as string;
   const subjetivo = formData.get("subjetivo") as string;
@@ -271,6 +272,7 @@ export async function crearNotaSesion(prevState: unknown, formData: FormData) {
   const evolucion = formData.get("evolucion") as string;
   const porcentajeRaw = formData.get("porcentajeObjetivo") as string;
   const notasAdicionales = formData.get("notasAdicionales") as string;
+  const fotosUrlsRaw = formData.get("fotosUrls") as string | null;
 
   if (!citaId || !pacienteId) {
     return { error: "Cita y paciente son obligatorios" };
@@ -313,27 +315,81 @@ export async function crearNotaSesion(prevState: unknown, formData: FormData) {
   // Truncar evolucion a 30 chars (varchar(30) en BD)
   const evolucionSafe = (evolucion || "sin_cambios").slice(0, 30);
 
-  try {
-    await prisma.notaSesion.create({
-      data: {
-        citaId,
-        fisioterapeutaId: userId,
-        pacienteId,
-        subjetivo: subjetivo || null,
-        objetivo: objetivo || null,
-        analisis: analisis || null,
-        plan: plan || null,
-        dolorInicio,
-        dolorFin,
-        tecnicasUtilizadas: tecnicas,
-        evolucion: evolucionSafe,
-        porcentajeObjetivo,
-        notasAdicionales: notasAdicionales || null,
-      },
-    });
+  // Parse fotos URLs
+  let fotosUrls: string[] = [];
+  if (fotosUrlsRaw) {
+    try {
+      const parsed = JSON.parse(fotosUrlsRaw);
+      if (Array.isArray(parsed)) fotosUrls = parsed.filter((u): u is string => typeof u === "string");
+    } catch {
+      fotosUrls = [];
+    }
+  }
 
-    // Create ProgresoDolor entry for tracking
-    if (dolorInicio !== null || dolorFin !== null) {
+  try {
+    let savedNotaId: string;
+    if (notaId) {
+      // UPDATE — verificar que la nota pertenezca a la cita
+      const existente = await prisma.notaSesion.findFirst({
+        where: { id: notaId, citaId },
+        select: { id: true },
+      });
+      if (!existente) {
+        return { error: "La nota a actualizar no existe." };
+      }
+      await prisma.notaSesion.update({
+        where: { id: notaId },
+        data: {
+          subjetivo: subjetivo || null,
+          objetivo: objetivo || null,
+          analisis: analisis || null,
+          plan: plan || null,
+          dolorInicio,
+          dolorFin,
+          tecnicasUtilizadas: tecnicas,
+          evolucion: evolucionSafe,
+          porcentajeObjetivo,
+          notasAdicionales: notasAdicionales || null,
+        },
+      });
+      savedNotaId = notaId;
+    } else {
+      const nueva = await prisma.notaSesion.create({
+        data: {
+          citaId,
+          fisioterapeutaId: userId,
+          pacienteId,
+          subjetivo: subjetivo || null,
+          objetivo: objetivo || null,
+          analisis: analisis || null,
+          plan: plan || null,
+          dolorInicio,
+          dolorFin,
+          tecnicasUtilizadas: tecnicas,
+          evolucion: evolucionSafe,
+          porcentajeObjetivo,
+          notasAdicionales: notasAdicionales || null,
+        },
+        select: { id: true },
+      });
+      savedNotaId = nueva.id;
+    }
+
+    // Persistir fotos nuevas (no borra las anteriores; sólo agrega)
+    if (fotosUrls.length > 0) {
+      await prisma.sesionFoto.createMany({
+        data: fotosUrls.map((url, i) => ({
+          notaSesionId: savedNotaId,
+          pacienteId,
+          url,
+          tipo: "evidencia",
+          orden: i,
+        })),
+      });
+    }
+
+    // Create ProgresoDolor entry for tracking (solo en creación)
+    if (!notaId && (dolorInicio !== null || dolorFin !== null)) {
       const dolorInicioNum = dolorInicioRaw ? parseInt(dolorInicioRaw, 10) : null;
       const dolorFinNum = dolorFinRaw ? parseInt(dolorFinRaw, 10) : null;
       await prisma.progresoDolor.create({

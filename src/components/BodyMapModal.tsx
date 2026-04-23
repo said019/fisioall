@@ -8,8 +8,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import { toast } from "sonner";
 import BodyMap from "@/components/BodyMap";
 import { getSnapshotActual, guardarSnapshot } from "@/app/dashboard/expediente/bodymap-actions";
@@ -146,6 +148,9 @@ export default function BodyMapModal({
     <Dialog open={abierto} onOpenChange={setAbierto}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="max-w-6xl h-[90vh] p-0 overflow-hidden flex flex-col gap-0">
+        <VisuallyHidden.Root>
+          <DialogTitle>Body Map de {pacienteNombre}</DialogTitle>
+        </VisuallyHidden.Root>
         {/* ── HEADER ── */}
         <div className="sticky top-0 z-10 flex items-center justify-between gap-3 px-5 py-4 border-b border-cyan-100 bg-white">
           <div className="flex items-center gap-3 min-w-0">
