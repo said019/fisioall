@@ -174,7 +174,9 @@ const SERVICIO_ESPECIALIDAD: Record<string, string> = {
   "Piernas Completas": "Tratamientos Corporales",
   "Axila": "Tratamientos Corporales",
   "Bigote": "Tratamientos Corporales",
+  "Bozo": "Tratamientos Corporales",
   "Barbilla": "Tratamientos Corporales",
+  "Mentón": "Tratamientos Corporales",
   "Barba Completa": "Tratamientos Corporales",
   "Área de Bikini": "Tratamientos Corporales",
 };
