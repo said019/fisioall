@@ -40,10 +40,6 @@ export default async function AgendaPage(props: {
       getPacientesLite(),
       getFisioterapeutas(),
     ]);
-    console.log(
-      `[AgendaPage] semana ${mondayQueryStart.toISOString()} → ${saturdayQueryEnd.toISOString()}: ${citas?.length ?? 0} citas`,
-      citas?.map((c) => `${c.fechaHoraInicio} ${c.paciente}`),
-    );
   } catch (err) {
     console.error("[AgendaPage] fetch failed:", err);
     citas = undefined;

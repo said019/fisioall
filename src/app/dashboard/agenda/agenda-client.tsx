@@ -333,6 +333,23 @@ function getMondayFromISO(iso: string) {
   return new Date(Date.UTC(Number(m.year), Number(m.month) - 1, Number(m.day), 18, 0, 0));
 }
 
+// Dado un Date que representa mediodía CDMX del lunes, devuelve el rango
+// [00:00 lunes CDMX, 00:00 domingo CDMX) en UTC para usar en getCitasSemana.
+// Esto garantiza que citas tempranas (ej. 11:00 CDMX) caigan dentro del rango.
+function weekRangeMx(monday: Date): { start: Date; end: Date } {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Mexico_City",
+    year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(monday);
+  const m: Record<string, string> = {};
+  for (const p of parts) m[p.type] = p.value;
+  const y = Number(m.year), mo = Number(m.month), d = Number(m.day);
+  return {
+    start: new Date(Date.UTC(y, mo - 1, d, 6, 0, 0)),               // 00:00 lunes CDMX
+    end:   new Date(Date.UTC(y, mo - 1, d + 6, 5, 59, 59, 999)),    // 23:59:59.999 sábado CDMX
+  };
+}
+
 // ── COMPONENT ──────────────────────────────────────────────────────────────
 export default function AgendaClient({
   initialCitas,
@@ -390,13 +407,11 @@ export default function AgendaClient({
   const navigateWeek = useCallback(async (offset: number) => {
     const newMonday = new Date(monday);
     newMonday.setDate(monday.getDate() + offset * 7);
-    const sat = new Date(newMonday);
-    sat.setDate(newMonday.getDate() + 5);
-    sat.setHours(23, 59, 59, 999);
+    const range = weekRangeMx(newMonday);
 
     setLoadingWeek(true);
     try {
-      const dbCitas = await getCitasSemana(newMonday.toISOString(), sat.toISOString());
+      const dbCitas = await getCitasSemana(range.start.toISOString(), range.end.toISOString());
       setMonday(newMonday);
       setCitasData(mapDBCitas(dbCitas ?? [], newMonday));
       const newDays = buildWeekDays(newMonday);
@@ -418,13 +433,11 @@ export default function AgendaClient({
     const thisMon = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMon);
     if (sameDay(thisMon, monday)) return;
 
-    const sat = new Date(thisMon);
-    sat.setDate(thisMon.getDate() + 5);
-    sat.setHours(23, 59, 59, 999);
+    const range = weekRangeMx(thisMon);
 
     setLoadingWeek(true);
     try {
-      const dbCitas = await getCitasSemana(thisMon.toISOString(), sat.toISOString());
+      const dbCitas = await getCitasSemana(range.start.toISOString(), range.end.toISOString());
       setMonday(thisMon);
       setCitasData(mapDBCitas(dbCitas ?? [], thisMon));
       const newDays = buildWeekDays(thisMon);
@@ -484,7 +497,7 @@ export default function AgendaClient({
       const sat = new Date(monday);
       sat.setDate(monday.getDate() + 5);
       sat.setHours(23, 59, 59, 999);
-      getCitasSemana(monday.toISOString(), sat.toISOString()).then((db) => {
+      getCitasSemana(weekRangeMx(monday).start.toISOString(), weekRangeMx(monday).end.toISOString()).then((db) => {
         if (db) setCitasData(mapDBCitas(db, monday));
       });
     }
@@ -549,7 +562,7 @@ export default function AgendaClient({
       const sat = new Date(monday);
       sat.setDate(monday.getDate() + 5);
       sat.setHours(23, 59, 59, 999);
-      const db = await getCitasSemana(monday.toISOString(), sat.toISOString());
+      const db = await getCitasSemana(weekRangeMx(monday).start.toISOString(), weekRangeMx(monday).end.toISOString());
       if (db) setCitasData(mapDBCitas(db, monday));
       // Pre-fill patient and open new cita modal
       resetForm();
@@ -570,7 +583,7 @@ export default function AgendaClient({
       const sat = new Date(monday);
       sat.setDate(monday.getDate() + 5);
       sat.setHours(23, 59, 59, 999);
-      const db = await getCitasSemana(monday.toISOString(), sat.toISOString());
+      const db = await getCitasSemana(weekRangeMx(monday).start.toISOString(), weekRangeMx(monday).end.toISOString());
       if (db) setCitasData(mapDBCitas(db, monday));
     });
   }
@@ -839,7 +852,7 @@ export default function AgendaClient({
                     targetSat.setDate(targetMonday.getDate() + 5);
                     targetSat.setHours(23, 59, 59, 999);
                     setLoadingWeek(true);
-                    getCitasSemana(targetMonday.toISOString(), targetSat.toISOString()).then((db) => {
+                    getCitasSemana(weekRangeMx(targetMonday).start.toISOString(), weekRangeMx(targetMonday).end.toISOString()).then((db) => {
                       setMonday(targetMonday);
                       setCitasData(mapDBCitas(db ?? [], targetMonday));
                       const newDays = buildWeekDays(targetMonday);
@@ -961,7 +974,7 @@ export default function AgendaClient({
                                 const sat = new Date(monday);
                                 sat.setDate(monday.getDate() + 5);
                                 sat.setHours(23, 59, 59, 999);
-                                const db = await getCitasSemana(monday.toISOString(), sat.toISOString());
+                                const db = await getCitasSemana(weekRangeMx(monday).start.toISOString(), weekRangeMx(monday).end.toISOString());
                                 if (db) setCitasData(mapDBCitas(db, monday));
                               });
                             }}
@@ -980,7 +993,7 @@ export default function AgendaClient({
                                 const sat = new Date(monday);
                                 sat.setDate(monday.getDate() + 5);
                                 sat.setHours(23, 59, 59, 999);
-                                const db = await getCitasSemana(monday.toISOString(), sat.toISOString());
+                                const db = await getCitasSemana(weekRangeMx(monday).start.toISOString(), weekRangeMx(monday).end.toISOString());
                                 if (db) setCitasData(mapDBCitas(db, monday));
                               });
                             }}
@@ -1003,7 +1016,7 @@ export default function AgendaClient({
                               const sat = new Date(monday);
                               sat.setDate(monday.getDate() + 5);
                               sat.setHours(23, 59, 59, 999);
-                              const db = await getCitasSemana(monday.toISOString(), sat.toISOString());
+                              const db = await getCitasSemana(weekRangeMx(monday).start.toISOString(), weekRangeMx(monday).end.toISOString());
                               if (db) setCitasData(mapDBCitas(db, monday));
                             });
                           }}
@@ -1021,7 +1034,7 @@ export default function AgendaClient({
                               const sat = new Date(monday);
                               sat.setDate(monday.getDate() + 5);
                               sat.setHours(23, 59, 59, 999);
-                              const db = await getCitasSemana(monday.toISOString(), sat.toISOString());
+                              const db = await getCitasSemana(weekRangeMx(monday).start.toISOString(), weekRangeMx(monday).end.toISOString());
                               if (db) setCitasData(mapDBCitas(db, monday));
                             });
                           }}
@@ -1060,7 +1073,7 @@ export default function AgendaClient({
                       const sat = new Date(monday);
                       sat.setDate(monday.getDate() + 5);
                       sat.setHours(23, 59, 59, 999);
-                      const db = await getCitasSemana(monday.toISOString(), sat.toISOString());
+                      const db = await getCitasSemana(weekRangeMx(monday).start.toISOString(), weekRangeMx(monday).end.toISOString());
                       if (db) setCitasData(mapDBCitas(db, monday));
                     }}
                   />
