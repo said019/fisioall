@@ -178,6 +178,7 @@ const SERVICIO_ESPECIALIDAD: Record<string, string> = {
   "Barbilla": "Tratamientos Corporales",
   "Mentón": "Tratamientos Corporales",
   "Barba Completa": "Tratamientos Corporales",
+  "Mentón, mejillas y patillas": "Tratamientos Corporales",
   "Área de Bikini": "Tratamientos Corporales",
 };
 
