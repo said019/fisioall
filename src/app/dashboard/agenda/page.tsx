@@ -1,6 +1,10 @@
 import AgendaClient from "./agenda-client";
 import { getCitasSemana, getFisioterapeutas, getPacientesLite } from "./actions";
 
+// Dashboard en vivo — siempre datos frescos, nunca cachear la página
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function AgendaPage(props: {
   searchParams: Promise<{ pacienteId?: string }>;
 }) {
