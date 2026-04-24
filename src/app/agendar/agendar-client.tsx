@@ -1202,13 +1202,13 @@ export default function AgendarPage({ categorias: CATEGORIAS }: { categorias: Ca
                   {/* Datos bancarios */}
                   <div className="bg-[#f8fafb] rounded-xl p-3.5 border border-[#e4ecf2] space-y-1.5">
                     <p className="text-[10px] font-bold text-[#8fa8ba] uppercase tracking-wider">Datos para transferencia</p>
-                    <div className="grid grid-cols-2 gap-1 text-xs">
+                    <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">
                       <span className="text-[#8fa8ba]">Banco:</span>
                       <span className="font-medium text-[#1e2d3a]">BBVA</span>
-                      <span className="text-[#8fa8ba]">CLABE:</span>
-                      <span className="font-mono font-medium text-[#1e2d3a] text-[11px]">0121 8001 5367 0948 72</span>
                       <span className="text-[#8fa8ba]">Beneficiario:</span>
-                      <span className="font-medium text-[#1e2d3a]">Kaya Kalp</span>
+                      <span className="font-medium text-[#1e2d3a]">Paola Ríos Aguilar</span>
+                      <span className="text-[#8fa8ba]">N° tarjeta:</span>
+                      <span className="font-mono font-medium text-[#1e2d3a] text-[11px]">4152 3145 1397 1146</span>
                     </div>
                   </div>
 
