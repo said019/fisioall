@@ -540,7 +540,7 @@ export default function LandingClient({ config, servicios = [] }: { config: Conf
                 <div className="h-2 w-2 rounded-full bg-[#e89b3f]" />
                 <span className="text-[10px] uppercase tracking-[0.25em] text-[#8fa8ba] font-semibold">Epilación Roll-On</span>
               </div>
-              <h3 className="font-semibold text-[#1e2d3a] text-lg mb-2">Depilación</h3>
+              <h3 className="font-semibold text-[#1e2d3a] text-lg mb-2">Epilación</h3>
               <p className="text-sm text-[#5a7080] leading-relaxed mb-4">
                 Aplicación suave y precisa, resultados duraderos. Ideal para todo tipo de piel.
               </p>
