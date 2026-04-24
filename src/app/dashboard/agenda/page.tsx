@@ -1,13 +1,16 @@
+import { unstable_noStore as noStore } from "next/cache";
 import AgendaClient from "./agenda-client";
 import { getCitasSemana, getFisioterapeutas, getPacientesLite } from "./actions";
 
 // Dashboard en vivo — siempre datos frescos, nunca cachear la página
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 export default async function AgendaPage(props: {
   searchParams: Promise<{ pacienteId?: string }>;
 }) {
+  noStore();
   const searchParams = await props.searchParams;
   const preselectedPacienteId = searchParams.pacienteId ?? null;
 
