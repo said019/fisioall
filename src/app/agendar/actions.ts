@@ -592,6 +592,8 @@ export async function agendarCitaPublica(prevState: unknown, formData: FormData)
     }
 
     revalidatePath("/agendar");
+    revalidatePath("/dashboard/agenda");
+    revalidatePath("/dashboard");
     return { success: true };
   } catch (error) {
     console.error("Error booking:", error);
@@ -629,6 +631,8 @@ export async function cancelarCitaPublica(citaId: string, pacienteId: string) {
     }
 
     revalidatePath("/agendar");
+    revalidatePath("/dashboard/agenda");
+    revalidatePath("/dashboard");
     return { success: true };
   } catch (error) {
     console.error("Error cancelling:", error);
