@@ -25,7 +25,9 @@ export default async function AgendaPage(props: {
   const [yMx, mMx, dMx] = mxDateStr.split("-").map(Number);
   const mxNow = new Date(Date.UTC(yMx, mMx - 1, dMx, 18, 0, 0)); // noon CDMX
   const dayOfWeek = mxNow.getUTCDay();
-  const diffToMon = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  // Domingo = mostrar la semana que viene (los lunes de Mon-Sat ya pasaron).
+  // Lun=Mon..Sab=Sat → mostrar la semana actual.
+  const diffToMon = dayOfWeek === 0 ? 1 : 1 - dayOfWeek;
   // Display dates (noon CDMX)
   const monday = new Date(Date.UTC(yMx, mMx - 1, dMx + diffToMon, 18, 0, 0));
   // Query range (00:00 CDMX = 06:00 UTC del lunes; 00:00 CDMX domingo = fin de sábado)

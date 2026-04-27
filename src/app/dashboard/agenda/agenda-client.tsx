@@ -429,7 +429,8 @@ export default function AgendaClient({
   const goToThisWeek = useCallback(async () => {
     const now = new Date();
     const dayOfWeek = now.getDay();
-    const diffToMon = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    // Domingo → semana que viene (Mon-Sat ya pasó). Lun-Sáb → semana actual.
+    const diffToMon = dayOfWeek === 0 ? 1 : 1 - dayOfWeek;
     const thisMon = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMon);
     if (sameDay(thisMon, monday)) return;
 
