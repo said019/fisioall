@@ -409,7 +409,8 @@ export async function getHorariosDisponibles(
   for (const h of horarios) {
     const fisioBloqueos = bloqueosPorFisio.get(h.usuarioId) ?? [];
     const cubsFisio = cubsDe(h.usuarioId);
-    // Citas de ESTE fisio en el día (para detectar overlap por fisio + sala)
+    // Citas de ESTE fisio (para overlap del fisio en sí — no puede tener
+    // dos citas a la vez aunque sean en distinto cubiculo).
     const citasEsteFisio = citasNorm.filter((c) => c.fisioId === h.usuarioId);
 
     type Franja = { inicio: string; fin: string };
@@ -430,11 +431,22 @@ export async function getHorariosDisponibles(
         const gcalBloquea = gcalOcupadas.some((o) => minutos < o.fin && slotFin > o.inicio);
         const bloqueado = fisioBloqueos.some((r) => minutos < r.fin && slotFin > r.inicio);
 
-        // ¿Hay AL MENOS un cubículo del fisio libre en este slot?
+        // El fisio NO puede tener otra cita propia que se traslape (sin
+        // importar el cubiculo).
+        const fisioOcupado = citasEsteFisio.some(
+          (c) => minutos < c.fin && slotFin > c.inicio,
+        );
+
+        // ¿Hay AL MENOS un cubículo libre (vs TODAS las citas, no sólo del
+        // fisio actual) en este slot? Preferidos primero, luego cualquiera.
+        const cubsToTry: number[] = [...cubsFisio];
+        for (const c of [1, 2, 3]) {
+          if (!cubsToTry.includes(c)) cubsToTry.push(c);
+        }
         let cubLibreParaFisio = false;
-        for (const cubId of cubsFisio) {
+        for (const cubId of cubsToTry) {
           const cubStr = `Cubículo ${cubId}`;
-          const cubOcupado = citasEsteFisio.some(
+          const cubOcupado = citasNorm.some(
             (c) => c.sala === cubStr && minutos < c.fin && slotFin > c.inicio,
           );
           if (!cubOcupado) {
@@ -443,7 +455,7 @@ export async function getHorariosDisponibles(
           }
         }
 
-        const disponibleParaEsteFisio = !yaPaso && !bloqueado && !gcalBloquea && cubLibreParaFisio;
+        const disponibleParaEsteFisio = !yaPaso && !bloqueado && !gcalBloquea && !fisioOcupado && cubLibreParaFisio;
 
         const existente = slotMap.get(hora);
         if (!existente) {

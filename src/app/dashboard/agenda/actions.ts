@@ -580,8 +580,14 @@ export async function getSlotsDisponibles(params: {
       slotIni.setMinutes(slotIni.getMinutes() + minutos);
       const slotFin = new Date(slotIni.getTime() + duracionMin * 60 * 1000);
 
+      // Probar primero los cubículos preferidos del fisio; si todos
+      // están ocupados, caer a CUALQUIER cubículo libre (1, 2, 3).
+      const cubsToTry: number[] = [...cubiculosPref];
+      for (const c of [1, 2, 3]) {
+        if (!cubsToTry.includes(c)) cubsToTry.push(c);
+      }
       let cubiculoLibre: number | null = null;
-      for (const cubId of cubiculosPref) {
+      for (const cubId of cubsToTry) {
         const cubiculoStr = `Cubículo ${cubId}`;
         const ocupado = citasOcupadas.some(
           (c) =>
