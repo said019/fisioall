@@ -312,40 +312,71 @@ export async function getHorariosDisponibles(
   const esHoy = fechaISO === hoyStr;
   const minutosActuales = esHoy ? ahoraMx.getHours() * 60 + ahoraMx.getMinutes() : -1;
 
-  // Citas ya ocupadas ese día (solo del terapeuta específico, o todas)
-  const citasWhere: Record<string, unknown> = {
-    tenantId,
-    estado: { notIn: ["cancelada", "no_show"] },
-    fechaHoraInicio: { gte: inicioDia, lt: finDia },
-  };
-  if (fisioId) {
-    citasWhere.fisioterapeutaId = fisioId;
-  }
-
+  // Citas ya ocupadas ese día (de TODOS los fisios relevantes — necesitamos
+  // saber qué cubiculo está ocupado por quién para calcular disponibilidad real).
   const citasOcupadas = await prisma.cita.findMany({
-    where: citasWhere,
-    select: { fechaHoraInicio: true, fechaHoraFin: true },
+    where: {
+      tenantId,
+      estado: { notIn: ["cancelada", "no_show"] },
+      fechaHoraInicio: { gte: inicioDia, lt: finDia },
+      fisioterapeutaId: { in: usuarioIds },
+    },
+    select: { fechaHoraInicio: true, fechaHoraFin: true, sala: true, fisioterapeutaId: true },
   });
 
-  const horasOcupadas = citasOcupadas.map((c) => ({
-    inicio: c.fechaHoraInicio.getHours() * 60 + c.fechaHoraInicio.getMinutes(),
-    fin: c.fechaHoraFin.getHours() * 60 + c.fechaHoraFin.getMinutes(),
-  }));
+  // Helper: minutos del día en CDMX (deterministico, no depende de TZ runtime)
+  const minDelDiaMx = (d: Date): number => {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Mexico_City",
+      hour: "2-digit", minute: "2-digit", hour12: false,
+    }).formatToParts(d);
+    const h = Number(parts.find((p) => p.type === "hour")?.value ?? "0");
+    const m = Number(parts.find((p) => p.type === "minute")?.value ?? "0");
+    return (h === 24 ? 0 : h) * 60 + m;
+  };
 
-  // Google Calendar events
-  let gcalOcupadas: { inicio: number; fin: number }[] = [];
+  // Citas ocupadas normalizadas con minutos CDMX, fisio y sala
+  const citasNorm = citasOcupadas.map((c) => {
+    const ini = minDelDiaMx(c.fechaHoraInicio);
+    const finRaw = minDelDiaMx(c.fechaHoraFin);
+    return {
+      fisioId: c.fisioterapeutaId,
+      sala: c.sala,
+      inicio: ini,
+      fin: finRaw === 0 && ini > 0 ? 24 * 60 : finRaw,
+    };
+  });
+
+  // Google Calendar events (timezone-aware) — bloquean a TODOS los fisios
+  const gcalOcupadas: { inicio: number; fin: number }[] = [];
   try {
     const { listCalendarEvents } = await import("@/lib/google-calendar");
     const gcalEvents = await listCalendarEvents(tenantId, inicioDia, finDia);
-    gcalOcupadas = gcalEvents.map((e) => ({
-      inicio: e.start.getHours() * 60 + e.start.getMinutes(),
-      fin: e.end.getHours() * 60 + e.end.getMinutes(),
-    }));
+    for (const e of gcalEvents) {
+      const i = minDelDiaMx(e.start);
+      const f = minDelDiaMx(e.end);
+      gcalOcupadas.push({ inicio: i, fin: f === 0 && i > 0 ? 24 * 60 : f });
+    }
   } catch {
     // Google Calendar not connected — continue
   }
 
-  const todasOcupadas = [...horasOcupadas, ...gcalOcupadas];
+  // Cargar config de cubículos por fisio para esta especialidad
+  const especialidadAKey = (esp?: string): string => {
+    if (!esp) return "fisioterapia";
+    if (esp === "Suelo Pélvico") return "suelo_pelvico";
+    if (esp === "Tratamientos Faciales" || esp === "Tratamientos Corporales") return "cosme";
+    if (esp === "Rehabilitación") return "ejercicio";
+    return "fisioterapia";
+  };
+  const cubKey = especialidadAKey(especialidad);
+  const cubConfigs = await prisma.cubiculoUsuario.findMany({
+    where: { tenantId, usuarioId: { in: usuarioIds }, tipoSesion: cubKey },
+    select: { usuarioId: true, cubiculoPref: true },
+  });
+  const cubsPorFisio = new Map<string, number[]>();
+  for (const cc of cubConfigs) cubsPorFisio.set(cc.usuarioId, cc.cubiculoPref);
+  const cubsDe = (uid: string): number[] => cubsPorFisio.get(uid) ?? [1, 2, 3];
 
   // Helper: parse "HH:MM" → minutos
   const toMin = (hhmm: string) => {
@@ -377,6 +408,10 @@ export async function getHorariosDisponibles(
 
   for (const h of horarios) {
     const fisioBloqueos = bloqueosPorFisio.get(h.usuarioId) ?? [];
+    const cubsFisio = cubsDe(h.usuarioId);
+    // Citas de ESTE fisio en el día (para detectar overlap por fisio + sala)
+    const citasEsteFisio = citasNorm.filter((c) => c.fisioId === h.usuarioId);
+
     type Franja = { inicio: string; fin: string };
     const franjas = h.franjas as Franja[];
     for (const franja of franjas) {
@@ -390,9 +425,25 @@ export async function getHorariosDisponibles(
         const hora = `${String(Math.floor(minutos / 60)).padStart(2, "0")}:${String(minutos % 60).padStart(2, "0")}`;
         const slotFin = minutos + duracionMin;
         const yaPaso = esHoy && minutos <= minutosActuales;
-        const ocupado = todasOcupadas.some((o) => minutos < o.fin && slotFin > o.inicio);
+
+        // Bloqueo por GCal (afecta a todos)
+        const gcalBloquea = gcalOcupadas.some((o) => minutos < o.fin && slotFin > o.inicio);
         const bloqueado = fisioBloqueos.some((r) => minutos < r.fin && slotFin > r.inicio);
-        const disponibleParaEsteFisio = !ocupado && !yaPaso && !bloqueado;
+
+        // ¿Hay AL MENOS un cubículo del fisio libre en este slot?
+        let cubLibreParaFisio = false;
+        for (const cubId of cubsFisio) {
+          const cubStr = `Cubículo ${cubId}`;
+          const cubOcupado = citasEsteFisio.some(
+            (c) => c.sala === cubStr && minutos < c.fin && slotFin > c.inicio,
+          );
+          if (!cubOcupado) {
+            cubLibreParaFisio = true;
+            break;
+          }
+        }
+
+        const disponibleParaEsteFisio = !yaPaso && !bloqueado && !gcalBloquea && cubLibreParaFisio;
 
         const existente = slotMap.get(hora);
         if (!existente) {
