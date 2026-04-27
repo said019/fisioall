@@ -391,7 +391,7 @@ export default function HorariosPanel({ terapeutas }: HorariosPanelProps) {
                           value={String(c.cubiculoPref[0] ?? 1)}
                           onValueChange={(v) => updateCubiculoPref(c.tipoSesion, Number(v))}
                         >
-                          <SelectTrigger className="h-7 w-[90px] text-xs border-[#c8dce8]">
+                          <SelectTrigger className="h-7 w-[120px] text-xs border-[#c8dce8]">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -412,7 +412,7 @@ export default function HorariosPanel({ terapeutas }: HorariosPanelProps) {
                             updateCubiculoFallback(c.tipoSesion, v === "none" ? null : Number(v))
                           }
                         >
-                          <SelectTrigger className="h-7 w-[90px] text-xs border-[#c8dce8]">
+                          <SelectTrigger className="h-7 w-[120px] text-xs border-[#c8dce8]">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>

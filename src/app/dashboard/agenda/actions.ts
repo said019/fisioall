@@ -527,11 +527,26 @@ export async function getSlotsDisponibles(params: {
 
   const franjas = horario.franjas as { inicio: string; fin: string }[];
 
-  // 2. Obtener cubículo preferido para el tipo de sesión
+  // 2. Obtener cubículo preferido para el tipo de sesión.
+  //    En cubiculos_usuario el tipo está como clave corta (fisioterapia,
+  //    suelo_pelvico, cosme, ejercicio). Mapear el nombre del servicio.
+  const cubiculoKey = (() => {
+    const s = (tipoSesion || "").toLowerCase();
+    if (s.includes("suelo") || s.includes("pélvic")) return "suelo_pelvico";
+    if (s.includes("ejercicio")) return "ejercicio";
+    if (
+      s.includes("facial") || s.includes("limpieza") || s.includes("hidratac") ||
+      s.includes("rejuven") || s.includes("hilos") || s.includes("colágeno") ||
+      s.includes("epilación") || s.includes("epilacion") || s.includes("corporal") ||
+      s.includes("bozo") || s.includes("mentón") || s.includes("menton") ||
+      s.includes("axila") || s.includes("pierna") || s.includes("bikini")
+    ) return "cosme";
+    return "fisioterapia";
+  })();
   const cubiculoConfig = await prisma.cubiculoUsuario.findFirst({
-    where: { tenantId, usuarioId: fisioterapeutaId, tipoSesion },
+    where: { tenantId, usuarioId: fisioterapeutaId, tipoSesion: cubiculoKey },
   });
-  const cubiculosPref = cubiculoConfig?.cubiculoPref ?? [1];
+  const cubiculosPref = cubiculoConfig?.cubiculoPref ?? [1, 2, 3];
 
   // 3. Obtener citas ocupadas ese día (Mexico City UTC-6)
   const inicioDia = new Date(fecha + "T00:00:00-06:00");
