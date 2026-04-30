@@ -89,6 +89,18 @@ interface ExpedienteData {
     porcentajeObjetivo: number | null;
     notasAdicionales: string | null;
   } | null;
+  expedienteEspInicial?: {
+    id: string;
+    tipo: string;
+    citaId: string | null;
+    datosJson: Record<string, unknown>;
+  } | null;
+  expedienteEspSeguimiento?: {
+    id: string;
+    tipo: string;
+    citaId: string | null;
+    datosJson: Record<string, unknown>;
+  } | null;
   historialCitas?: Array<{
     id: string;
     tipoSesion: string;
@@ -497,22 +509,44 @@ export default function ExpedienteClient({
         </div>
       )}
 
-      {/* ── FORMULARIOS ESPECIALIZADOS ── */}
-      {tipoExpediente === "suelo_pelvico" && (
-        <ExpedienteSueloPelvico
-          pacienteId={paciente.id}
-          citaId={citaId ?? undefined}
-          esInicial={initialData.notasSesion.length === 0}
-        />
-      )}
+      {/* ── FORMULARIOS ESPECIALIZADOS ──
+       * Lógica esInicial:
+       *  - Si nunca se ha guardado un inicial → form inicial (para crear).
+       *  - Si el inicial existe y se guardó en ESTA cita → form inicial hidratado (editable).
+       *  - Si el inicial existe pero se guardó en otra cita → form seguimiento, pre-cargado con
+       *    el seguimiento de esta cita si existe; si no, vacío.
+       */}
+      {(() => {
+        const inicialEnEstaCita =
+          initialData.expedienteEspInicial?.citaId === citaId;
+        const esInicial =
+          !initialData.expedienteEspInicial || inicialEnEstaCita;
+        const datos = esInicial
+          ? initialData.expedienteEspInicial?.datosJson ?? null
+          : initialData.expedienteEspSeguimiento?.datosJson ?? null;
 
-      {tipoExpediente === "cosme" && (
-        <ExpedienteCosme
-          pacienteId={paciente.id}
-          citaId={citaId ?? undefined}
-          esInicial={initialData.notasSesion.length === 0}
-        />
-      )}
+        if (tipoExpediente === "suelo_pelvico") {
+          return (
+            <ExpedienteSueloPelvico
+              pacienteId={paciente.id}
+              citaId={citaId ?? undefined}
+              esInicial={esInicial}
+              datosExistentes={datos}
+            />
+          );
+        }
+        if (tipoExpediente === "cosme") {
+          return (
+            <ExpedienteCosme
+              pacienteId={paciente.id}
+              citaId={citaId ?? undefined}
+              esInicial={esInicial}
+              datosExistentes={datos}
+            />
+          );
+        }
+        return null;
+      })()}
 
       {/* ── SECCIÓN 2: ESCALA EVA (solo fisioterapia o seguimiento suelo pélvico) ── */}
       {(tipoExpediente === "fisioterapia" || (tipoExpediente === "suelo_pelvico" && initialData.notasSesion.length > 0)) && (

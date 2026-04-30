@@ -858,6 +858,9 @@ model ExpedienteEspecializado {
   @@index([tenantId])
   @@index([pacienteId])
   @@map("expedientes_especializados")
+  // Índices únicos parciales (no expresables en Prisma; ver migración 20260430180000_unique_expediente_especializado):
+  //   UNIQUE (tenant_id, paciente_id, tipo)            WHERE es_inicial = true
+  //   UNIQUE (tenant_id, paciente_id, tipo, cita_id)   WHERE es_inicial = false AND cita_id IS NOT NULL
 }
 
 // ── Body Map Snapshots (sistema de seguimiento clínico) ───────────────────── //

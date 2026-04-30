@@ -15,29 +15,49 @@ interface Props {
   pacienteId: string;
   citaId?: string;
   esInicial: boolean;
+  datosExistentes?: Record<string, unknown> | null;
 }
 
+const asString = (v: unknown): string => (typeof v === "string" ? v : "");
+const asBool = (v: unknown): boolean => v === true;
+const asNumber = (v: unknown, fallback = 0): number =>
+  typeof v === "number" && Number.isFinite(v) ? v : fallback;
+const asObj = (v: unknown): Record<string, unknown> =>
+  v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
+
 // ── Evaluación Inicial ──────────────────────────────────────────────────────
-function FormularioInicial({ pacienteId, citaId }: Omit<Props, "esInicial">) {
+function FormularioInicial({
+  pacienteId,
+  citaId,
+  datosExistentes,
+}: Omit<Props, "esInicial">) {
   const router = useRouter();
   const [guardando, setGuardando] = useState(false);
-  const [motivoConsulta, setMotivoConsulta] = useState("");
+  const d = datosExistentes ?? {};
+  const sint0 = asObj(d.sintomatologia);
+  const fert0 = asObj(d.datosFertilidad);
+  const [motivoConsulta, setMotivoConsulta] = useState(asString(d.motivoConsulta));
   const [sintomas, setSintomas] = useState({
-    dolorPelvico: false,
-    escapesOrina: false,
-    escapesGas: false,
-    presionAbdominopelvica: false,
-    vidaSexualActiva: false,
-    estrenimientoCronico: false,
+    dolorPelvico: asBool(sint0.dolorPelvico),
+    escapesOrina: asBool(sint0.escapesOrina),
+    escapesGas: asBool(sint0.escapesGas),
+    presionAbdominopelvica: asBool(sint0.presionAbdominopelvica),
+    vidaSexualActiva: asBool(sint0.vidaSexualActiva),
+    estrenimientoCronico: asBool(sint0.estrenimientoCronico),
   });
-  const [cicloMenstrual, setCicloMenstrual] = useState("");
-  const [partos, setPartos] = useState(0);
-  const [cesareas, setCesareas] = useState(0);
-  const [abortos, setAbortos] = useState(0);
-  const [antecedentes, setAntecedentes] = useState("");
-  const [semanasGestacion, setSemanasGestacion] = useState("");
-  const [sintomasEmbarazo, setSintomasEmbarazo] = useState("");
-  const [expectativas, setExpectativas] = useState("");
+  const [cicloMenstrual, setCicloMenstrual] = useState(
+    asString(fert0.estabilidadCicloMenstrual)
+  );
+  const [partos, setPartos] = useState(asNumber(fert0.partos));
+  const [cesareas, setCesareas] = useState(asNumber(fert0.cesareas));
+  const [abortos, setAbortos] = useState(asNumber(fert0.abortos));
+  const [antecedentes, setAntecedentes] = useState(asString(d.antecedentesPatologicos));
+  const [semanasGestacion, setSemanasGestacion] = useState(
+    typeof d.semanasGestacion === "number" ? String(d.semanasGestacion) : ""
+  );
+  const [sintomasEmbarazo, setSintomasEmbarazo] = useState(asString(d.sintomasEmbarazo));
+  const [expectativas, setExpectativas] = useState(asString(d.expectativasSesiones));
+  const yaGuardado = !!datosExistentes;
 
   const toggleSintoma = (key: keyof typeof sintomas) => {
     setSintomas((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -79,8 +99,8 @@ function FormularioInicial({ pacienteId, citaId }: Omit<Props, "esInicial">) {
 
     setGuardando(false);
     if (result.success) {
-      toast.success("Expediente de suelo pélvico guardado");
-      router.back();
+      toast.success(yaGuardado ? "Expediente actualizado" : "Expediente de suelo pélvico guardado");
+      router.refresh();
     } else {
       toast.error("Error al guardar el expediente");
     }
@@ -88,6 +108,14 @@ function FormularioInicial({ pacienteId, citaId }: Omit<Props, "esInicial">) {
 
   return (
     <div className="space-y-4">
+      {yaGuardado && (
+        <div className="bg-[#3fa87c]/10 border border-[#3fa87c]/30 rounded-lg p-3 flex items-center gap-2">
+          <CheckCircle2 className="h-4 w-4 text-[#3fa87c] shrink-0" />
+          <p className="text-xs text-[#2d6a4f] font-medium">
+            Expediente guardado. Los campos muestran los datos registrados — puedes editarlos y volver a guardar.
+          </p>
+        </div>
+      )}
       {/* Motivo de consulta */}
       <div className="border-l-4 border-[#0d9488] pl-4 space-y-1.5">
         <Label className="text-xs font-semibold text-[#0d9488]">Motivo de Consulta</Label>
@@ -226,7 +254,7 @@ function FormularioInicial({ pacienteId, citaId }: Omit<Props, "esInicial">) {
           className="cursor-pointer bg-[#0d9488] hover:bg-[#0d9488]/90 text-white transition-all duration-200 text-sm gap-1.5"
         >
           {guardando ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-          Guardar Expediente
+          {yaGuardado ? "Actualizar Expediente" : "Guardar Expediente"}
         </Button>
       </div>
     </div>
@@ -239,5 +267,11 @@ export default function ExpedienteSueloPelvico(props: Props) {
   if (!props.esInicial) {
     return null; // El padre renderizará el formulario SOAP estándar
   }
-  return <FormularioInicial pacienteId={props.pacienteId} citaId={props.citaId} />;
+  return (
+    <FormularioInicial
+      pacienteId={props.pacienteId}
+      citaId={props.citaId}
+      datosExistentes={props.datosExistentes}
+    />
+  );
 }

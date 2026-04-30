@@ -22,22 +22,35 @@ interface Props {
   pacienteId: string;
   citaId?: string;
   esInicial: boolean;
+  datosExistentes?: Record<string, unknown> | null;
 }
 
+// Helpers para leer del JSON guardado sin romper si falta un campo o cambia el shape.
+const asString = (v: unknown): string => (typeof v === "string" ? v : "");
+const asBool = (v: unknown): boolean => v === true;
+const asStringArray = (v: unknown): string[] =>
+  Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
+
 // ── Evaluación Inicial ──────────────────────────────────────────────────────
-function FormularioInicialCosme({ pacienteId, citaId }: Omit<Props, "esInicial">) {
+function FormularioInicialCosme({
+  pacienteId,
+  citaId,
+  datosExistentes,
+}: Omit<Props, "esInicial">) {
   const router = useRouter();
   const [guardando, setGuardando] = useState(false);
-  const [productosEnPiel, setProductosEnPiel] = useState("");
-  const [rutinaSkincare, setRutinaSkincare] = useState("");
-  const [alergias, setAlergias] = useState("");
-  const [usaProtectorSolar, setUsaProtectorSolar] = useState(false);
-  const [pielAcartonada, setPielAcartonada] = useState(false);
-  const [tabaco, setTabaco] = useState(false);
-  const [cafeinaAlcohol, setCafeinaAlcohol] = useState("");
-  const [motivoVisita, setMotivoVisita] = useState("");
-  const [expectativas, setExpectativas] = useState("");
-  const [recomendadoPor, setRecomendadoPor] = useState("");
+  const d = datosExistentes ?? {};
+  const [productosEnPiel, setProductosEnPiel] = useState(asString(d.productosEnPiel));
+  const [rutinaSkincare, setRutinaSkincare] = useState(asString(d.rutinaSkincare));
+  const [alergias, setAlergias] = useState(asString(d.alergias));
+  const [usaProtectorSolar, setUsaProtectorSolar] = useState(asBool(d.usaProtectorSolar));
+  const [pielAcartonada, setPielAcartonada] = useState(asBool(d.pielAcartonada));
+  const [tabaco, setTabaco] = useState(asBool(d.tabaco));
+  const [cafeinaAlcohol, setCafeinaAlcohol] = useState(asString(d.consumoCafeinaAlcohol));
+  const [motivoVisita, setMotivoVisita] = useState(asString(d.motivoVisita));
+  const [expectativas, setExpectativas] = useState(asString(d.expectativasSesiones));
+  const [recomendadoPor, setRecomendadoPor] = useState(asString(d.recomendadoPor));
+  const yaGuardado = !!datosExistentes;
 
   const handleGuardar = async () => {
     if (guardando) return;
@@ -64,8 +77,8 @@ function FormularioInicialCosme({ pacienteId, citaId }: Omit<Props, "esInicial">
 
     setGuardando(false);
     if (result.success) {
-      toast.success("Expediente de cosmetología guardado");
-      router.back();
+      toast.success(yaGuardado ? "Expediente actualizado" : "Expediente de cosmetología guardado");
+      router.refresh();
     } else {
       toast.error("Error al guardar el expediente");
     }
@@ -73,6 +86,14 @@ function FormularioInicialCosme({ pacienteId, citaId }: Omit<Props, "esInicial">
 
   return (
     <div className="space-y-4">
+      {yaGuardado && (
+        <div className="bg-[#3fa87c]/10 border border-[#3fa87c]/30 rounded-lg p-3 flex items-center gap-2">
+          <CheckCircle2 className="h-4 w-4 text-[#3fa87c] shrink-0" />
+          <p className="text-xs text-[#2d6a4f] font-medium">
+            Expediente guardado. Los campos muestran los datos registrados — puedes editarlos y volver a guardar.
+          </p>
+        </div>
+      )}
       {/* Productos y rutina */}
       <div className="border-l-4 border-[#e89b3f] pl-4 space-y-3">
         <div className="space-y-1.5">
@@ -172,7 +193,7 @@ function FormularioInicialCosme({ pacienteId, citaId }: Omit<Props, "esInicial">
           className="cursor-pointer bg-[#e89b3f] hover:bg-[#e89b3f]/90 text-white transition-all duration-200 text-sm gap-1.5"
         >
           {guardando ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-          Guardar Expediente
+          {yaGuardado ? "Actualizar Expediente" : "Guardar Expediente"}
         </Button>
       </div>
     </div>
@@ -180,18 +201,26 @@ function FormularioInicialCosme({ pacienteId, citaId }: Omit<Props, "esInicial">
 }
 
 // ── Seguimiento ─────────────────────────────────────────────────────────────
-function FormularioSeguimientoCosme({ pacienteId, citaId }: Omit<Props, "esInicial">) {
+function FormularioSeguimientoCosme({
+  pacienteId,
+  citaId,
+  datosExistentes,
+}: Omit<Props, "esInicial">) {
   const router = useRouter();
   const [guardando, setGuardando] = useState(false);
-  const [biotipo, setBiotipo] = useState("");
-  const [estadoPiel, setEstadoPiel] = useState<string[]>([]);
-  const [alteraciones, setAlteraciones] = useState<string[]>([]);
-  const [textura, setTextura] = useState("");
-  const [fototipo, setFototipo] = useState("");
-  const [lineasExpresion, setLineasExpresion] = useState("");
-  const [observaciones, setObservaciones] = useState("");
-  const [diagnosticoTratamiento, setDiagnosticoTratamiento] = useState("");
-  const [fechaPrimeraSesion, setFechaPrimeraSesion] = useState("");
+  const d = datosExistentes ?? {};
+  const [biotipo, setBiotipo] = useState(asString(d.biotipoCutaneo));
+  const [estadoPiel, setEstadoPiel] = useState<string[]>(asStringArray(d.estadoPiel));
+  const [alteraciones, setAlteraciones] = useState<string[]>(asStringArray(d.alteraciones));
+  const [textura, setTextura] = useState(asString(d.textura));
+  const [fototipo, setFototipo] = useState(asString(d.fototipo));
+  const [lineasExpresion, setLineasExpresion] = useState(asString(d.lineasExpresion));
+  const [observaciones, setObservaciones] = useState(asString(d.observaciones));
+  const [diagnosticoTratamiento, setDiagnosticoTratamiento] = useState(
+    asString(d.diagnosticoTratamiento)
+  );
+  const [fechaPrimeraSesion, setFechaPrimeraSesion] = useState(asString(d.fechaPrimeraSesion));
+  const yaGuardado = !!datosExistentes;
 
   const toggleArray = (arr: string[], setArr: (v: string[]) => void, val: string) => {
     setArr(arr.includes(val) ? arr.filter((v) => v !== val) : [...arr, val]);
@@ -221,8 +250,8 @@ function FormularioSeguimientoCosme({ pacienteId, citaId }: Omit<Props, "esInici
 
     setGuardando(false);
     if (result.success) {
-      toast.success("Seguimiento de cosmetología guardado");
-      router.back();
+      toast.success(yaGuardado ? "Seguimiento actualizado" : "Seguimiento de cosmetología guardado");
+      router.refresh();
     } else {
       toast.error("Error al guardar el seguimiento");
     }
@@ -230,6 +259,14 @@ function FormularioSeguimientoCosme({ pacienteId, citaId }: Omit<Props, "esInici
 
   return (
     <div className="space-y-4">
+      {yaGuardado && (
+        <div className="bg-[#3fa87c]/10 border border-[#3fa87c]/30 rounded-lg p-3 flex items-center gap-2">
+          <CheckCircle2 className="h-4 w-4 text-[#3fa87c] shrink-0" />
+          <p className="text-xs text-[#2d6a4f] font-medium">
+            Seguimiento guardado. Los campos muestran los datos registrados.
+          </p>
+        </div>
+      )}
       {/* Biotipo cutáneo */}
       <div className="space-y-1.5">
         <Label className="text-xs font-semibold text-[#854f0b]">Biotipo Cutáneo</Label>
@@ -381,7 +418,7 @@ function FormularioSeguimientoCosme({ pacienteId, citaId }: Omit<Props, "esInici
           className="cursor-pointer bg-[#e89b3f] hover:bg-[#e89b3f]/90 text-white transition-all duration-200 text-sm gap-1.5"
         >
           {guardando ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-          Guardar Seguimiento
+          {yaGuardado ? "Actualizar Seguimiento" : "Guardar Seguimiento"}
         </Button>
       </div>
     </div>
@@ -390,7 +427,19 @@ function FormularioSeguimientoCosme({ pacienteId, citaId }: Omit<Props, "esInici
 
 export default function ExpedienteCosme(props: Props) {
   if (props.esInicial) {
-    return <FormularioInicialCosme pacienteId={props.pacienteId} citaId={props.citaId} />;
+    return (
+      <FormularioInicialCosme
+        pacienteId={props.pacienteId}
+        citaId={props.citaId}
+        datosExistentes={props.datosExistentes}
+      />
+    );
   }
-  return <FormularioSeguimientoCosme pacienteId={props.pacienteId} citaId={props.citaId} />;
+  return (
+    <FormularioSeguimientoCosme
+      pacienteId={props.pacienteId}
+      citaId={props.citaId}
+      datosExistentes={props.datosExistentes}
+    />
+  );
 }

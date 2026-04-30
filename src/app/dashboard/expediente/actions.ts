@@ -140,6 +140,8 @@ export async function getExpedientePaciente(pacienteId: string) {
       fechaHoraInicio: null,
     },
     notaExistente: null,
+    expedienteEspInicial: null,
+    expedienteEspSeguimiento: null,
     historialCitas: [],
     notasSesion: [],
     progresosDolor: [],
@@ -192,6 +194,21 @@ export async function getExpedientePorCita(citaId: string) {
   // Existing nota for this cita (if any — for pre-fill on revisit)
   const notaExistente = cita.notasSesion[0] ?? null;
 
+  // Existing expediente especializado (per-paciente para inicial, per-cita para seguimiento)
+  const expedientesEspecializados = await prisma.expedienteEspecializado.findMany({
+    where: {
+      tenantId,
+      pacienteId: cita.pacienteId,
+      OR: [{ esInicial: true }, { citaId, esInicial: false }],
+    },
+    orderBy: { updatedAt: "desc" },
+  });
+
+  const expedienteEspInicial =
+    expedientesEspecializados.find((e) => e.esInicial) ?? null;
+  const expedienteEspSeguimiento =
+    expedientesEspecializados.find((e) => !e.esInicial && e.citaId === citaId) ?? null;
+
   return {
     paciente: {
       id: cita.paciente.id,
@@ -219,6 +236,22 @@ export async function getExpedientePorCita(citaId: string) {
           evolucion: notaExistente.evolucion,
           porcentajeObjetivo: notaExistente.porcentajeObjetivo,
           notasAdicionales: notaExistente.notasAdicionales,
+        }
+      : null,
+    expedienteEspInicial: expedienteEspInicial
+      ? {
+          id: expedienteEspInicial.id,
+          tipo: expedienteEspInicial.tipo,
+          citaId: expedienteEspInicial.citaId,
+          datosJson: expedienteEspInicial.datosJson as Record<string, unknown>,
+        }
+      : null,
+    expedienteEspSeguimiento: expedienteEspSeguimiento
+      ? {
+          id: expedienteEspSeguimiento.id,
+          tipo: expedienteEspSeguimiento.tipo,
+          citaId: expedienteEspSeguimiento.citaId,
+          datosJson: expedienteEspSeguimiento.datosJson as Record<string, unknown>,
         }
       : null,
     historialCitas: historialCitas.map((h) => ({
